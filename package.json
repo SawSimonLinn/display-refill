@@ -1,0 +1,44 @@
+{
+  "name": "display-refill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Display Case Refill Scanner monorepo: Next.js admin/API, shared domain/server packages, scan worker, SwiftUI iOS app.",
+  "packageManager": "npm@11.18.0",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "workspaces": [
+    "apps/admin",
+    "packages/domain",
+    "packages/server",
+    "workers/scan-worker",
+    "tests/db"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev -w @display-refill/admin",
+    "dev:worker": "npm run dev -w @display-refill/scan-worker",
+    "build": "npm run build --workspaces --if-present",
+    "build:admin": "npm run build -w @display-refill/admin",
+    "build:worker": "npm run build -w @display-refill/scan-worker",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "check:client-config": "node scripts/check-client-config.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run check:client-config && npm run check:db-scripts",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset --local",
+    "db:types": "supabase gen types typescript --local --schema public > packages/server/src/database.types.ts",
+    "db:types:check": "node scripts/check-db-types.mjs",
+    "test:db": "npm run test:db -w @display-refill/db-tests",
+    "check:db-scripts": "node scripts/check-db-scripts.mjs",
+    "check:db": "npm run db:reset && npm run db:types:check && npm run test:db"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.117.2",
+    "@types/node": "22.20.5",
+    "supabase": "2.119.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "note": "Synthetic fixture; not an actual store POG",
+  "name": "Mobile 2 \u2014 example draft",
+  "coordinate_space": "upright_canonical_display_crop",
+  "slots": [
+    {
+      "slot_id": "11111111-1111-4111-8111-111111111111",
+      "label": "A1",
+      "product_name": "Individual Cobb Salad",
+      "x": 0.05,
+      "y": 0.1,
+      "width": 0.4,
+      "height": 0.8,
+      "target_quantity": 3,
+      "refill_threshold": 1
+    },
+    {
+      "slot_id": "22222222-2222-4222-8222-222222222222",
+      "label": "A2",
+      "product_name": "Individual Garden Salad",
+      "x": 0.55,
+      "y": 0.1,
+      "width": 0.4,
+      "height": 0.8,
+      "target_quantity": 3,
+      "refill_threshold": null
+    }
+  ]
+}

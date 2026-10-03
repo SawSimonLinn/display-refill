@@ -1,0 +1,45 @@
+# XcodeGen spec. Generate the (git-ignored) project with:
+#   cd apps/ios && xcodegen generate
+name: DisplayRefill
+options:
+  bundleIdPrefix: com.displayrefill
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_LANGUAGE: en
+packages:
+  DisplayRefillKit:
+    path: DisplayRefillKit
+targets:
+  DisplayRefill:
+    type: application
+    platform: iOS
+    sources:
+      - path: DisplayRefill/App
+    configFiles:
+      Debug: DisplayRefill/Config/Shared.xcconfig
+      Release: DisplayRefill/Config/Shared.xcconfig
+    settings:
+      base:
+        INFOPLIST_FILE: DisplayRefill/Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.displayrefill.app
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - package: DisplayRefillKit
+        product: DisplayRefillCore
+      - package: DisplayRefillKit
+        product: DisplayRefillUI
+schemes:
+  DisplayRefill:
+    build:
+      targets:
+        DisplayRefill: all
+    test:
+      targets:
+        - package: DisplayRefillKit/DisplayRefillCoreTests

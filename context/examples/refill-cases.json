@@ -1,0 +1,81 @@
+{
+  "cases": [
+    {
+      "name": "top_up",
+      "target": 3,
+      "threshold": null,
+      "current": 2,
+      "expected_refill": 1
+    },
+    {
+      "name": "above_trigger",
+      "target": 3,
+      "threshold": 1,
+      "current": 2,
+      "expected_refill": 0
+    },
+    {
+      "name": "inclusive_trigger",
+      "target": 3,
+      "threshold": 1,
+      "current": 1,
+      "expected_refill": 2
+    },
+    {
+      "name": "empty",
+      "target": 3,
+      "threshold": 1,
+      "current": 0,
+      "expected_refill": 3
+    },
+    {
+      "name": "overstock",
+      "target": 3,
+      "threshold": 1,
+      "current": 4,
+      "expected_refill": 0
+    },
+    {
+      "name": "unknown",
+      "target": 3,
+      "threshold": 1,
+      "current": null,
+      "expected_refill": null
+    }
+  ],
+  "aggregation": {
+    "slots": [
+      {
+        "product": "cobb",
+        "target": 3,
+        "threshold": 1,
+        "current": 1
+      },
+      {
+        "product": "cobb",
+        "target": 2,
+        "threshold": null,
+        "current": 0
+      }
+    ],
+    "expected_product_refill": {
+      "cobb": 4
+    },
+    "expected_fill_score": 20
+  },
+  "invalid_inputs": [
+    {
+      "target": 0
+    },
+    {
+      "target": 3,
+      "threshold": 4
+    },
+    {
+      "current": -1
+    },
+    {
+      "current": 1.5
+    }
+  ]
+}

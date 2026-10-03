@@ -1,0 +1,5 @@
+// Copy to Local.xcconfig (git-ignored). Publishable values only.
+// On a physical device, use your Mac's LAN address instead of localhost.
+API_BASE_URL = http:/$()/localhost:3000
+SUPABASE_URL = http:/$()/127.0.0.1:54321
+SUPABASE_PUBLISHABLE_KEY = sb_publishable_REPLACE_ME
