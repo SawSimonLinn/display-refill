@@ -68,3 +68,10 @@ All entries are specification decisions; none imply implemented code.
 | Branding and app name | Display Refill working label | Distribution setup |
 
 Do not reintroduce the original template's collaboration workspace or vendors. The uploaded files supplied organizational style only; the user's current stack and scope are authoritative.
+
+## Feature 06 Decisions (2026-10-03)
+| ID | Decision | Reason |
+| --- | --- | --- |
+| D51 | Counts/confirmation own their idempotency records inside `mutate_scan_counts`, storing the committed snapshot and SHA-256 request hash; authorization precedes replay | Closing the commit-to-response-record crash window is necessary for safe lost-response retries. Other features' idempotency remains unchanged |
+| D52 | The pure TypeScript refill calculator serves provisional responses. The confirmation transaction mirrors the same formula in SQL over locked database snapshots; integration tests compare final slot/product totals and score with the domain calculator | Final quantities cannot rely on a client/model payload or an unlocked earlier read. Frozen responses use stored finals, independent of future arithmetic or POG changes |
+| D53 | Feature 06 delivers detail/count/confirmation routes and basic append-only count provenance. Feature 07 retains creation HTTP orchestration/completion/iOS UI; Feature 10 retains AI correction UI and takeover | Makes the backend engine independently verifiable without building subsequent workflow features |

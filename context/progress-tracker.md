@@ -1,10 +1,10 @@
 # Progress Tracker
 
 ## Current Phase
-Phase 0 — Foundation. Features 04–05 implemented and verified on the local stack (database, API, web dashboard). Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Features 04–05 did not change that.
+Phase 0 — Foundation. Features 04–06 implemented and verified on the local stack (database, API, web dashboard). Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Features 04–06 did not change that.
 
 ## Current Goal
-Feature 05 completed locally. Next unit: Feature 06 (authoritative refill engine); no Feature 06 code is included. Deliver a complete manual refill workflow before live vision integration.
+Feature 06 backend completed locally. Next unit: Feature 07 (iOS manual workflow). Deliver a complete manual refill workflow before live vision integration.
 
 ## Completed
 - Reworked the seven uploaded reference documents for this project.
@@ -16,6 +16,7 @@ Feature 05 completed locally. Next unit: Feature 06 (authoritative refill engine
 - Feature 03 Supabase Auth and memberships (details, evidence and limitations below).
 - Feature 04 store, display and product management (details, evidence and limitations below).
 - Feature 05 POG builder, reference-image validation and publication (details, evidence and limitations below).
+- Feature 06 authoritative backend refill engine, atomic count saving and confirmation (details, evidence and limitations below).
 
 ## In Progress
 None.
@@ -28,7 +29,7 @@ None.
 | 03 Supabase Auth | Implemented; verified locally (iOS on macOS only) | DB 105/105, API 43/43, unit 54/54, Swift 28/28 + 3 live; browser pass (below) |
 | 04 Store/display/product management | Implemented; verified locally (no iOS client yet) | DB 120/120, API 59/59, unit 66/66, browser pass, 2 negative controls (below) |
 | 05 POG builder | Complete locally; accessibility/device gaps explicit | Migration 10, DB 120/120 regressions, API 70/70 (11 new real-workflow tests), unit 95/95, Chromium workflow/viewport checks (below) |
-| 06 Refill engine | Not started | Rules and test fixtures only |
+| 06 Refill engine | Complete locally (backend only) | Migration 11; unit 110/110, DB 120/120, API 79/79; authorization, concurrency, retry and frozen-history evidence below |
 | 07 Manual iOS workflow | Not started | Feature spec only |
 | 08 Photo capture/storage | Not started | Feature spec only |
 | 09 Vision pipeline | Not started | Mock adapter only; provider unselected |
@@ -290,7 +291,7 @@ These are the Feature 04 handoff notes; the reference/publication gaps are close
 - The agent-browser synthetic click on the row "Edit" button did not register in two attempts while DOM `.click()` and keyboard Enter did; not reproduced as an app defect, cause unknown.
 
 ## Next Up
-Feature 06: authoritative refill engine (not implemented in Feature 05). Install Xcode to close the iOS build gap for features 01 and 03.
+Feature 07: iOS manual workflow (Feature 06 backend evidence below). Install Xcode to close the iOS build gap for features 01 and 03.
 
 ## Open Questions
 See decision-log.md for provider, hosting, device minimum, retention, training eligibility and real POG data. No question blocks the next local feature.
@@ -330,3 +331,34 @@ Verification corrections: the initial new API tests attempted to expire an inten
 - New POG API upload endpoints enforce ten-minute grants instead of Supabase’s fixed two-hour signed upload tokens. Published-reference existence checks use private Storage reads before the transactional DB publication; Storage and PostgreSQL are separate systems, and privileged out-of-band deletion remains an operator/retention responsibility.
 - Signed reference reads may remain usable for up to five minutes after access revocation, as specified. Uploaded reference images were synthetic local JPEGs; no real store photos/provider calls or hosted operations.
 - Scans were created with the existing trusted `create_scan` function to prove historical preservation. Employee manual/photo capture/count/vision workflows remain Features 06–10; Feature 08 still owns scan-photo upload validation.
+
+## Feature 06 — What Exists (2026-10-03, local only)
+- Read the required context, inspected Feature 05 implementation/evidence, and read the installed Next 16 route guide before editing. Initial working tree was clean. Earlier auth/catalog/POG code and checks were retained; no SIMON.md, iOS code, real uploaded POG photographs, hosted Supabase or git commits were touched.
+- `packages/domain/src/refill.ts`: one validated pure calculator for slot recommendations, product aggregates and rounded/capped fill score. Includes positive targets, inclusive optional triggers, known overstock, unknown propagation and strict count/confirmation request schemas. Products aggregate **after** per-slot calculation, so excess cannot offset a shortage.
+- Migration 11 (`supabase/migrations/20261003001100_refill_engine.sql`): `mutate_scan_counts` is service-role-only, rechecks employee ownership/manager store/admin organization access, locks the scan and slots, checks revision/state, and saves accepted counts/verification plus append-only provenance. Confirmation recomputes from pinned snapshots, stores immutable slot finals, total/score, one confirmation and audit. The committed response snapshot and SHA-256 body hash are stored in the same transaction for safe retries; authorization is checked before replay. Also closes null-confirmation-timestamp and child-write history-guard gaps. Database types regenerated from the local applied schema.
+- `packages/server/src/scans.ts`, `apps/admin/src/server/scan-handlers.ts` and `/api/v1/scans/[scan_id]`, `/counts`, `/confirm`: caller-scoped single-statement detail reads; strict authenticated count/confirmation endpoints with cookie CSRF checks, revision and idempotency requirements. Both clients receive the same server calculations, explicit provisional state, unresolved IDs and product groups. Final responses read stored quantities. Slot ordering and UTC timestamps are deterministic.
+- `packages/domain/test/refill.test.ts`: supplied JSON cases, aggregation and invalid fragments; unknown product/display totals; inclusive equality, overstock capping, half-up score rounding and strict authority-injection denials. Refill bounds checked across every allowed count 0–999 for representative targets/triggers.
+- `tests/api/test/refill.test.ts`: nine synthetic local integration scenarios covering counts/confirmation and their actual PostgreSQL transaction. Fixture creation uses the existing trusted `create_scan`; POG fixtures are synthetic, and history preservation includes clone → change target/threshold → publish → assign after confirmation.
+
+## Feature 06 — Verification Evidence
+| Check | Command / evidence | Observed result |
+| --- | --- | --- |
+| From-empty migration/security regression | `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock npm run check:db` | Exit 0: **11 migrations + synthetic seed**, generated types match, **120/120 DB tests**, fresh Next production build, **79/79 API tests** (70 earlier regressions + 9 refill scenarios) |
+| Full workspace checks | `npm run check` | Exit 0: all six workspace typechecks, ESLint no warnings/errors, **110/110 unit tests** (admin 3, domain 63, server 41, worker 3), admin/worker builds, client-config and local-db-script guards |
+| Unknown and verification | New refill API suite | Initial nulls block confirmation with slot IDs; partial saves preserve unknown slots; known required-review counts remain provisional until explicitly verified. Unchanged verification records a correction; original synthetic AI evidence stays unchanged. Known non-required slots may confirm while pending |
+| Validation / rollback | Domain + actual API/RPC tests | Negative/fractional/oversized/string/null human counts, bad revisions, duplicate/non-pinned slots and target/total injection rejected. A direct RPC batch with a valid first item and invalid second rolls back counts, corrections and revision |
+| Authorization / CSRF | Actual employee, peer employee, unassigned same-org member, manager, admin and other-org identities | Peer employee mutations 403; unassigned/cross-org mutations 404; manager count save/admin confirmation allowed; direct authenticated RPC/table mutation 42501. Foreign-origin cookie save 403; same-origin allowed. Revocation denies even a previously successful key replay |
+| Concurrency / retry | Parallel HTTP requests against local PostgreSQL | Distinct keys confirming one revision → one 200 and one 409, one confirmation/audit. Same-key concurrent saves/confirmations → same committed snapshot, one mutation/revision; lost-response style replay unchanged; changed body/key → 409; competing count edits → one 200/one 409 |
+| Arithmetic / frozen history | Domain-versus-SQL parity plus clone/publication/assignment test | Slot/product finals and scores agree at threshold boundaries, zero and overstock. Product rename and assignment of new POG targets/triggers do not change confirmed detail. Post-confirm count edits, slot insert/update and clearing `confirmed_at` refused |
+
+Verification corrections: the first new HTTP run exposed a missing service-role execute grant on the private payload helper (500; all failed transactions rolled back). Added the narrow grant while retaining client revocation, then repeated the from-empty check successfully. Corrected a synthetic overstock test's score expectation from 38 to **31** (`round(100 × (3+0+1)/13)`). Final response refinements normalize timestamps/order and reject revisions beyond PostgreSQL integer range; final production HTTP recheck is recorded below.
+
+## Feature 06 — Limitations / Handoff
+- **iOS simulator/SDK build and physical device remain unverified** (E01/E02/E03 unchanged). No new iOS or web count-entry UI was implemented or browser/device acceptance claimed. Feature 07 must display these server results and show unsaved edits as “Save to recalculate.”
+- Feature 07 owns creation HTTP orchestration, completion/attestation and the manual client. Feature 08 owns photo upload. Features 09/10 own worker evidence ingestion, confidence routing, takeover and AI correction UI. This feature implements only the backend count/verification/provenance needed by those consumers.
+- Only synthetic local fixtures were used. AI verification tests install synthetic observations during a simulated processing state; no provider/model calls, real photo inference, automatic import or training occurred. No hosted migration was applied.
+- SQL confirmation mirrors the pure TypeScript formula to recompute under the transaction lock (D52); future rule changes must preserve parity tests. Already confirmed responses use frozen stored quantities.
+- Retry evidence exercises ignored-response/replay and concurrent same-key requests; no forced operating-system/server-process crash was injected. The response snapshot is in the same PostgreSQL commit as the result, eliminating the separate response-record write window.
+- Idempotency expiry/cleanup remains Feature 12. This transaction expires matching records on use; no background cleanup was added. The full pilot/client/provider workflow is not complete.
+
+Final post-refinement rechecks: `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock npm run test:api` rebuilt the production admin with the final source and passed **79/79** across 8 files (exit 0); `npm run test -w @display-refill/domain` passed **63/63** across 5 files (exit 0). `git diff --check` passed. No commits were created.

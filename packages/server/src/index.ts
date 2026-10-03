@@ -12,3 +12,5 @@ export * from "./vision";
 export type { Database, Json } from "./database.types";
 export * from "./pog-images";
 export * from "./pogs";
+
+export * from "./scans";

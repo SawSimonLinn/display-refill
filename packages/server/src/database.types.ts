@@ -599,6 +599,9 @@ isOneToOne: false
               "active": boolean,"display_name": string,"email": string,"invited_at": string,"last_sign_in_at": string,"org_role": string,"revision": number,"stores": Json,"user_id": string
             }[]
                            },
+"mutate_scan_counts":
+{ Args: { "p_action": string,"p_actor": string,"p_expected_revision": number,"p_items": Json,"p_key": string,"p_request_id": string,"p_scan_id": string }; Returns: Json
+                           },
 "publish_pog_version":
 { Args: { "p_actor": string,"p_expected_revision": number,"p_request_id"?: string,"p_version_id": string }; Returns: {
               "created_at": string,

@@ -1,7 +1,7 @@
 # Authoritative Refill Engine
 
 ## Status
-Not started.
+Implemented locally; verification evidence and remaining client/toolchain limitations are in `../progress-tracker.md`.
 
 ## Dependencies
 Feature(s): 02. Read the linked domain contracts through the README before implementation.
