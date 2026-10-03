@@ -5,9 +5,12 @@ planogram (POG) and get a refill list. SwiftUI app for employees, Next.js
 admin dashboard and API, Supabase Auth/Postgres/Storage, and a persistent
 TypeScript worker for photo analysis.
 
-**Status: features 01 (foundation) and 02 (database and security).** The
-local schema, RLS and storage exist; there is no sign-in UI, no business API
-and no real vision provider yet. See
+**Status: features 01–05 (foundation, database and security, Supabase Auth
+and memberships, store/display/product management, POG builder/publication).** Sign-in, sessions,
+membership management, stores, products, POG identities and displays (with
+published-version assignment), private reference-image validation and the POG
+editor/publication work against the local stack; employee scans and vision are
+not built yet. See
 [context/progress-tracker.md](context/progress-tracker.md) for what is verified.
 Specifications live in [context/](context/README.md).
 
@@ -21,7 +24,8 @@ packages/server/         Server-only: config validation, logger, HTTP helpers, v
 workers/scan-worker/     Persistent worker process (mock vision; no job queue yet)
 supabase/                Migrations, seed and local config (see supabase/README.md)
 tests/db/                Database integration tests (local Supabase only)
-scripts/                 Repository checks
+tests/api/               Black-box HTTP tests of the admin app + /api/v1 (local only)
+scripts/                 Repository checks, API test runner, first-admin bootstrap
 context/                 Specifications
 ```
 
@@ -48,7 +52,8 @@ Versions recorded on the feature 01 machine (macOS 26, Apple Silicon):
 | Xcode | **not installed** | needed for the iOS build; see apps/ios/README.md |
 | Supabase CLI | 2.119.0 | root devDependency (`npx supabase`) |
 | Postgres (local) | 17 (`supabase/postgres:17.11.0.002`) | via `supabase start` |
-| supabase-js / pg | 2.117.2 / 8.23.1 | database tests |
+| supabase-js / pg | 2.117.2 / 8.23.1 | server package, admin app, database tests |
+| @supabase/ssr | 0.12.7 | web session cookies |
 | Colima / Docker CLI | 0.10.3 / 29.8.2 | container runtime used for local Supabase |
 
 All npm dependencies are pinned to exact versions.
@@ -65,8 +70,15 @@ npm run check:client-config # after build: no server secrets in browser bundle o
 npm run check:db-scripts    # no script targets a hosted database
 npm run check               # all of the above in order
 
-# Database (needs local Supabase running: npm run db:start)
-npm run check:db            # reset from empty + generated-types check + DB tests
+# Database and API (needs local Supabase running: npm run db:start)
+npm run test:db             # DB/RLS/function tests
+npm run test:api            # builds the admin app, starts it on :3100 against local
+                            # Supabase, runs tests/api (sign-in, refresh, logout,
+                            # members, invite/reset emails via Mailpit), stops it
+npm run check:db            # reset from empty + types check + test:db + test:api
+
+# Operator only: first admin of an organization (context/operations-runbook.md)
+node scripts/bootstrap-admin.mjs --email owner@example.com --org-name "Org"
 ```
 
 Each part also builds alone:
@@ -88,8 +100,10 @@ npm run dev:admin                                  # http://localhost:3000
 curl -i http://localhost:3000/api/v1/health
 ```
 
-Use the values from `npx supabase status` (local stack). The API does not
-query the database yet; only configuration is validated.
+Use the values from `npx supabase status` (local stack). Invite and reset
+emails go to Mailpit at http://127.0.0.1:54324. To sign in, bootstrap an admin
+(command above, `APP_ORIGIN=http://localhost:3000`), open the invitation in
+Mailpit and choose a password.
 
 With incomplete configuration the server still starts, logs which variables
 are missing or malformed (names and rules, never values), and API routes
@@ -110,12 +124,13 @@ Invalid configuration exits with code 78 and a message listing each variable.
 
 | Area | State |
 | --- | --- |
-| `GET /api/v1/health` | Real. Reports `database: not_checked`, `authentication: not_implemented`, `job_queue: not_implemented`. |
-| Other `/api/v1/*` | JSON `404 NOT_FOUND` envelope. No business endpoints yet. |
+| `GET /api/v1/health` | Real. Reports `database: not_checked`, `authentication: not_checked`, `job_queue: not_implemented`. |
+| `/api/v1/me`, `/members`, `/members/invite`, `/members/:user_id`, `/auth/password-reset` | Real (feature 03). |
+| `/api/v1/stores`, `/stores/:id`, `/stores/:id/displays`, `/displays/:id`, `/products`, `/products/:id`, `/pogs`, `/pogs/:id` | Real (feature 04; context/api-contracts.md). Other `/api/v1/*` paths return the JSON `404` envelope. |
 | Configuration validation | Real, for admin and worker. |
-| Sign-in (web and iOS) | **Placeholder.** Disabled form; no Supabase Auth calls; no pages are protected. |
-| Admin pages | Navigation shell with "Not built yet" placeholders. No data. |
-| iOS app | Sign-in placeholder, server reachability check, Check/History tab shell with empty states. |
+| Web sign-in, reset, invite acceptance, sign-out | Real (Supabase Auth, httpOnly SSR cookies). Pages require a verified session; employees are sent to the iOS app. |
+| Admin pages | Overview, Members, Stores, Displays, Products and POGs (reference-image/rectangle editor, immutable publication and cloning) are real. Scans UI/workflows are not built. |
+| iOS app | Real sign-in, Keychain session, refresh, sign-out, reset request, authorized store list; History is an empty state. Compiled and tested for macOS only (no Xcode). |
 | Vision analysis | `MockVisionAdapter` returns the fixed fixture (one known count, one unknown occluded slot) for the requested slot IDs. No network. |
 | Database | Real (local): schema, RLS, triggers, private buckets, `publish_pog_version`, `create_scan`. See supabase/README.md. |
 | Job queue | Table exists; claiming/processing not implemented. The worker idles. |

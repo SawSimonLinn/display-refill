@@ -1,7 +1,7 @@
 # Store, Display and Product Management
 
 ## Status
-Not started.
+Implemented and verified against the local stack (database, API, web dashboard; browser pass in Chromium). Store/display lists, products and POG identities only: the POG editor, reference images and publication are feature 05, so published-version assignment was tested with synthetic published versions. No iOS client uses these routes yet (feature 07). Evidence and limitations: progress-tracker.md.
 
 ## Dependencies
 Feature(s): 03. Read the linked domain contracts through the README before implementation.

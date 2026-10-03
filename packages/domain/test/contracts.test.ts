@@ -21,7 +21,7 @@ const fixtures = {
 
 describe("fixtures", () => {
   it("match their schemas", () => {
-    expect(HealthEnvelope.parse(fixtures.health).data.checks.authentication).toBe("not_implemented");
+    expect(HealthEnvelope.parse(fixtures.health).data.checks.authentication).toBe("not_checked");
     expect(ErrorEnvelope.parse(fixtures.error).error.code).toBe("CONFIGURATION_INVALID");
     expect(VisionResponseV1.parse(fixtures.vision).slots).toHaveLength(2);
   });

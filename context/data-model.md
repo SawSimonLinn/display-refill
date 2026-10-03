@@ -49,7 +49,9 @@ Index scans on `(store_id, created_at DESC, id DESC)`, `(display_id, created_at 
 4. Jobs, attempts, upload intents, idempotency and audit.
 5. Private buckets/storage policies and publication/confirmation grants.
 6. Synthetic seed and RLS integration fixtures.
-This order is implemented in `supabase/migrations/` (feature 02) with one change: the domain functions (`publish_pog_version`, `create_scan`) are in migration 5 because `create_scan` writes upload intents (migration 4). Migration 6 adds row locks that close publication race windows and requires scans to pin a published version. Migration 7 adds the missing `pog_slots(organization_id)` index. Step 5's "confirmation grants" arrive with the confirmation function in feature 06 (decision D29); until then no client role can write confirmations.
+This order is implemented in `supabase/migrations/` (feature 02) with one change: the domain functions (`publish_pog_version`, `create_scan`) are in migration 5 because `create_scan` writes upload intents (migration 4). Migration 6 adds row locks that close publication race windows and requires scans to pin a published version. Migration 7 adds the missing `pog_slots(organization_id)` index. Migration 8 (feature 03) adds the membership functions, the admin roster projection, the first-admin bootstrap and an organization-row lock in the last-admin trigger. Step 5's "confirmation grants" arrive with the confirmation function in feature 06 (decision D29); until then no client role can write confirmations.
+
+Migration 9 (feature 04, `…0900_catalog_management.sql`) adds the service-role management functions for stores, products, POG identities and displays (decision D39); it changes no table.
 
 ## Implementation Notes (feature 02)
 - `pog_versions.created_by` and `published_by` are nullable: null only for synthetic seed rows created without an identity.
@@ -59,3 +61,19 @@ This order is implemented in `supabase/migrations/` (feature 02) with one change
 - `idempotency_records` adds `response_body` so a replay can return the original result.
 - `upload_intents.object_path` is constrained to the organization's own prefix and the documented path shape for each bucket.
 - Store `timezone` is validated against the database's IANA zone list by trigger.
+
+## Implementation Notes (feature 04)
+- Archiving: stores, displays and products set `active = false`; POGs set `archived = true`. Nothing is deleted through the API. Archived stores and displays block new scans (`create_scan`, unchanged); archived POGs block new display assignments and publication; archived products block publication and flag displays whose assigned version uses them (`has_archived_products`).
+- Store numbers are checked case-insensitively per organization inside `create_store`/`update_store`; the existing exact unique constraint backs this up under concurrency.
+- A display's store never changes. Restoring a display requires an active store; adding a display to an archived store is refused.
+- Every change bumps `revision` (existing touch trigger) only when a value actually changes; a no-op patch returns the current row unchanged.
+- Audit events: `store.created|updated|archived|restored`, `product.created|updated|archived|restored`, `pog.created|updated|archived|restored`, `display.created|updated|archived|restored`, and `display.assigned` with before/after version IDs.
+
+## Implementation Notes (feature 05)
+- Migration 10 adds `pog_versions.reference_upload_id`, `reference_validated_at`, `slots_need_review`, `source_version_id`; generated TypeScript types come from the applied local schema.
+- Canonical `reference_width/height` describe the upright cropped, re-encoded image. A draft clone shares its source POG's immutable reference path and creates fresh slot IDs. Reference paths are scoped to the organization/POG prefix to allow this sharing.
+- `create_pog_version` locks the POG row, requires an admin, refuses a second open draft and allocates the next unique version number. Version numbers are reserved at draft creation, then frozen at publication (no renumbering).
+- `replace_pog_slots` locks the version, checks revision, validates all supplied slots, replaces them and increments the version revision in one transaction. Failure rolls back the whole set. Slot labels are unique case-insensitively through this write boundary. Overlaps/archived products can be saved as drafts but cannot publish.
+- `create_pog_upload_intent`, `finalize_pog_reference`, `settle_pog_upload` are service-role-only, actor/tenant checked. Finalization records immutable output and settles the upload in one transaction. Replacing any image on a draft with slots requires coordinate confirmation at the current revision.
+- Publication trigger additionally requires a validated reference and completed coordinate review; geometry/products/targets/thresholds are rechecked with the existing publication/slot/product locks. Published versions/slots remain immutable for every database role.
+- Audit includes `pog_version.created`, `pog_version.slots_saved`, `pog_version.reference_set|reference_replaced`, and existing `pog_version.published`. Upload issuance/failed validation is operational state, not a publication event. Existing assignment audits remain Feature 04.

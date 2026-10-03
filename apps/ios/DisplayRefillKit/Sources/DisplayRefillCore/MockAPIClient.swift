@@ -27,6 +27,14 @@ public struct MockAPIClient: APIClient {
         }
     }
 
+    public func requestPasswordReset(email: String) async throws(APIClientError) -> PasswordResetAck {
+        switch scenario {
+        case .healthy: PasswordResetAck(status: "sent_if_registered")
+        case .configurationInvalid: try APIResponseDecoder.decode(data: Fixtures.errorConfigurationInvalid, response: Self.response(503))
+        case .offline: throw .transport(.notConnectedToInternet)
+        }
+    }
+
     private static func response(_ status: Int) -> URLResponse {
         HTTPURLResponse(url: URL(string: "https://mock.invalid/api/v1/health")!, statusCode: status, httpVersion: nil, headerFields: nil)!
     }
@@ -44,7 +52,7 @@ public enum Fixtures {
         "checks": {
           "configuration": "ok",
           "database": "not_checked",
-          "authentication": "not_implemented",
+          "authentication": "not_checked",
           "job_queue": "not_implemented"
         }
       },

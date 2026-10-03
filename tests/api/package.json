@@ -1,0 +1,17 @@
+{
+  "name": "@display-refill/api-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Black-box HTTP tests for the admin web app and /api/v1 against a running server and LOCAL Supabase only. Run through scripts/run-api-tests.mjs.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@display-refill/domain": "0.1.0",
+    "@display-refill/server": "0.1.0",
+    "@supabase/supabase-js": "2.117.2",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
+  }
+}

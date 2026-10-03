@@ -7,24 +7,47 @@ public enum APIClientError: Error, Equatable, Sendable {
     case unexpectedResponse(status: Int)
     case transport(URLError.Code)
     case decoding
+    /// The session ended (refresh rejected or no session): show sign-in.
+    case signedOut
 }
 
 /// Network boundary for presentation code; tests and previews use `MockAPIClient`.
 public protocol APIClient: Sendable {
     func health() async throws(APIClientError) -> HealthStatus
+    /// Unauthenticated. The server builds the email link; the app cannot choose it.
+    func requestPasswordReset(email: String) async throws(APIClientError) -> PasswordResetAck
 }
 
 public struct URLSessionAPIClient: APIClient {
     private let baseURL: URL
     private let session: URLSession
 
-    public init(baseURL: URL, session: URLSession = .shared) {
+    public init(baseURL: URL, session: URLSession = URLSession(configuration: .displayRefill)) {
         self.baseURL = baseURL
         self.session = session
     }
 
     public func health() async throws(APIClientError) -> HealthStatus {
         try await get("api/v1/health")
+    }
+
+    public func requestPasswordReset(email: String) async throws(APIClientError) -> PasswordResetAck {
+        var request = URLRequest(url: baseURL.appending(path: "api/v1/auth/password-reset"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(UUID().uuidString.lowercased(), forHTTPHeaderField: "X-Request-Id")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email])
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError {
+            throw .transport(error.code)
+        } catch {
+            throw .transport(.unknown)
+        }
+        return try APIResponseDecoder.decode(data: data, response: response)
     }
 
     private func get<T: Decodable & Sendable>(_ path: String) async throws(APIClientError) -> T {

@@ -11,6 +11,8 @@ Coordinates are relative to a canonical upright crop of the full display. Employ
 
 Count only visible, attributable units. If stock is stacked behind visible containers, do not infer hidden totals; mark occluded and require physical verification. A visually mismatched item triggers wrong_product and review. Never assume that being in the right slot proves identity.
 
+Feature 05 now produces the canonical upright, metadata-free reference crop. Slot geometry is stored relative to that crop at six-decimal precision and rendered against the actual image content box, excluding borders/letterboxing. Browser viewport/zoom correctness is a UI property; it supplies no camera alignment, homography or perspective correction. Feature 08/09 must still implement and verify scan crop/alignment.
+
 ## Output Contract (schema version 1)
 ```json
 {

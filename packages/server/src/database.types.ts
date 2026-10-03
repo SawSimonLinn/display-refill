@@ -133,13 +133,13 @@ isOneToOne: false
                   ]
                 },"pog_versions": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"organization_id": string,"pog_id": string,"published_at": string | null,"published_by": string | null,"reference_height": number | null,"reference_path": string | null,"reference_width": number | null,"revision": number,"state": string,"updated_at": string,"version_number": number
+                    "created_at": string,"created_by": string | null,"id": string,"organization_id": string,"pog_id": string,"published_at": string | null,"published_by": string | null,"reference_height": number | null,"reference_path": string | null,"reference_upload_id": string | null,"reference_validated_at": string | null,"reference_width": number | null,"revision": number,"slots_need_review": boolean,"source_version_id": string | null,"state": string,"updated_at": string,"version_number": number
                   }
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id": string,"pog_id": string,"published_at"?: string | null,"published_by"?: string | null,"reference_height"?: number | null,"reference_path"?: string | null,"reference_width"?: number | null,"revision"?: number,"state"?: string,"updated_at"?: string,"version_number": number
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id": string,"pog_id": string,"published_at"?: string | null,"published_by"?: string | null,"reference_height"?: number | null,"reference_path"?: string | null,"reference_upload_id"?: string | null,"reference_validated_at"?: string | null,"reference_width"?: number | null,"revision"?: number,"slots_need_review"?: boolean,"source_version_id"?: string | null,"state"?: string,"updated_at"?: string,"version_number": number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id"?: string,"pog_id"?: string,"published_at"?: string | null,"published_by"?: string | null,"reference_height"?: number | null,"reference_path"?: string | null,"reference_width"?: number | null,"revision"?: number,"state"?: string,"updated_at"?: string,"version_number"?: number
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id"?: string,"pog_id"?: string,"published_at"?: string | null,"published_by"?: string | null,"reference_height"?: number | null,"reference_path"?: string | null,"reference_upload_id"?: string | null,"reference_validated_at"?: string | null,"reference_width"?: number | null,"revision"?: number,"slots_need_review"?: boolean,"source_version_id"?: string | null,"state"?: string,"updated_at"?: string,"version_number"?: number
                   }
                   Relationships: [
                     {
@@ -147,6 +147,18 @@ isOneToOne: false
       columns: ["organization_id","pog_id"]
 isOneToOne: false
       referencedRelation: "pogs"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "pog_versions_reference_upload_id_fkey"
+      columns: ["reference_upload_id"]
+isOneToOne: false
+      referencedRelation: "upload_intents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pog_versions_source_fkey"
+      columns: ["organization_id","source_version_id"]
+isOneToOne: false
+      referencedRelation: "pog_versions"
       referencedColumns: ["organization_id","id"]
     }
                   ]
@@ -420,9 +432,171 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "create_scan":
+            "apply_membership_invite":
+{ Args: { "p_actor": string,"p_org": string,"p_org_role": string,"p_request_id"?: string,"p_stores": Json,"p_user": string }; Returns: number
+                           },
+"bootstrap_first_admin":
+{ Args: { "p_org"?: string,"p_org_name"?: string,"p_user": string }; Returns: string
+                           },
+"create_display":
+{ Args: { "p_active_pog_version_id"?: string,"p_actor": string,"p_name": string,"p_request_id"?: string,"p_store_id": string }; Returns: {
+              "active": boolean,
+"active_pog_version_id": string | null,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"store_id": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "displays"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_pog":
+{ Args: { "p_actor": string,"p_name": string,"p_org": string,"p_request_id"?: string }; Returns: {
+              "archived": boolean,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "pogs"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_pog_upload_intent":
+{ Args: { "p_actor": string,"p_request_id"?: string,"p_version_id": string }; Returns: {
+              "actor_id": string,
+"bucket": string,
+"created_at": string,
+"expected_type": string,
+"expires_at": string,
+"id": string,
+"max_bytes": number,
+"object_path": string,
+"organization_id": string,
+"resource_id": string,
+"revision": number,
+"state": string,
+"store_id": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "upload_intents"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_pog_version":
+{ Args: { "p_actor": string,"p_pog_id": string,"p_request_id"?: string,"p_source_version_id"?: string }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"id": string,
+"organization_id": string,
+"pog_id": string,
+"published_at": string | null,
+"published_by": string | null,
+"reference_height": number | null,
+"reference_path": string | null,
+"reference_upload_id": string | null,
+"reference_validated_at": string | null,
+"reference_width": number | null,
+"revision": number,
+"slots_need_review": boolean,
+"source_version_id": string | null,
+"state": string,
+"updated_at": string,
+"version_number": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "pog_versions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_product":
+{ Args: { "p_actor": string,"p_category": string,"p_container_type": string,"p_name": string,"p_org": string,"p_plu"?: string,"p_request_id"?: string,"p_short_name": string,"p_sku"?: string,"p_upc"?: string }; Returns: {
+              "active": boolean,
+"category": string,
+"container_type": string,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"plu": string | null,
+"revision": number,
+"short_name": string,
+"sku": string | null,
+"upc": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "products"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_scan":
 { Args: { "p_actor": string,"p_display_id": string,"p_expected_pog_version_id"?: string,"p_source": string }; Returns: {
               "pog_version_id": string,"revision": number,"scan_id": string,"slot_count": number,"status": string,"upload_bucket": string,"upload_expires_at": string,"upload_object_path": string
+            }[]
+                           },
+"create_store":
+{ Args: { "p_actor": string,"p_name": string,"p_org": string,"p_request_id"?: string,"p_store_number": string,"p_timezone": string }; Returns: {
+              "active": boolean,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"store_number": string,
+"timezone": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stores"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"finalize_pog_reference":
+{ Args: { "p_actor": string,"p_expected_revision": number,"p_height": number,"p_request_id"?: string,"p_sha256": string,"p_upload_id": string,"p_version_id": string,"p_width": number }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"id": string,
+"organization_id": string,
+"pog_id": string,
+"published_at": string | null,
+"published_by": string | null,
+"reference_height": number | null,
+"reference_path": string | null,
+"reference_upload_id": string | null,
+"reference_validated_at": string | null,
+"reference_width": number | null,
+"revision": number,
+"slots_need_review": boolean,
+"source_version_id": string | null,
+"state": string,
+"updated_at": string,
+"version_number": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "pog_versions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"list_organization_members":
+{ Args: { "p_actor": string,"p_org": string }; Returns: {
+              "active": boolean,"display_name": string,"email": string,"invited_at": string,"last_sign_in_at": string,"org_role": string,"revision": number,"stores": Json,"user_id": string
             }[]
                            },
 "publish_pog_version":
@@ -436,8 +610,12 @@ isOneToOne: false
 "published_by": string | null,
 "reference_height": number | null,
 "reference_path": string | null,
+"reference_upload_id": string | null,
+"reference_validated_at": string | null,
 "reference_width": number | null,
 "revision": number,
+"slots_need_review": boolean,
+"source_version_id": string | null,
 "state": string,
 "updated_at": string,
 "version_number": number
@@ -445,6 +623,133 @@ isOneToOne: false
                           SetofOptions: {
         from: "*"
         to: "pog_versions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"replace_pog_slots":
+{ Args: { "p_actor": string,"p_confirm_coordinates"?: boolean,"p_expected_revision": number,"p_request_id"?: string,"p_slots": Json,"p_version_id": string }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"id": string,
+"organization_id": string,
+"pog_id": string,
+"published_at": string | null,
+"published_by": string | null,
+"reference_height": number | null,
+"reference_path": string | null,
+"reference_upload_id": string | null,
+"reference_validated_at": string | null,
+"reference_width": number | null,
+"revision": number,
+"slots_need_review": boolean,
+"source_version_id": string | null,
+"state": string,
+"updated_at": string,
+"version_number": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "pog_versions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"settle_pog_upload":
+{ Args: { "p_actor": string,"p_state": string,"p_upload_id": string }; Returns: {
+              "actor_id": string,
+"bucket": string,
+"created_at": string,
+"expected_type": string,
+"expires_at": string,
+"id": string,
+"max_bytes": number,
+"object_path": string,
+"organization_id": string,
+"resource_id": string,
+"revision": number,
+"state": string,
+"store_id": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "upload_intents"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"update_display":
+{ Args: { "p_actor": string,"p_changes": Json,"p_display_id": string,"p_expected_revision": number,"p_request_id"?: string }; Returns: {
+              "active": boolean,
+"active_pog_version_id": string | null,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"store_id": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "displays"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"update_membership":
+{ Args: { "p_active"?: boolean,"p_actor": string,"p_expected_revision": number,"p_org": string,"p_org_role"?: string,"p_request_id"?: string,"p_stores"?: Json,"p_user": string }; Returns: number
+                           },
+"update_pog":
+{ Args: { "p_actor": string,"p_changes": Json,"p_expected_revision": number,"p_pog_id": string,"p_request_id"?: string }; Returns: {
+              "archived": boolean,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "pogs"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"update_product":
+{ Args: { "p_actor": string,"p_changes": Json,"p_expected_revision": number,"p_product_id": string,"p_request_id"?: string }; Returns: {
+              "active": boolean,
+"category": string,
+"container_type": string,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"plu": string | null,
+"revision": number,
+"short_name": string,
+"sku": string | null,
+"upc": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "products"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"update_store":
+{ Args: { "p_actor": string,"p_changes": Json,"p_expected_revision": number,"p_request_id"?: string,"p_store_id": string }; Returns: {
+              "active": boolean,
+"created_at": string,
+"id": string,
+"name": string,
+"organization_id": string,
+"revision": number,
+"store_number": string,
+"timezone": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "stores"
         isOneToOne: true
         isSetofReturn: false
       } }

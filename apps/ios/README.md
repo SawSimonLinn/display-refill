@@ -26,6 +26,28 @@ At launch `AppConfiguration` validates these keys and shows a
 service-role key in the publishable slot and refuses any bundled
 `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` or `VISION_API_KEY`.
 
+## Authentication (feature 03)
+
+`DisplayRefillCore` signs in with Supabase Auth email/password through
+`SupabaseAuthClient` (Supabase Auth's HTTP endpoints, behind the
+`SupabaseAuthAPI` protocol; decision D31 explains why not supabase-swift yet).
+`SessionManager` keeps the session in the Keychain
+(`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`), refreshes 60 s before
+expiry with a single in-flight refresh, and on a 401 refreshes once and
+retries once. A rejected refresh deletes the Keychain item and returns to
+sign-in; a network failure keeps the session. `URLSessionAccountAPI` sends
+`Authorization: Bearer` to `/api/v1/me`. Sign-out clears the Keychain item,
+HTTP caches and the app's image folders, then revokes the session.
+"Forgot password?" calls `POST /api/v1/auth/password-reset`; the email opens a
+web page to choose the password. There is no sign-up.
+
+Live check against a local stack (macOS, not iOS): start the admin app on
+:3100 against local Supabase, create a user with one store membership, then run
+the compiled test binary with `DISPLAY_REFILL_LIVE=1 LIVE_API_BASE_URL=…
+LIVE_SUPABASE_URL=… LIVE_PUBLISHABLE_KEY=… LIVE_EMAIL=… LIVE_PASSWORD=…
+LIVE_EXPECTED_STORE_IDS=…`. `DISPLAY_REFILL_KEYCHAIN_TEST=1` enables a real
+Keychain round trip (writes to the login keychain and deletes the item).
+
 ## Build and test (with Xcode)
 
 ```bash

@@ -34,7 +34,7 @@ public final class HealthCheckModel {
             "Can't reach the server. Check your connection and retry."
         case .server(_, .configurationInvalid, _, _):
             "The server is reachable but not configured yet."
-        case .server, .unexpectedResponse, .decoding:
+        case .server, .unexpectedResponse, .decoding, .signedOut:
             "The server responded unexpectedly. Retry later."
         }
     }

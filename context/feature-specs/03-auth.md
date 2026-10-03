@@ -1,7 +1,7 @@
 # Supabase Authentication and Memberships
 
 ## Status
-Not started.
+Implemented and verified against the local stack (web, API, database). iOS auth logic verified on macOS with stubbed and live local services; no iOS simulator or device run, no hosted email delivery. Evidence and limitations: progress-tracker.md.
 
 ## Dependencies
 Feature(s): 02. Read the linked domain contracts through the README before implementation.

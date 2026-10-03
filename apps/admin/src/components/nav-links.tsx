@@ -13,11 +13,13 @@ export const NAV_ITEMS = [
   { href: "/members", label: "Members", icon: Users },
 ] as const;
 
-export function NavLinks() {
+/** Members is shown to org admins only; the page and API enforce it regardless. */
+export function NavLinks({ showMembers }: { showMembers: boolean }) {
   const pathname = usePathname();
+  const items = showMembers ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/members");
   return (
     <ul className="flex gap-1 overflow-x-auto md:flex-col">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <li key={href}>

@@ -1,10 +1,10 @@
 # Progress Tracker
 
 ## Current Phase
-Phase 0 — Foundation. Feature 02 complete on local Supabase (acceptance criteria demonstrated; not applied to any hosted project). Feature 01 implemented; its iOS build is still unverified.
+Phase 0 — Foundation. Features 04–05 implemented and verified on the local stack (database, API, web dashboard). Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Features 04–05 did not change that.
 
 ## Current Goal
-Feature 03 (Supabase Auth sign-in, sessions, membership management) on both clients. Deliver a complete manual refill workflow before live vision integration.
+Feature 05 completed locally. Next unit: Feature 06 (authoritative refill engine); no Feature 06 code is included. Deliver a complete manual refill workflow before live vision integration.
 
 ## Completed
 - Reworked the seven uploaded reference documents for this project.
@@ -13,6 +13,9 @@ Feature 03 (Supabase Auth sign-in, sessions, membership management) on both clie
 - Prepared a documentation index, examples and ZIP delivery.
 - Feature 01 repository foundation (details and evidence below).
 - Feature 02 database, constraints and security (details and evidence below).
+- Feature 03 Supabase Auth and memberships (details, evidence and limitations below).
+- Feature 04 store, display and product management (details, evidence and limitations below).
+- Feature 05 POG builder, reference-image validation and publication (details, evidence and limitations below).
 
 ## In Progress
 None.
@@ -22,9 +25,9 @@ None.
 | --- | --- | --- |
 | 01 Foundation | Implemented; iOS build unverified | TS checks pass (below); Swift compiled for macOS only |
 | 02 Database and security | Complete (local) | 88/88 DB tests on a from-empty instance, acceptance audit, lint fixed (below) |
-| 03 Supabase Auth | Not started | Auth specification only |
-| 04 Store/display/product management | Not started | Feature spec only |
-| 05 POG builder | Not started | Feature spec only |
+| 03 Supabase Auth | Implemented; verified locally (iOS on macOS only) | DB 105/105, API 43/43, unit 54/54, Swift 28/28 + 3 live; browser pass (below) |
+| 04 Store/display/product management | Implemented; verified locally (no iOS client yet) | DB 120/120, API 59/59, unit 66/66, browser pass, 2 negative controls (below) |
+| 05 POG builder | Complete locally; accessibility/device gaps explicit | Migration 10, DB 120/120 regressions, API 70/70 (11 new real-workflow tests), unit 95/95, Chromium workflow/viewport checks (below) |
 | 06 Refill engine | Not started | Rules and test fixtures only |
 | 07 Manual iOS workflow | Not started | Feature spec only |
 | 08 Photo capture/storage | Not started | Feature spec only |
@@ -172,11 +175,158 @@ Unexplained, no longer reproducible: before the instance was recreated, `db:rese
 - **Remaining unindexed FKs:** actor/user FKs (`created_by`, `actor_id`, `confirmed_by`, …) and some composite FKs have no exact covering index. They only affect parent-row deletes, which history rules forbid or keep rare. Revisit with the identity-redaction process (feature 12).
 - **RLS performance** at realistic data volumes: not measured.
 
+## Feature 03 — Dependency Check
+Feature 02 re-verified at the start of this session before any change: `npm run check:db` 88/88, `npm run check` exit 0 (unit 38/38), Swift fallback 11/11. The local stack was running (Colima); Mailpit at :54324. Xcode still not installed (E01), SwiftPM still broken (E02).
+
+## Feature 03 — What Exists
+- **Database** (`supabase/migrations/…0800_membership_management.sql`): `list_organization_members` (admin roster with email, SECURITY DEFINER), `apply_membership_invite`, `update_membership` (full store set, revision check, before/after audit, `membership.revoked` on deactivation), `bootstrap_first_admin` (refuses orgs with an active admin); all service-role only. Last-admin trigger now locks the organization row (defect A02). Regenerated types.
+- **Local Auth config** (`supabase/config.toml`): redirect allowlist `http://localhost:3000/auth/confirm`; invite/recovery templates (`supabase/templates/`) with token-hash links; password minimum 12; local email limit 100/h. Signup stays disabled.
+- **packages/domain** `auth.ts`: roles, `Me`, `Member`, strict invite/update/reset schemas, password policy, `safeNextPath` redirect allowlist. Health now reports `authentication: not_checked`.
+- **packages/server**: `verifyAccessToken` (Supabase Auth `getUser`, D30), `loadMe` (caller-scoped RLS reads), `resolveAdminOrganization`, members service (invite with compensating delete), idempotency over `idempotency_records`, in-process rate limiter, same-origin check, DB error mapping.
+- **apps/admin**: `src/proxy.ts` (session refresh), httpOnly SSR cookies (`@supabase/ssr` 0.12.7), `/api/v1/me`, `/api/v1/members`, `/members/invite`, `/members/:user_id`, `/api/v1/auth/password-reset`; form handlers `/auth/sign-in|sign-out|forgot-password|verify|set-password`; pages `/sign-in`, `/forgot-password`, `/auth/confirm`, `/account/password`, `/no-access`; dashboard gated by capability, Members admin-only with invite and edit/revoke UI; store selector lists authorized stores.
+- **iOS** (`DisplayRefillKit`): `HTTPTransport`, `SupabaseAuthClient` (D31), `KeychainSessionStore`, `SessionManager` actor, `URLSessionAccountAPI`, `AppLocalDataCleaner`; UI `AppSession`, `SignInView` + reset sheet, `SignedInView` (authorized stores), `AccessRemovedView`. Placeholder sign-in and preview shell removed.
+- **Tests**: `tests/db/test/memberships.test.ts` (17); new workspace `tests/api` (43 HTTP tests against `next start` on :3100, Mailpit for email) run by `npm run test:api` (`scripts/run-api-tests.mjs`, loopback only); `packages/domain/test/auth.test.ts`, `packages/server/test/auth.test.ts`; Swift `AuthTests.swift` (stubbed transport), `LiveAuthTests.swift` (opt-in, local stack).
+- **Operator bootstrap**: `scripts/bootstrap-admin.mjs`; procedure in operations-runbook.md.
+- Docs: decision-log D30–D38, auth-and-permissions and api-contracts implementation sections, operations-runbook (bootstrap, hosted Auth checklist, membership incident), current-issues A02/R09/R10, data-model, READMEs, feature spec status.
+
+## Feature 03 — Verification (2026-10-03, local Supabase on Colima, Node 22.13.1)
+| Criterion | Command / evidence | Result |
+| --- | --- | --- |
+| Invited user signs in and sees only authorized stores | `tests/api/test/members.test.ts` "invites once per Idempotency-Key…": admin POSTs invite → one Mailpit email linking to `http://localhost:3100/auth/confirm?token_hash=…&type=invite` → confirm page → `POST /auth/verify` → set password → password sign-in → `/api/v1/me` lists exactly store A2 (employee). `bearer-auth.test.ts`: per-role store lists for admin A, manager A1, employees A1/A2, admin B. `web-session.test.ts`: manager's store selector shows A Store 1 only. Swift live test: same user via `SupabaseAuthClient` + `/api/v1/me` returns only the assigned store | Met (web + API; iOS client logic on macOS, not on iOS) |
+| Expired token refresh works once | Web: `web-session.test.ts` sets cookie `expires_at` in the past → page 200, new access and refresh token in Set-Cookie, API works with it. iOS: `AuthTests` proactive refresh, 5 concurrent calls → 1 refresh, 401 → refresh → retry (exact request sequence me/token/me); Swift live test: expired session refreshes once against local Auth (rotation observed) | Met |
+| Invalid refresh returns to sign-in without retry loops | Web: bogus refresh token → 307 `/sign-in?next=%2F`, auth cookies cleared, `/sign-in` 200 (terminal); API with that cookie → 401. iOS: rejected refresh → `.signedOut`, Keychain item deleted, exactly 1 refresh and no retry; second 401 after a successful refresh → stop after 3 requests, later calls make no request; Swift live: bogus refresh token → signed out after 1 attempt | Met |
+| Password reset via allowlisted redirects; arbitrary redirects rejected | `password-reset.test.ts`: web form → Mailpit link to `/auth/confirm` → verify → weak/mismatch rejected → new password works, old fails, link single-use; unknown email gets the same answer and no email; cross-origin form rejected; iOS endpoint rejects a `redirect_to` field (422) and answers 202 identically for known/unknown; direct Supabase `/recover` with `redirect_to=https://evil.example/steal` → email contains no `evil.example`; confirm/verify reject `signup`, `magiclink`, `email_change`. `next` allowlist: `web-session.test.ts` (6 hostile values → `/`) and 18 cases in `packages/domain/test/auth.test.ts` | Met (local Mailpit only) |
+| Logout clears sensitive cached content | Web: 303 to `/sign-in?signed_out=1`, `Clear-Site-Data: "cache", "storage"`, auth cookies deleted; the old access token → 401 and a copied old cookie → redirect to sign-in (session revoked server-side); cross-origin sign-out rejected. Pages send `no-store`. iOS: Keychain item deleted even offline, logout request carries the bearer, cleaner removes image directories; Swift live: after sign-out the rotated token → our API 401 (Auth log: `/logout 204` then `/user 403`) | Met (iOS cache/image clearing tested on macOS paths) |
+| Revoked membership denies next request | `bearer-auth.test.ts`: same token, store revoked → store disappears; org revoked → 403. `members.test.ts`: revoke via API → member's existing token 403. `web-session.test.ts`: existing web session → `/no-access?reason=revoked`, API 403 | Met |
+| Employee cannot grant themselves manager/admin (API or DB) | API: employee and manager PATCH self to admin / POST invite / GET roster → 403, rows unchanged. DB: `memberships.test.ts` (function with self as actor → FORBIDDEN; clients cannot execute any membership function: 42501), existing `direct-writes.test.ts` (direct table writes 42501). Editing `user_metadata` to `role: admin` grants nothing | Met |
+| Admin-only membership management, audited, last-admin protected | `memberships.test.ts` 17 tests incl. cross-org NOT_FOUND, validation leaves no partial rows, audit before/after; `members.test.ts`: admin B gets 404 on org A, last admin → 409 for demote and revoke, audit `membership.updated` → `membership.revoked`, idempotent replay returns the stored response with no second email, same key + different body → 409 | Met |
+| Concurrent last-admin race | Two raw connections demote two admins concurrently: fails with the feature 02 trigger body (both commit), passes with migration 08 | Defect A02 found and fixed |
+| CSRF on cookie mutations | `members.test.ts`: cookie PATCH with foreign Origin, no Origin, or `Sec-Fetch-Site: cross-site` → 403 and row unchanged; with app Origin → 200. Sign-in/forgot/sign-out forms reject cross-origin posts | Met |
+| Operator first-admin bootstrap | `bootstrap.test.ts`: creates org + admin + invite email; refuses an org with an admin and deletes the identity it created; refuses a non-loopback URL without `--confirm-remote`; argument validation | Met (local only) |
+| No alternative identity provider | Only `@supabase/supabase-js` 2.117.2 and `@supabase/ssr` 0.12.7 added; iOS uses Supabase Auth endpoints | Met |
+| Public signup disabled | `config.toml` unchanged (`[auth] enable_signup = false`); `direct-writes.test.ts` signup rejection still passes; no sign-up link on `/sign-in` (asserted) | Met (local) |
+
+### Negative controls
+| Change made temporarily | Expected failing test | Observed |
+| --- | --- | --- |
+| Same-origin check disabled in `api-auth.ts` | members CSRF test | Failed as expected; restored |
+| `getUser` replaced with local `getClaims` verification | bearer "signed-out session" test | Only that test failed (expired/forged still rejected); restored. Basis for D30 |
+| Feature 02 last-admin trigger body reinstated | concurrent demotion test | Failed (both demotions committed); fix reapplied |
+
+### Totals (final run, after `rm -rf apps/admin/.next`)
+| Command | Result |
+| --- | --- |
+| `npm run check` | Exit 0: typecheck 6 workspaces, ESLint 0 problems, unit tests 54/54 (admin 3, domain 20, server 28, worker 3), admin + worker builds, client-config scan OK, db-scripts guard OK (7 manifests) |
+| `npm run check:db` | Exit 0: reset (8 migrations + seed), types match, DB 105/105 (9 files), API 43/43 (5 files, fresh `next build` + `next start`) |
+| `apps/ios/scripts/swiftc-check.sh` (CLT overlay flags) with `DISPLAY_REFILL_KEYCHAIN_TEST=1` | Core, UI, app entry compile for macOS 14 with `-warnings-as-errors`; 28/28 passed incl. real login-keychain round trip; 3 live tests skipped (env) |
+| Swift live suite (`DISPLAY_REFILL_LIVE=1`, server on :3100, local Auth) | 3/3 passed |
+| Browser pass (agent-browser, Chromium, :3100) | Sign-in form, overview with authorized stores, Members invite (client fetch passed the CSRF check, email sent) and edit (A Store 2 → manager, audited), sign-out to `/sign-in?signed_out=1`, `document.cookie` empty (httpOnly), employee sign-in → `/no-access?reason=employee`. Screenshots reviewed |
+| `npm audit --omit=dev` | 0 vulnerabilities (dev-only E06 unchanged; no `audit fix --force`) |
+
+Process note: one interim Swift live run failed because the `.next` build on disk was still the `getClaims` negative-control build (Supabase Auth log showed a JWKS fetch and no `/user` call). After rebuilding, the same test passed. All totals above come from fresh builds.
+
+## Feature 03 — Unverified / Remaining
+- **iOS on iOS**: no Xcode, so no iOS SDK build, simulator or device run. Keychain behaviour was exercised only in the macOS login keychain; `kSecUseDataProtectionKeychain`, background refresh after first unlock, app relaunch restore and the SwiftUI screens on a phone are unverified. supabase-swift not used (D31).
+- **Email delivery**: only local Mailpit. No hosted SMTP, no real inbox, no phone mail client opening the links, no link-scanner behaviour observed.
+- **Hosted project**: no migration applied, no Auth setting changed (Site URL, allowlist, templates, password length, signup) — see the runbook checklist. `workers/scan-worker/.env` still names a hosted URL; nothing in this feature used it.
+- **Rate limits** are per process (R09) and were only tested for password reset; sign-in, invite and set-password limits are not exercised by tests.
+- **Supabase Auth redirect behaviour**: any path/port on the site_url host is accepted (observed with :3100); other hosts fall back to site_url. Re-check on the hosted version.
+- **Session revocation in Auth on membership revoke**: revocation is enforced by membership checks on every request; Auth sessions are not ended. Ending them needs the dashboard (runbook).
+- Dark theme of the new pages not reviewed; accessibility (screen reader, keyboard-only) of the Members editor not tested.
+- Idempotency records are not yet cleaned up after expiry beyond reuse of the same key (feature 12 retention).
+
+## Feature 04 — Dependency Check
+Feature 03 re-verified before any change (2026-10-03, local Supabase on Colima): `npm run check:db` exit 0 — DB 105/105, API 43/43; `npm run check` exit 0 — unit 54/54, lint 0 problems, builds OK. Xcode still not installed (E01), SwiftPM still broken (E02). Feature 03's auth, membership authorization and audit code paths were not modified, except two additive changes: `ApiContext` now carries the verified access token (for RLS-scoped reads) and `resolveAdminOrganization` takes an optional refusal message.
+
+## Feature 04 — What Exists
+- **Database** (`supabase/migrations/…0900_catalog_management.sql`, no table changes): service-role-only `create_store`, `update_store`, `create_product`, `update_product`, `create_pog` (identity + empty draft v1), `update_pog`, `create_display`, `update_display`. Each derives organization/store from the stored row (`FOR UPDATE`/`FOR SHARE`), re-checks the actor (`is_org_admin` / `is_store_manager`), checks `expected_revision`, skips no-op changes, writes audit events in the same transaction, and names the bad field in HINT. Assignment accepts only a published version of a non-archived POG in the display's organization. Private helpers explicitly revoked from PUBLIC. Types regenerated.
+- **packages/domain** `catalog.ts`: strict request schemas, response shapes (`Store`, `Product`, `Pog`, `Display`, `DisplayDetail`), `ListQuery`, `page`/`organizationPage`.
+- **packages/server** `catalog.ts`: RLS-scoped list/detail reads with cursor pagination and status filters, write wrappers over the functions, `storeAccess`; `fromDbError` maps HINT to `field_errors`; `resolveMemberOrganization`.
+- **apps/admin API**: `GET|POST /stores`, `PATCH /stores/:id`, `GET|POST /stores/:id/displays`, `GET|PATCH /displays/:id`, `GET|POST /products`, `PATCH /products/:id`, `GET|POST /pogs`, `PATCH /pogs/:id` via `server/api-handlers.ts` (auth + CSRF, strict body, early capability check, Idempotency-Key, replay).
+- **apps/admin UI**: Stores, Products, POGs (identity create/rename/archive; an on-page note says drawing/publishing is feature 05), Displays (per store: create, rename, assign/unassign published version, archive/restore, last scan, archived-product warning). Status filters, empty states naming the next authorized action, permission notes, per-field validation errors, conflict notice with "Reload latest", session-expired and network messages that keep input, `loading.tsx`, `error.tsx` with retry, working store filter in the navigation, row-specific accessible button names.
+- **Tests**: `tests/db/test/catalog-management.test.ts` (15), `tests/api/test/catalog.test.ts` (16), `packages/domain/test/catalog.test.ts` (6), `packages/server/test/catalog.test.ts` (6). Writes use per-run organizations (D45); published versions are synthetic fixtures inserted with SQL until feature 05.
+- Docs: decision-log D39–D45, api-contracts (implemented routes), data-model and auth-and-permissions (feature 04 sections), current-issues A03/R05, READMEs, feature spec status.
+
+## Feature 04 — Verification (2026-10-03, local Supabase on Colima, Node 22.13.1)
+| Criterion | Command / evidence | Result |
+| --- | --- | --- |
+| Admin configures two stores and sample products | API: admin POSTs two stores and three products (SKU/UPC/PLU variants); lists return them, never org B's; audit shows 2× `store.created`, 3× `product.created`. Browser: admin adds a store; a duplicate number (`a-001` vs `A-001`) shows the field error with input kept, then succeeds | Met |
+| Manager only mutates assigned displays | API: manager creates/renames/unassigns/archives in their store; for another store in the same org: list, create, read and patch all 404, rows unchanged; employee create/patch 403; admin acts org-wide. DB: same via functions, plus manager `update_store` → FORBIDDEN. Browser: manager sees one store in the filter and only their org's published versions; a URL for another store shows "Store not found"; Stores/Products read-only with a permission note | Met |
+| Cross-organization POG assignment rejected server-side | API: assigning org A's or B's published version, a draft, or an unknown ID to an org C display → 422 `field_errors.active_pog_version_id` (same message); org B manager assigning C's version → 422, no row. DB: same plus an archived POG's version | Met |
+| Empty states give the next authorized action; unauthorized actions blocked by the API | API (HTML): new org admin sees "No stores yet" + "Add a store", "No products yet", Displays → "Create a store on the Stores page first"; manager of an empty store sees "No displays in Fresh yet" + "Add a display" and no "Add a store". Manager/employee POST/PATCH on stores/products/POGs → 403; other-org admin → 404 for every record type, rows unchanged | Met |
+| Archiving a display prevents new scans and preserves prior scan detail | API + DB: scan created, display archived, `create_scan` → VALIDATION_FAILED; earlier scan and its slot rows unchanged and still readable by the employee (RLS); archived display still has detail and is listed under `status=archived` for managers (employee 403). Store archive also blocks scans and new displays. Concurrency: an archive waits for an in-flight `create_scan` (row lock) and the next scan is refused | Met |
+| Product rename does not alter existing scan snapshots | API and DB: scan on a synthetic published version; product renamed via PATCH / `update_product` → `scan_slots.product_name_snapshot` keeps the old name; archiving it raises `has_archived_products` on the display | Met |
+| Concurrent edits return a revision conflict | DB: two raw connections, same `expected_revision` → second gets CONFLICT, first value kept. API: two parallel PATCHes → one 200, one 409; stale store/product PATCHes → 409. Browser: out-of-band change while the form is open → conflict notice; after "Reload latest" a second save changed only the edited field (defect A03 found and fixed) | Met |
+| Idempotency, CSRF, input limits | Replay returns the stored 201 with `idempotent-replayed`; same key with a different body → 409; missing key → 422. Cookie POST with a foreign Origin or no Origin → 403; app Origin → 201. Smuggled `active`/`actor_id`/`organization_id` fields → 422. Forged cursor, limit 101, unknown status → 422 | Met |
+
+### Negative controls (local DB, restored by `db:reset`)
+| Temporary change | Expected failing test | Observed |
+| --- | --- | --- |
+| `update_display` revision check disabled | DB concurrent-edit test; API "concurrent edits" | Both failed (API saw `[200, 200]`, a silent overwrite) |
+| Organization filter removed from `check_assignable_version` | DB and API cross-org assignment tests | Both failed; the composite FK still rejected the write (23503 → API 500), so the explicit check is what produces the 422 |
+
+### Defects found during verification
+- **A03** (UI): forms sent all fields, so after a conflict + reload a stale untouched field could revert another user's change. Fixed with edit tracking (D43); re-verified in the browser.
+- **Test isolation**: the first full run failed 4 existing feature 02/03 tests (`rls-reads`, `sessions`) because the new suites wrote into seed org A, whose exact contents those tests assert. Each new suite now uses its own per-run organization (D45). A second DB + API pass without a reset is green.
+- A flaky ordering assumption in a new DB test (two audit events in one transaction share `created_at`) was fixed in the test query.
+
+### Totals (final run, after `rm -rf apps/admin/.next`)
+| Command | Result |
+| --- | --- |
+| `npm run check:db` | Exit 0: reset (9 migrations + seed), types match, DB 120/120 (10 files), API 59/59 (6 files, fresh `next build` + `next start`) |
+| `npm run test:db`, then `npm run test:api -- --no-build` (rerun, no reset) | Exit 0: 120/120 and 59/59 |
+| `npm run check` | Exit 0: typecheck all workspaces, ESLint 0 problems, unit 66/66 (admin 3, domain 26, server 34, worker 3), admin + worker builds, client-config scan OK, db-scripts guard OK |
+| Browser pass (agent-browser, Chromium, production build on :3200, synthetic local users) | Admin: create store, duplicate-number validation, success state, conflict → reload → re-save. Manager: displays page, add display with version, archive via confirm dialog, archived filter, other store's URL denied, read-only stores/products, keyboard toggle of edit forms, 390 px layout. Screenshots reviewed |
+
+## Feature 04 — Unverified / Remaining
+These are the Feature 04 handoff notes; the reference/publication gaps are closed by Feature 05 below.
+- **iOS build/device: still unverified** (E01/E02, unchanged). No iOS code changed; the iOS app does not call the feature 04 routes yet (feature 07).
+- **Published versions come from synthetic SQL fixtures**; the real POG builder/publication path is feature 05. `GET /pogs/:id/versions/:version_id` is not implemented.
+- **Hosted project**: migration 9 not applied anywhere but local; nothing hosted was touched.
+- Screen reader (VoiceOver/NVDA) and dark theme not tested; contrast not measured. Keyboard and accessible names checked in the browser only.
+- Lists are oldest-first per the cursor contract; no name sort or search. Pages show up to 50 rows per page with "Show more".
+- Archived stores do not appear in the navigation store filter (it lists active stores); their displays are reachable from the Stores page link.
+- Rate limiting for catalog mutations is not added (none specified); idempotency records are still not cleaned up after expiry (feature 12).
+- The agent-browser synthetic click on the row "Edit" button did not register in two attempts while DOM `.click()` and keyboard Enter did; not reproduced as an app defect, cause unknown.
+
 ## Next Up
-Feature 03: Supabase Auth on web (SSR cookies) and iOS (bearer tokens, Keychain refresh), operator bootstrap for the first admin, membership management through the API. Install Xcode before iOS sign-in work to close the feature 01 iOS build gap.
+Feature 06: authoritative refill engine (not implemented in Feature 05). Install Xcode to close the iOS build gap for features 01 and 03.
 
 ## Open Questions
-See decision-log.md for provider, hosting, device minimum, retention, training eligibility and real POG data. No question blocks feature 03.
+See decision-log.md for provider, hosting, device minimum, retention, training eligibility and real POG data. No question blocks the next local feature.
 
 ## Session Notes
-Documentation checks are not application tests. Do not copy the reference project's completion claims, package versions, screenshots or authentication state into this project. This project directory is not its own git repository: the enclosing repository root is the user's home directory, so no commits were made.
+Documentation checks are not application tests. Do not copy the reference project's completion claims, package versions, screenshots or authentication state into this project. This project directory is not its own git repository: the enclosing repository root is the user's home directory, so no commits were made. (Feature 04 session: `git rev-parse --show-toplevel` reports the project directory itself; no commits were made in this session either.)
+
+## Feature 05 — What Exists (2026-10-03, local only)
+- Completed the pre-existing unverified builder files after reading the required context and installed Next 16 route/client documentation. Earlier auth/catalog/UI changes and field-specific Feature 04 PATCH forms were retained; no iOS code, SIMON.md, hosted Supabase or git commits were changed by this feature session.
+- **Migration 10** (`supabase/migrations/20261003001000_pog_builder.sql`): canonical reference validation/review/source fields; service-role-only draft cloning, slot-set saves, upload intents/finalization/settlement; admin/tenant/revision checks and transactional audits; validated-reference and coordinate-review publication guards. Existing published-version/slot locks, product locks and scan snapshots remain in force. Database types regenerated from local Supabase.
+- **Domain** (`packages/domain/src/pog.ts`, `pog-geometry.ts`): strict requests/responses, six-decimal canonical rectangles, integer precision checks, touching-vs-overlap validation, pointer content-box mapping, keyboard movement/resizing and draft/publication blockers.
+- **Server/API** (`packages/server/src/pogs.ts`, `pog-images.ts`, `/api/v1/pogs/:id/versions`, `/pog-versions/:id/*`): actor-bound ten-minute authenticated raw-byte upload, 10 MiB streaming limit, private write-once Storage, decoded JPEG validation/dimension limits, EXIF orientation plus rotation/crop, metadata-free max-2048 JPEG, content-addressed immutable outputs, draft revisions/idempotent JSON retries, actual-object existence check before atomic publication, five-minute RLS-authorized reference links. No employee scan-photo workflow was implemented.
+- **Web** (`apps/admin/src/components/pog-editor/`, version page and POG list): photo/bounds editor, drawing/select/move/eight-handle resize/delete, keyboard and percentage inputs, product/label/target/inclusive trigger/order, explicit save/conflict/validation states, saved-only publication, required coordinate review after replacement, immutable viewer and clone action. Publication/assignment are separate.
+- **Tests**: domain geometry/contracts, server image decoding/orientation/crop/metadata tests; `tests/api/test/pog-builder.test.ts` has 11 local integration tests using **actual upload → finalize → save → publish routes**, including cloning/assignment and trusted scan creation. Older DB fixtures mark synthetic references validated so pre-existing publication regression tests continue testing their original invariants; new Feature 05 tests do not insert published fixtures.
+
+## Feature 05 — Verification Evidence
+| Check | Command / evidence | Observed result |
+| --- | --- | --- |
+| From-empty local migrations, generated types, earlier database tests | `npm run check:db` (local Supabase/Colima, fresh reset) | Exit 0: 10 migrations + seed, generated types match, **120/120 DB tests**, including publication-vs-slot/product races, last-admin concurrency, RLS/storage denials, history and audits |
+| HTTP regression + real builder integration | Same `check:db` runs fresh production build/server on :3100, `tests/api` | **70/70** across 7 files (59 existing + 11 builder). Upload/finalize/save/publish/idempotent replay; clone/change/publish/manager assign; original scan version/name/label/target/threshold snapshots and historical image survive; immutable published API/table writes denied |
+| Invalid publication | `pog-builder.test.ts` | Missing/unvalidated reference, missing actual Storage object, empty layout, overlap and inactive product refused with draft/audit unchanged. Out-of-bounds, zero/fractional target, invalid trigger, duplicate labels and cross-org products refused on save and cannot publish |
+| Authorization at each boundary | Same integration file, actual admin/manager/employee/other-org identities | API authoring denied 403/404; draft image denied; RLS hides draft; direct authenticated RPC and guessed Storage read denied; manager published read allowed, employee unassigned read denied; historical pinned image allowed; CSRF refused; live-token revocation blocks an issued upload grant; another same-org admin cannot use someone else’s grant |
+| Concurrent operations + retries | Same integration file | One save/publication winner + 409 loser; one clone + 409 loser; one simultaneous publication + 409 loser; shared-key save replay adds only one revision/audit; publication/finalization replay unchanged; changed body/key conflict; competing crops return one 200 and one 409, winning image bytes/dimensions/hash remain unchanged after publish and a late finalize |
+| Unit checks | `npm test` | **95/95**: admin 3, domain 48, server 41, worker 3. Includes EXIF orientation + quarter turn before crop, metadata removal, malformed/oversized/tiny image rejection, no letterbox drift, touching edges and keyboard geometry |
+| TypeScript, lint and worker | `npm run typecheck`, `npm run lint`, `npm run build:worker` | Exit 0 (all six workspace typechecks; ESLint no warnings/errors; worker bundle built). Admin production build passed in `check:db` |
+| Secret/script guards | `npm run check:client-config`, `npm run check:db-scripts` | Exit 0; only publishable client configuration, no remote/non-local reset commands |
+| Actual browser editing and publication | Playwright skill, visible Chromium, temporary local production server :3205; synthetic per-run org/admin; `/tmp/playwright-test-pog.js` | Passed upload, left/right rotation, canonical 80% width crop, draw/move/handle resize, metadata/numeric values, arrow/Shift/Alt keyboard edit, keyboard add/Delete, invalid numeric save denial, out-of-band edit → 409 → reload → re-save, publish, Displays form assignment and clone. No page errors. Screenshot reviewed (`/tmp/pog-editor-desktop.png`) |
+| Coordinate placement at viewport/zoom changes | Same browser pass: actual image/slot DOM rectangles measured at **1440×1000, 768×1024, 390×844**, CSS zoom **125%** | x/y/w/h match configured 0.1/0.1/0.3/0.3 within 0.0002 normalized units; image-content aspect matches canonical crop. Domain tests additionally cover deliberately letterboxed content boxes. No camera-perspective claim |
+
+Verification corrections: the initial new API tests attempted to expire an intent before its creation timestamp (existing constraint correctly rejected the fixture) and expected 401 on a cookie mutation without an Origin (existing CSRF correctly returned 403). Fixtures/headers were corrected; final from-empty run above passed. A sandboxed build cached a Turbopack port-binding failure; moving the failed `.next` cache to `/tmp` and rebuilding with loopback process permission resolved it. Early browser scripts needed hydration waiting, exact group selectors, upload-success heading assertion and canvas centering below the sticky toolbar; the final workflow passed.
+
+## Feature 05 — Explicitly Unresolved / Scope Boundaries
+- **iOS SDK build, simulator and physical device remain unverified** (E01/E02). No iOS Feature 05 client was built or tested.
+- Keyboard controls were exercised in Chromium, but a full keyboard-only journey, screen readers (VoiceOver/NVDA), measured contrast, touch gestures and dark mode were **not** tested. Safari/Firefox were not tested.
+- Browser zoom evidence is CSS zoom at 125%; native browser zoom controls were not separately exercised. Geometry uses current content bounds rather than cached viewport dimensions.
+- Reference-object cleanup after failed concurrent finalization/replacement, expired unused intents and idempotency retention remain Feature 12. No cleanup can delete a source image still shared by cloned/published/pinned versions. Immediate cleanup only covers finalized/rejected/expired staging objects reached by finalization; cleanup failures are logged for later recovery.
+- New POG API upload endpoints enforce ten-minute grants instead of Supabase’s fixed two-hour signed upload tokens. Published-reference existence checks use private Storage reads before the transactional DB publication; Storage and PostgreSQL are separate systems, and privileged out-of-band deletion remains an operator/retention responsibility.
+- Signed reference reads may remain usable for up to five minutes after access revocation, as specified. Uploaded reference images were synthetic local JPEGs; no real store photos/provider calls or hosted operations.
+- Scans were created with the existing trusted `create_scan` function to prove historical preservation. Employee manual/photo capture/count/vision workflows remain Features 06–10; Feature 08 still owns scan-photo upload validation.

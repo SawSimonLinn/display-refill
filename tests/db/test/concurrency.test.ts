@@ -21,7 +21,7 @@ async function draft() {
   );
   const id = version.rows[0]!.id;
   await w.db.query(
-    `update public.pog_versions set reference_path = $2, reference_width = 1600, reference_height = 1200 where id = $1`,
+    `update public.pog_versions set reference_path = $2, reference_width = 1600, reference_height = 1200, reference_validated_at = now() where id = $1`,
     [id, `${SEED.orgA}/${pogId}/${id}/reference.jpg`],
   );
   await insertSlot(w.db, id, "L1", 0);

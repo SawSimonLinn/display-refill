@@ -38,7 +38,7 @@ describe("GET /api/v1/health", () => {
     expect(data.checks).toEqual({
       configuration: "ok",
       database: "not_checked",
-      authentication: "not_implemented",
+      authentication: "not_checked",
       job_queue: "not_implemented",
     });
     expect(response.headers.get("x-request-id")).toBe(request_id);

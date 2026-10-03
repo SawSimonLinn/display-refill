@@ -1,7 +1,9 @@
 import { Construction } from "lucide-react";
+import { requireDashboard } from "@/server/session";
 
 /** Honest stand-in for screens that later features build. Shows no fake data. */
-export function PlaceholderPage({ title, feature, description }: { title: string; feature: string; description: string }) {
+export async function PlaceholderPage({ path, title, feature, description }: { path: string; title: string; feature: string; description: string }) {
+  await requireDashboard(path);
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

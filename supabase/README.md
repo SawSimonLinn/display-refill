@@ -9,7 +9,7 @@ trusted functions and synthetic seed data. Everything here targets the
 
 | File | Contents |
 | --- | --- |
-| `config.toml` | Local stack config. Public signup disabled; realtime, edge runtime and analytics off |
+| `config.toml` | Local stack config. Public signup disabled; redirect allowlist `http://localhost:3000/auth/confirm`; password minimum 12; local email limit raised to 100/h for Mailpit tests; realtime, edge runtime and analytics off |
 | `migrations/…0100_identity_stores.sql` | Organizations, profiles, memberships, stores; `private` authorization helpers; last-admin guard |
 | `migrations/…0200_catalog_pogs.sql` | Products, POGs, versions, slots, displays; coordinate/quantity checks; publish validation and immutability triggers |
 | `migrations/…0300_scans.sql` | Scans, pinned slot snapshots, append-only corrections/confirmations; layout-data read policies |
@@ -17,6 +17,10 @@ trusted functions and synthetic seed data. Everything here targets the
 | `migrations/…0500_storage_grants_functions.sql` | Private buckets, client grant lockdown, `publish_pog_version`, `create_scan` |
 | `migrations/…0600_publication_locks.sql` | Row locks closing publish-vs-slot-edit and publish-vs-product-archive races; scans may pin only published versions |
 | `migrations/…0700_tenant_indexes.sql` | `pog_slots(organization_id)` index (every tenant table now has one) |
+| `migrations/…0800_membership_management.sql` | Feature 03: `list_organization_members`, `apply_membership_invite`, `update_membership`, `bootstrap_first_admin` (service role only, audited); last-admin trigger locks the organization row |
+| `migrations/…0900_catalog_management.sql` | Feature 04: `create_/update_store`, `create_/update_product`, `create_/update_pog`, `create_/update_display` (service role only, revision-checked, audited; field name in HINT) |
+| `migrations/…1000_pog_builder.sql` | Feature 05: draft cloning/slot saves, validated canonical reference metadata, upload intents/finalization, coordinate-review and publication guards (admin-only, audited, revision checked) |
+| `templates/invite.html`, `templates/recovery.html` | Email templates: token-hash links to `<redirect>/auth/confirm` |
 | `seed.sql` | Two synthetic organizations (IDs in `tests/db/src/seed-ids.ts`); no users or passwords |
 
 ## Commands (repo root)

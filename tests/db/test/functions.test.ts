@@ -17,7 +17,7 @@ async function draft(slots: Array<{ x: number; y: number; width: number; height:
   const id = version.data.id;
   const reference = await w.service
     .from("pog_versions")
-    .update({ reference_path: `${SEED.orgA}/${pog.data.id}/${id}/reference.jpg`, reference_width: 1600, reference_height: 1200 })
+    .update({ reference_path: `${SEED.orgA}/${pog.data.id}/${id}/reference.jpg`, reference_width: 1600, reference_height: 1200, reference_validated_at: new Date().toISOString() })
     .eq("id", id);
   if (reference.error) throw reference.error;
   if (slots.length) {

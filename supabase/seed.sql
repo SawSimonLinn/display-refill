@@ -26,13 +26,14 @@ insert into public.pogs (id, organization_id, name) values
 
 -- Versions start as drafts; slots are added; the UPDATE to published runs the
 -- same validation trigger used by publish_pog_version().
-insert into public.pog_versions (id, organization_id, pog_id, version_number, reference_path, reference_width, reference_height) values
+-- Seed references stand in for validated uploads (no image objects exist).
+insert into public.pog_versions (id, organization_id, pog_id, version_number, reference_path, reference_width, reference_height, reference_validated_at) values
   ('50000000-0000-4000-8000-0000000000a1', '10000000-0000-4000-8000-00000000000a', '40000000-0000-4000-8000-0000000000a1', 1,
-   '10000000-0000-4000-8000-00000000000a/40000000-0000-4000-8000-0000000000a1/50000000-0000-4000-8000-0000000000a1/reference.jpg', 1600, 1200),
+   '10000000-0000-4000-8000-00000000000a/40000000-0000-4000-8000-0000000000a1/50000000-0000-4000-8000-0000000000a1/reference.jpg', 1600, 1200, now()),
   ('50000000-0000-4000-8000-0000000000a2', '10000000-0000-4000-8000-00000000000a', '40000000-0000-4000-8000-0000000000a1', 2,
-   null, null, null),
+   null, null, null, null),
   ('50000000-0000-4000-8000-0000000000b1', '10000000-0000-4000-8000-00000000000b', '40000000-0000-4000-8000-0000000000b1', 1,
-   '10000000-0000-4000-8000-00000000000b/40000000-0000-4000-8000-0000000000b1/50000000-0000-4000-8000-0000000000b1/reference.jpg', 1600, 1200);
+   '10000000-0000-4000-8000-00000000000b/40000000-0000-4000-8000-0000000000b1/50000000-0000-4000-8000-0000000000b1/reference.jpg', 1600, 1200, now());
 
 insert into public.pog_slots (id, organization_id, pog_version_id, label, product_id, x, y, width, height, target_quantity, refill_threshold, sort_order) values
   -- Org A v1 (published below)

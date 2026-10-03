@@ -1,7 +1,7 @@
 # POG Builder and Publication
 
 ## Status
-Not started.
+Complete and verified locally (2026-10-03). Migration 10; 120/120 database regression tests, 70/70 API tests including 11 real publication-workflow tests, 95/95 unit tests, visible Chromium editing/assignment and viewport/zoom checks. See [progress tracker](../progress-tracker.md#feature-05--verification-evidence) for evidence and unresolved iOS/accessibility environments.
 
 ## Dependencies
 Feature(s): 04. Read the linked domain contracts through the README before implementation.

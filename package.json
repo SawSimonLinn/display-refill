@@ -12,7 +12,8 @@
     "packages/domain",
     "packages/server",
     "workers/scan-worker",
-    "tests/db"
+    "tests/db",
+    "tests/api"
   ],
   "scripts": {
     "dev:admin": "npm run dev -w @display-refill/admin",
@@ -31,8 +32,9 @@
     "db:types": "supabase gen types typescript --local --schema public > packages/server/src/database.types.ts",
     "db:types:check": "node scripts/check-db-types.mjs",
     "test:db": "npm run test:db -w @display-refill/db-tests",
+    "test:api": "node scripts/run-api-tests.mjs",
     "check:db-scripts": "node scripts/check-db-scripts.mjs",
-    "check:db": "npm run db:reset && npm run db:types:check && npm run test:db"
+    "check:db": "npm run db:reset && npm run db:types:check && npm run test:db && npm run test:api"
   },
   "devDependencies": {
     "@supabase/supabase-js": "2.117.2",

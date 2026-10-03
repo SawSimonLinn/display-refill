@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     checks: {
       configuration: "ok",
       database: "not_checked",
-      authentication: "not_implemented",
+      authentication: "not_checked",
       job_queue: "not_implemented",
     },
   };

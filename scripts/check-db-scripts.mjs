@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 
 const root = new URL("..", import.meta.url);
 const manifests = ["package.json", "apps/admin/package.json", "packages/domain/package.json", "packages/server/package.json",
-  "workers/scan-worker/package.json", "tests/db/package.json"];
+  "workers/scan-worker/package.json", "tests/db/package.json", "tests/api/package.json"];
 const forbidden = [
   [/--linked\b/, "targets a linked (hosted) project"],
   [/--db-url\b/, "targets an arbitrary database URL"],

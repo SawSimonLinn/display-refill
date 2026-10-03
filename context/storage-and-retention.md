@@ -2,7 +2,7 @@
 
 ## Buckets and Paths
 Private `display-scans`: `{organization_id}/{store_id}/{scan_id}/capture.jpg`.
-Private `pog-images`: `{organization_id}/{pog_id}/{version_id}/reference.jpg`.
+Private `pog-images`: `{organization_id}/{pog_id}/{version_id}/upload-{upload_id}.jpg` staging, promoted to `reference-{upload_id}-{sha256}.jpg` after validation. Published clones may share the source POG’s reference object.
 Store bucket/path separately in metadata. Reference images are immutable after publication. Never accept a public image URL as the source of truth. Private buckets enforce access controls; time-limited signed links enable authorized reads. See [Supabase bucket documentation](https://supabase.com/docs/guides/storage/buckets/fundamentals).
 
 ## Upload Pipeline
@@ -26,3 +26,10 @@ A daily scheduled worker job deletes expired objects idempotently and records im
 
 ## Future Training
 Do not automatically export or train on corrections. Admin-controlled export is a later feature and must honor image retention and organizational permission. The MVP stores provenance and export eligibility fields only if policy is approved; default eligibility is false. A retained count without its deleted image remains useful for audit but cannot train image recognition. Avoid people in capture framing; provide retake guidance when people block the display.
+
+## Implemented Reference Upload (feature 05)
+The POG browser accepts JPEG/PNG/WebP, previews EXIF-upright pixels, offers quarter-turn rotation and numeric/draggable display bounds, and converts non-JPEG or oversized inputs to JPEG when possible. HEIC is not supported by this web workflow. The **server** accepts JPEG bytes only: 10 MiB, maximum 4096 per edge / 16 million pixels, crop at least 64 px per edge. It decodes, normalizes EXIF plus admin rotation, crops, scales to at most 2048 on the long edge and re-encodes without metadata.
+
+POG uploads use a ten-minute, actor-bound authenticated API endpoint that streams to the private exact staging path without overwrite. This differs from the proposed direct signed-upload pipeline because Supabase’s signed upload tokens last two hours. Finalize checks intent, draft state/revision, ownership and expiry, writes a content-addressed output without overwrite, then records validation transactionally. Same-byte upload retries are safe; finalize uses normal JSON idempotency. Rejected/expired staging objects are removed immediately; successful staging objects are removed after promotion. Cleanup failures are logged without signed URLs or image data.
+
+Concurrent outputs that lose a revision race and replaced draft references are retained for Feature 12’s unreferenced-object cleanup; no retention worker is built here. Cleanup must consult every version that shares an object, plus assignment/history retention. Validated/published image objects are never overwritten or removed by editor operations. Publication refuses a missing validated Storage object. Scan-photo capture/upload/finalization remains **unimplemented Feature 08**.

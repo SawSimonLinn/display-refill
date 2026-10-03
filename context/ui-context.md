@@ -37,3 +37,10 @@ Support Dynamic Type, VoiceOver, web keyboard navigation, visible focus, and at 
 - Offline: “Connect to save counts and calculate a refill list.” Do not promise automatic sync.
 - Version conflict: “This scan changed on another device. Reload before saving.”
 - Expired image: “Photo removed under retention policy. Counts and review history remain.”
+
+## Implemented POG Editor (feature 05)
+Admins open a draft from POGs, upload/orient/select reference bounds, draw/select/drag/resize rectangles, or create them with “Add slot” and numeric fields. Focused rectangles: arrows move, Shift+arrows resize, Alt/Option makes fine steps, Delete/Backspace removes, Escape deselects. Position percentages commit with Enter/blur; invalid/uncommitted coordinates block saving/publication. All slot metadata is editable in labeled fields, with inclusive-trigger wording and a selectable slot table.
+
+Saving is explicit, with unsaved/saving/saved/failed/conflict text. A conflict keeps the local layout; “Reload latest” discards it, or “Save mine over it” explicitly confirms replacement after fetching the latest revision. This override refuses a changed reference until reload/review. Edits are blocked while saving; unsaved slot values can be restored in the same tab at the same revision. Publication requires a saved valid draft and confirmation; published layouts are read-only with clone/blank-draft actions. Reference replacement displays a required “I checked every slot” checkbox, applied on save. Display assignment is a separate action on Displays.
+
+Keyboard/browser geometry checks do not establish screen-reader accessibility, contrast, dark-mode review or iOS/device support; unresolved checks are recorded in the progress tracker.

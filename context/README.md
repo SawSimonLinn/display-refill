@@ -2,7 +2,7 @@
 
 A complete planning handoff for an employee SwiftUI app, Next.js/TypeScript admin/API, and Supabase Auth/Postgres/Storage backend. Supabase Auth is mandatory. Start with manual counts and single-image scans; live video/AR and custom model training are outside MVP.
 
-This folder contains specifications. Features 01 (repository foundation) and 02 (database and security) are implemented; later features are **not started**. The repository README at the root explains how to run what exists; [progress tracker](progress-tracker.md) records verification evidence. The seven uploaded Markdown references have been rewritten, with their filenames preserved. See [reference mapping](reference-mapping.md) for provenance and removed assumptions.
+This folder contains specifications. Features 01 (repository foundation), 02 (database and security), 03 (Supabase Auth and memberships), 04 (store, display and product management), and 05 (POG builder/reference validation/publication) are implemented; later features are **not started**. Features 03–05 are verified locally; the iOS simulator/device build and hosted email paths are not (see the tracker). The repository README at the root explains how to run what exists; [progress tracker](progress-tracker.md) records verification evidence. The seven uploaded Markdown references have been rewritten, with their filenames preserved. See [reference mapping](reference-mapping.md) for provenance and removed assumptions.
 
 ## Read First
 1. [Project overview](project-overview.md) — purpose, scope, workflow and success targets.
@@ -59,4 +59,4 @@ Examples are fixtures for implementing tests, not evidence that tests have run. 
 - Durable worker results cannot overwrite manual takeover or newer human revisions.
 - Confirmed counts are historical evidence; completion is an employee attestation.
 
-Resolve conflicting requirements by updating the relevant contract and decision log before changing code. Keep progress evidence truthful. The immediate next implementation unit is feature 03.
+Resolve conflicting requirements by updating the relevant contract and decision log before changing code. Keep progress evidence truthful. The immediate next implementation unit is feature 06 (authoritative refill engine).
