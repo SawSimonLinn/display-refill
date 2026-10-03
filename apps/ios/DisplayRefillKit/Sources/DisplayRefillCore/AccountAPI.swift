@@ -21,15 +21,15 @@ public struct URLSessionAccountAPI: AccountAPI {
     }
 
     public func me() async throws(APIClientError) -> Me {
-        try await authorizedGet("api/v1/me")
+        try await authorizedRequest("api/v1/me")
     }
 
-    private func authorizedGet<T: Decodable & Sendable>(_ path: String) async throws(APIClientError) -> T {
+    func authorizedRequest<T: Decodable & Sendable>(_ path: String, method: String = "GET", body: Data? = nil, key: String? = nil) async throws(APIClientError) -> T {
         let token = try await mapAuth { () async throws(AuthError) in try await sessions.validAccessToken() }
-        var (data, response) = try await send(path, token: token)
+        var (data, response) = try await send(path, token: token, method: method, body: body, key: key)
         if response.statusCode == 401 {
             let retryToken = try await mapAuth { () async throws(AuthError) in try await sessions.accessTokenAfterUnauthorized(rejectedToken: token) }
-            (data, response) = try await send(path, token: retryToken)
+            (data, response) = try await send(path, token: retryToken, method: method, body: body, key: key)
             if response.statusCode == 401 {
                 await sessions.expire()
                 throw .signedOut
@@ -38,8 +38,12 @@ public struct URLSessionAccountAPI: AccountAPI {
         return try APIResponseDecoder.decode(data: data, response: response)
     }
 
-    private func send(_ path: String, token: String) async throws(APIClientError) -> (Data, HTTPURLResponse) {
-        var request = URLRequest(url: baseURL.appending(path: path))
+    private func send(_ path: String, token: String, method: String, body: Data?, key: String?) async throws(APIClientError) -> (Data, HTTPURLResponse) {
+        var request = URLRequest(url: URL(string: path, relativeTo: baseURL.appending(path: "/"))!)
+        request.httpMethod = method
+        request.httpBody = body
+        request.setValue(key, forHTTPHeaderField: "Idempotency-Key")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue(UUID().uuidString.lowercased(), forHTTPHeaderField: "X-Request-Id")

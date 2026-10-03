@@ -1,7 +1,7 @@
 # iOS Manual Workflow
 
 ## Status
-Not started.
+Implemented; local backend/Swift client verification passes. iOS target, simulator/device, actual app relaunch and assistive-technology acceptance remain unverified (Xcode unavailable). Not acceptance-complete.
 
 ## Dependencies
 Feature(s): 03, 04, 05, 06. Read the linked domain contracts through the README before implementation.

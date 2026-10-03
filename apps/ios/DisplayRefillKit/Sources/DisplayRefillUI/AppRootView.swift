@@ -6,13 +6,15 @@ public struct AppServices: Sendable {
     public let client: any APIClient
     public let sessions: SessionManager
     public let account: any AccountAPI
+    public let manual: any ManualScanAPI
     public let cleaner: any LocalDataCleaner
 
-    public init(client: any APIClient, sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner) {
+    public init(client: any APIClient, sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, manual: any ManualScanAPI) {
         self.client = client
         self.sessions = sessions
         self.account = account
         self.cleaner = cleaner
+        self.manual = manual
     }
 
     public static func live(_ config: AppConfiguration) -> AppServices {
@@ -23,7 +25,8 @@ public struct AppServices: Sendable {
             client: URLSessionAPIClient(baseURL: config.apiBaseURL),
             sessions: sessions,
             account: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport),
-            cleaner: AppLocalDataCleaner()
+            cleaner: AppLocalDataCleaner(),
+            manual: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport)
         )
     }
 }
@@ -68,7 +71,7 @@ struct SessionRootView: View {
             case .signedOut, .signingIn:
                 SignInView(session: session, client: services.client)
             case .ready(let me):
-                SignedInView(me: me, onReload: session.loadAccount, onSignOut: session.signOut)
+                SignedInView(me: me, api: services.manual, onReload: session.loadAccount, onSignOut: session.signOut)
             case .accessRemoved:
                 AccessRemovedView(onRetry: session.loadAccount, onSignOut: session.signOut)
             case .failed(let message):
@@ -127,7 +130,8 @@ struct AppRootView_Previews: PreviewProvider {
                 client: MockAPIClient(),
                 sessions: SessionManager(auth: PreviewAuth(), store: InMemorySessionStore()),
                 account: PreviewAccount(),
-                cleaner: NoCleanup()
+                cleaner: NoCleanup(),
+                manual: PreviewManual()
             )
         }
         .previewDisplayName("Sign in")
@@ -135,4 +139,10 @@ struct AppRootView_Previews: PreviewProvider {
         AppRootView(configuration: .failure(.init(problems: [.init(key: "API_BASE_URL", problem: "is required")])))
             .previewDisplayName("Configuration error")
     }
+}
+
+private struct PreviewManual: ManualScanAPI {
+    func displays(store: String) async throws -> [ManualDisplay] { [] }
+    func detail(id: String) async throws -> ScanDetail { throw APIClientError.signedOut }
+    func mutate(path: String, method: String, body: Data, key: String) async throws -> ScanDetail { throw APIClientError.signedOut }
 }

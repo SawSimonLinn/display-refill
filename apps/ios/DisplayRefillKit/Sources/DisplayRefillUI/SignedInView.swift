@@ -1,15 +1,16 @@
 import DisplayRefillCore
 import SwiftUI
 
-/// Employee shell after sign-in: Check (authorized stores) and History.
-/// Display selection and checks arrive with features 04 and 07.
+/// Assigned stores and device-saved manual scan links. Full history is Feature 11.
 public struct SignedInView: View {
     let me: Me
+    let api: any ManualScanAPI
     let onReload: () async -> Void
     let onSignOut: () async -> Void
 
-    public init(me: Me, onReload: @escaping () async -> Void, onSignOut: @escaping () async -> Void) {
+    public init(me: Me, api: any ManualScanAPI, onReload: @escaping () async -> Void, onSignOut: @escaping () async -> Void) {
         self.me = me
+        self.api = api
         self.onReload = onReload
         self.onSignOut = onSignOut
     }
@@ -17,22 +18,17 @@ public struct SignedInView: View {
     public var body: some View {
         TabView {
             NavigationStack {
-                StoreListView(stores: me.stores)
+                StoreListView(stores: me.stores, api: api, userID: me.userID.uuidString)
                     .refreshable { await onReload() }
                     .toolbar { accountMenu }
             }
             .tabItem { Label("Check", systemImage: "checklist") }
 
             NavigationStack {
-                ContentUnavailableView(
-                    "No checks yet",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text("Confirmed checks will appear here.")
-                )
-                .navigationTitle("History")
-                .toolbar { accountMenu }
+                SavedChecksView(api: api, userID: me.userID.uuidString)
+                    .toolbar { accountMenu }
             }
-            .tabItem { Label("History", systemImage: "clock") }
+            .tabItem { Label("Saved checks", systemImage: "clock") }
         }
     }
 
@@ -51,6 +47,8 @@ public struct SignedInView: View {
 /// Stores the server says this user may access; nothing else is shown.
 struct StoreListView: View {
     let stores: [Me.Store]
+    let api: any ManualScanAPI
+    let userID: String
 
     var body: some View {
         Group {
@@ -62,13 +60,17 @@ struct StoreListView: View {
                 )
             } else {
                 List(stores) { store in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(store.name).font(.headline)
-                        Text("Store #\(store.storeNumber) · \(store.role.label)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    NavigationLink {
+                        DisplaySelectionView(store: store, api: api, userID: userID)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(store.name).font(.headline)
+                            Text("Store #\(store.storeNumber) · \(store.role.label)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
         }

@@ -1,10 +1,10 @@
 # Progress Tracker
 
 ## Current Phase
-Phase 0 — Foundation. Features 04–06 implemented and verified on the local stack (database, API, web dashboard). Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Features 04–06 did not change that.
+Phase 0 — Foundation. Features 04–06 implemented and verified on the local stack (database, API, web dashboard). Feature 07 implemented with local backend and actual Swift client verification, but iOS acceptance remains open. Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Feature 07 does not close that gap.
 
 ## Current Goal
-Feature 06 backend completed locally. Next unit: Feature 07 (iOS manual workflow). Deliver a complete manual refill workflow before live vision integration.
+Verify Feature 07 on the actual iOS target, simulator/device and assistive technologies before treating its acceptance criteria as complete. Manual implementation and local client/backend checks are available; live vision remains out of scope.
 
 ## Completed
 - Reworked the seven uploaded reference documents for this project.
@@ -19,7 +19,7 @@ Feature 06 backend completed locally. Next unit: Feature 07 (iOS manual workflow
 - Feature 06 authoritative backend refill engine, atomic count saving and confirmation (details, evidence and limitations below).
 
 ## In Progress
-None.
+Feature 07 iOS target/device, actual app-relaunch and accessibility acceptance verification (blocked by unavailable Xcode/iOS runtime).
 
 ## Feature Status
 | Feature | Status | Evidence |
@@ -30,7 +30,7 @@ None.
 | 04 Store/display/product management | Implemented; verified locally (no iOS client yet) | DB 120/120, API 59/59, unit 66/66, browser pass, 2 negative controls (below) |
 | 05 POG builder | Complete locally; accessibility/device gaps explicit | Migration 10, DB 120/120 regressions, API 70/70 (11 new real-workflow tests), unit 95/95, Chromium workflow/viewport checks (below) |
 | 06 Refill engine | Complete locally (backend only) | Migration 11; unit 110/110, DB 120/120, API 79/79; authorization, concurrency, retry and frozen-history evidence below |
-| 07 Manual iOS workflow | Not started | Feature spec only |
+| 07 Manual iOS workflow | Implemented; iOS acceptance incomplete | Migration 12; DB 120/120, API 80/80, TS units 110/110; Swift macOS compile/model tests and actual local HTTP workflow pass. iOS build/relaunch/VoiceOver/Dynamic Type unverified |
 | 08 Photo capture/storage | Not started | Feature spec only |
 | 09 Vision pipeline | Not started | Mock adapter only; provider unselected |
 | 10 Review/corrections | Not started | Feature spec only |
@@ -362,3 +362,28 @@ Verification corrections: the first new HTTP run exposed a missing service-role 
 - Idempotency expiry/cleanup remains Feature 12. This transaction expires matching records on use; no background cleanup was added. The full pilot/client/provider workflow is not complete.
 
 Final post-refinement rechecks: `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock npm run test:api` rebuilt the production admin with the final source and passed **79/79** across 8 files (exit 0); `npm run test -w @display-refill/domain` passed **63/63** across 5 files (exit 0). `git diff --check` passed. No commits were created.
+
+## Feature 07 — Implementation and Evidence (2026-10-03)
+- Existing Supabase Auth/Keychain/session manager remain the authentication authority. Authenticated transport now supports Codable manual requests and pagination while keeping one refresh/one retry on 401, exact mutation bytes and idempotency keys.
+- SwiftUI assigned stores → active displays → manual creation → unknown numeric counts → save/review → immutable confirmation → employee completion attestation → reopen saved scan detail. Native numeric fields and named Increase/Decrease controls; blank is not zero and controls require an explicit count. Rows show pinned product/slot/target/trigger and saved/unsaved verification state.
+- Refill quantities, product groups, slot quantities, unresolved counts and revisions come from Feature 06 responses. No Swift authoritative refill formula, camera/photo upload, vision call or full searchable history was added.
+- Transient errors retain in-memory input and exact pending request/key; duplicate actions are disabled. Conflict reload retains entries and requires explicit review/save at the latest revision. Loading, empty assignment/display lists, missing POG, permissions, expired session and retry messages are present. Confirm is blocked with missing/invalid/unsaved/unverified counts.
+- Migration `20261003001200_manual_workflow.sql` adds a narrowly granted transactional wrapper around existing `create_scan` plus completion, storing idempotency snapshots atomically and re-checking access before replay. Completion writes time/actor/revision/audit only, leaving slot observations and frozen refill quantities unchanged. Generated database types were regenerated, not hand-edited.
+- Device-saved account-scoped scan-ID links use UserDefaults. Reopening fetches server detail anew; no offline count synchronization or durable unsaved-input promise.
+- Files: `ManualWorkflow.swift`, `ManualCheckView.swift`, authenticated transport/app composition/signed-in navigation; creation/completion route handlers and server wrapper; migration/types; seven mocked Swift tests, one opt-in live Swift workflow, expanded local HTTP workflow test and `scripts/run-ios-manual-tests.mjs`. The fallback script now accepts an empty flags array on macOS's older Bash.
+
+| Check | Actual result |
+| --- | --- |
+| `npm run check` | Exit 0: all workspace typechecks, lint, 110 TS unit tests, Next production build, worker bundle, client-config and local DB-script checks |
+| `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock npm run check:db` | Exit 0: clean local reset applied all 12 migrations and synthetic seed; generated types match; DB 120/120, HTTP API 80/80 |
+| `OUT_DIR=/tmp/feature07-swift SWIFTC_FLAGS="…overlay… -Xfrontend -disable-cross-import-overlays" apps/ios/scripts/swiftc-check.sh` | Exit 0: Core, SwiftUI and app entry point compiled for macOS with warnings-as-errors; Swift suite passes, including seven new mocked tests. Live Auth/Keychain/manual suites opt-in and skipped by default |
+| `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock node scripts/run-ios-manual-tests.mjs /tmp/feature07-swift/CoreTests --no-build` | Exit 0: actual Swift client signs into local Supabase as isolated synthetic employee, selects assigned store/display, creates unknown manual slots, blocks blank confirmation, saves explicit zero, consumes server recommendations, confirms, completes, then reopens persisted detail using fresh client/session-manager/model. Counts and refill quantities unchanged by completion. Vision absent; synthetic access revoked afterward |
+| Local API workflow assertions | Same-key concurrent creation/completion replay, changed bodies (including another display) conflict, stale edits fail, no POG and changed POG handled, peer/cross-org/revoked-store writes denied, cookie CSRF denied, exactly one completion audit, frozen slots preserved and detail re-fetch matches |
+| Swift mocked assertions | Blank vs zero, strict integer limits, deliberately non-derived server quantity displayed, exact byte/key retry after connectivity failure, explicit conflict reload preserves input and uses new revision/key, immutable scan cannot save, fresh-model reopen, denied input retained, 401 mutation refresh preserves bytes/key |
+| `xcode-select -p`, `xcodebuild -version`, `xcrun simctl list devices` | Only /Library/Developer/CommandLineTools; Xcode required / simctl unavailable. No Xcode.app in /Applications |
+| `/usr/bin/swift test --package-path apps/ios/DisplayRefillKit` | Fails linking PackageDescription manifest (existing E02). Plain swiftc with temporary VFS overlay works; system files were not edited |
+| Accessibility source inspection | Semantic native colors/fonts, text status labels, numeric VoiceOver labels, per-slot named controls and ≥44-point count/control frames. Runtime VoiceOver, large Dynamic Type, keyboard/focus and physical-device usability remain unverified |
+
+**Acceptance still open:** actual iOS app build, simulator/device manual UI flow, app termination/relaunch with Keychain + saved-ID navigation, VoiceOver and Dynamic Type. A fresh macOS client/model reopening a persisted scan is independent evidence of API/session wiring, not proof of actual iOS app relaunch. Hosted Auth/email, paid provider and device/network-background behavior remain untested. No hosted Supabase operations, SIMON.md edits or commits were performed.
+
+Next smallest unit: install/select Xcode, generate the existing iOS project, build/test its actual target and exercise Feature 07 (including stale edits, network loss, restart and accessibility). Feature 07 is not marked acceptance-complete.

@@ -23,7 +23,7 @@ export function scanDetail(row: Snapshot) {
     image_available: row.image_path !== null && row.image_deleted_at === null,
     provisional: !final, provisional_total_refill: final ? null : calculation.total_refill,
     total_refill: row.total_refill, display_score: final ? row.display_score : calculation.display_score,
-    confirmed_at: row.confirmed_at === null ? null : new Date(row.confirmed_at).toISOString(), completed_at: row.completed_at === null ? null : new Date(row.completed_at).toISOString(),
+    confirmed_at: row.confirmed_at === null ? null : new Date(row.confirmed_at).toISOString(), completed_by: row.completed_by, completed_at: row.completed_at === null ? null : new Date(row.completed_at).toISOString(),
     unresolved_slot_ids: slots.filter((s) => s.accepted_quantity === null || (s.review_required && s.review_state !== "verified")).map((s) => s.pog_slot_id),
     products,
     slots: slots.map((s, index) => ({
@@ -60,5 +60,15 @@ export async function mutateScan(service: DbClient, actor: string, scanId: strin
     payload: Snapshot;
     replayed: boolean;
   };
+  return ok({ detail: scanDetail(result.payload), replayed: result.replayed });
+}
+
+export async function manualWorkflow(service: DbClient, actor: string, action: "create" | "complete", resource: string, revision: number | null, pog: string | null, key: string, requestId: string) {
+  const { data, error } = await service.rpc("manual_scan_workflow", {
+    p_actor: actor, p_action: action, p_resource: resource, p_expected_revision: revision ?? undefined,
+    p_expected_pog: pog ?? undefined, p_key: key, p_request_id: requestId,
+  });
+  if (error) return fromDbError(error);
+  const result = data as unknown as { payload: Snapshot; replayed: boolean };
   return ok({ detail: scanDetail(result.payload), replayed: result.replayed });
 }

@@ -88,3 +88,37 @@ where `overlay.yaml` maps
 `/Library/Developer/CommandLineTools/usr/include/swift/module.modulemap` to
 an empty file. Reinstalling the Command Line Tools, or installing Xcode, should
 make these flags unnecessary.
+
+## Manual workflow (Feature 07)
+
+After sign-in, choose an assigned store and active display with a published
+POG, then start a manual check. Counts begin blank (unknown). Enter 0–999
+directly; Increase/Decrease are available after an explicit value. Save to
+review server recommendations grouped by product with expandable slot details,
+then confirm the saved counts and refill list. Confirmed counts are immutable.
+“Mark refill completed” records an employee attestation, preserving counts.
+
+Transient failures keep entries and exact pending request/key in memory.
+Retry the pending request before editing. On a revision conflict, “Reload
+latest and retain my entries” shows the latest revision and keeps physical
+count entries for explicit review/save. Entries are not synchronized offline.
+“Saved checks” keeps only account-scoped scan-ID links in UserDefaults; opening
+one re-fetches authorized server detail. This is not the Feature 11 history UI.
+
+For a live **macOS Swift client** pass against local synthetic fixtures, first
+compile the fallback binary to a known output directory, then run from repo root:
+
+```bash
+OUT_DIR=/tmp/feature07-swift apps/ios/scripts/swiftc-check.sh
+DOCKER_HOST=unix://$HOME/.colima/default/docker.sock   node scripts/run-ios-manual-tests.mjs /tmp/feature07-swift/CoreTests
+```
+
+Use the documented VFS overlay flags if CLT still needs them. The script refuses
+non-loopback Supabase, builds/starts the API, creates an isolated synthetic
+employee/store/layout, exercises the actual Swift client and then revokes that
+identity. Retained synthetic scan fixtures are cleared by local DB reset.
+`--no-build` reuses the existing admin build.
+
+This pass verifies the wire flow and a fresh session-manager/client/model reopen.
+It does **not** prove the iOS target builds, actual application relaunch restores
+navigation, or VoiceOver/Dynamic Type work on iPhone. Those checks remain required.

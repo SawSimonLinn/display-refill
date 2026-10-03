@@ -1,7 +1,7 @@
 # Current Issues and Risks
 
 ## Implementation Status
-Features 01–06 exist (see progress-tracker.md). No open application defects are known. Machine/toolchain problems are listed under Observed Environment Issues; vision and later workflow features are not implemented.
+Features 01–07 exist (see progress-tracker.md). No open application defects are known. Machine/toolchain problems are listed under Observed Environment Issues; Feature 07 still has iOS build/relaunch/accessibility verification gaps; vision and Features 08–13 are not implemented.
 
 ## Known Product / Technical Risks
 | ID | Risk | Mitigation / evidence needed | Status |

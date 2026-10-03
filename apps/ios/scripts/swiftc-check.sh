@@ -15,8 +15,11 @@ out="${OUT_DIR:-$(mktemp -d)}"
 mkdir -p "$out"
 cd "$out"
 
-read -r -a extra <<< "${SWIFTC_FLAGS:-}"
-common=(-swift-version 6 -target arm64-apple-macosx14.0 -warnings-as-errors "${extra[@]}")
+common=(-swift-version 6 -target arm64-apple-macosx14.0 -warnings-as-errors)
+if [[ -n "${SWIFTC_FLAGS:-}" ]]; then
+  read -r -a extra <<< "$SWIFTC_FLAGS"
+  common+=("${extra[@]}")
+fi
 dev="$(xcode-select -p)"
 testing_fw="$dev/Library/Developer/Frameworks"
 [[ -d "$testing_fw" ]] || testing_fw="$dev/Platforms/MacOSX.platform/Developer/Library/Frameworks"

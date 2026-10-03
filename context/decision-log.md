@@ -75,3 +75,10 @@ Do not reintroduce the original template's collaboration workspace or vendors. T
 | D51 | Counts/confirmation own their idempotency records inside `mutate_scan_counts`, storing the committed snapshot and SHA-256 request hash; authorization precedes replay | Closing the commit-to-response-record crash window is necessary for safe lost-response retries. Other features' idempotency remains unchanged |
 | D52 | The pure TypeScript refill calculator serves provisional responses. The confirmation transaction mirrors the same formula in SQL over locked database snapshots; integration tests compare final slot/product totals and score with the domain calculator | Final quantities cannot rely on a client/model payload or an unlocked earlier read. Frozen responses use stored finals, independent of future arithmetic or POG changes |
 | D53 | Feature 06 delivers detail/count/confirmation routes and basic append-only count provenance. Feature 07 retains creation HTTP orchestration/completion/iOS UI; Feature 10 retains AI correction UI and takeover | Makes the backend engine independently verifiable without building subsequent workflow features |
+
+## Feature 07 Decisions (2026-10-03)
+| ID | Decision | Reason |
+| --- | --- | --- |
+| D54 | Manual creation/completion use service-role-only `manual_scan_workflow`, which reuses `create_scan` and commits its idempotency response atomically. Creation keys are scoped to POST /scans across displays; completion keys are scoped to their scan route | Safe lost-response/concurrent retries without replacing Feature 06 endpoints |
+| D55 | Feature 07 offers account-scoped device-saved scan-ID links; each detail is fetched from the server. Full searchable/server history remains Feature 11 | Reopening after restart needs a durable navigation pointer, not another authoritative data store |
+| D56 | Conflict reload retains all physical count entries, shows the new server revision and requires explicit review/save. Pending transient requests retain exact encoded bytes/key; editing is disabled until retry or explicit detail reload | Prevent silent input loss and mismatched idempotency bodies; no durable offline promise |
