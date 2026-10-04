@@ -102,3 +102,21 @@ describe("processReferenceImage", () => {
     expect(await processReferenceImage(new Uint8Array(10 * 1024 * 1024 + 1), { rotation: 0, crop: WHOLE })).toMatchObject({ ok: false, reason: "too_large" });
   });
 });
+
+it("normalizes all eight EXIF orientations and crops relative to upright pixels", async () => {
+  // asymmetric four-quadrant fixture catches mirrors as well as swapped dimensions
+  const corners = ["red", "green", "blue", "yellow"];
+  const tiles = await Promise.all(corners.map(background => sharp({ create: { width: 100, height: 100, channels: 3, background } }).png().toBuffer()));
+  const base = await sharp({ create: { width: 200, height: 200, channels: 3, background: "black" } }).composite(tiles.map((input, i) => ({ input, left: i % 2 * 100, top: Math.floor(i / 2) * 100 }))).jpeg({ quality: 100 }).toBuffer();
+  const topLeft = [0, 1, 3, 2, 0, 2, 3, 1];
+  for (let orientation = 1; orientation <= 8; orientation++) {
+    const input = await sharp(base).withMetadata({ orientation }).jpeg({ quality: 100 }).toBuffer();
+    const result = await processReferenceImage(input, { rotation: 0, crop: { x: 0, y: 0, width: 0.5, height: 0.5 } });
+    if (!result.ok) throw new Error(result.message);
+    expect([result.width,result.height]).toEqual([100,100]);
+    const pixel = await sharp(result.jpeg).extract({ left: 50, top: 50, width: 1, height: 1 }).raw().toBuffer();
+    const expected = await sharp(tiles[topLeft[orientation-1]!]!).extract({ left: 50, top: 50, width: 1, height: 1 }).raw().toBuffer();
+    for (let channel = 0; channel < 3; channel++) expect(Math.abs(pixel[channel]!-expected[channel]!)).toBeLessThan(12);
+    expect((await sharp(result.jpeg).metadata()).exif).toBeUndefined();
+  }
+});

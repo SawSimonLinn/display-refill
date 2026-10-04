@@ -20,6 +20,8 @@ trusted functions and synthetic seed data. Everything here targets the
 | `migrations/…0800_membership_management.sql` | Feature 03: `list_organization_members`, `apply_membership_invite`, `update_membership`, `bootstrap_first_admin` (service role only, audited); last-admin trigger locks the organization row |
 | `migrations/…0900_catalog_management.sql` | Feature 04: `create_/update_store`, `create_/update_product`, `create_/update_pog`, `create_/update_display` (service role only, revision-checked, audited; field name in HINT) |
 | `migrations/…1000_pog_builder.sql` | Feature 05: draft cloning/slot saves, validated canonical reference metadata, upload intents/finalization, coordinate-review and publication guards (admin-only, audited, revision checked) |
+| `migrations/…1100_refill_engine.sql` … `…1300_photo_upload.sql` | Features 06–08: count/confirm transaction, manual workflow, photo upload/finalize/enqueue |
+| `migrations/…1400_vision_pipeline.sql` | Feature 09: job claim with leases and per-store limit, heartbeat, fenced attempt finish, explicit retry and manual takeover (service role only) |
 | `templates/invite.html`, `templates/recovery.html` | Email templates: token-hash links to `<redirect>/auth/confirm` |
 | `seed.sql` | Two synthetic organizations (IDs in `tests/db/src/seed-ids.ts`); no users or passwords |
 

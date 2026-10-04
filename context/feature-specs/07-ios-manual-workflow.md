@@ -1,7 +1,7 @@
 # iOS Manual Workflow
 
 ## Status
-Implemented; local backend/Swift client verification passes. iOS target, simulator/device, actual app relaunch and assistive-technology acceptance remain unverified (Xcode unavailable). Not acceptance-complete.
+Implemented; actual full-Xcode signed iOS app build and both default/largest-size local synthetic simulator workflows pass, including keyboard, retry/conflict, confirmation/completion and relaunch/session/logout. Native clipping, label, hit-region and Dynamic Type audits pass without exclusions. Spoken VoiceOver/focus-order acceptance and physical-device checks remain unverified. Not acceptance-complete. Fresh commands/results are in progress-tracker.md.
 
 ## Dependencies
 Feature(s): 03, 04, 05, 06. Read the linked domain contracts through the README before implementation.

@@ -215,16 +215,22 @@ isOneToOne: false
                   ]
                 },"scan_attempts": {
                   Row: {
-                    "attempt_number": number,"created_at": string,"ended_at": string | null,"generation": number,"id": string,"input_height": number | null,"input_sha256": string | null,"input_width": number | null,"latency_ms": number | null,"model": string,"normalized_response": Json | null,"organization_id": string,"outcome": string,"prompt_version": string,"provider": string,"scan_id": string,"schema_version": number,"started_at": string,"usage_json": Json | null
+                    "attempt_number": number,"confidence_threshold": number | null,"created_at": string,"ended_at": string | null,"error_code": string | null,"generation": number,"id": string,"input_height": number | null,"input_sha256": string | null,"input_width": number | null,"job_id": string | null,"latency_ms": number | null,"lease_token": string | null,"model": string,"normalized_response": Json | null,"organization_id": string,"outcome": string,"policy_version": string | null,"prompt_version": string,"provider": string,"scan_id": string,"schema_version": number,"started_at": string,"usage_json": Json | null
                   }
                   Insert: {
-                    "attempt_number": number,"created_at"?: string,"ended_at"?: string | null,"generation": number,"id"?: string,"input_height"?: number | null,"input_sha256"?: string | null,"input_width"?: number | null,"latency_ms"?: number | null,"model": string,"normalized_response"?: Json | null,"organization_id": string,"outcome": string,"prompt_version": string,"provider": string,"scan_id": string,"schema_version": number,"started_at": string,"usage_json"?: Json | null
+                    "attempt_number": number,"confidence_threshold"?: number | null,"created_at"?: string,"ended_at"?: string | null,"error_code"?: string | null,"generation": number,"id"?: string,"input_height"?: number | null,"input_sha256"?: string | null,"input_width"?: number | null,"job_id"?: string | null,"latency_ms"?: number | null,"lease_token"?: string | null,"model": string,"normalized_response"?: Json | null,"organization_id": string,"outcome": string,"policy_version"?: string | null,"prompt_version": string,"provider": string,"scan_id": string,"schema_version": number,"started_at": string,"usage_json"?: Json | null
                   }
                   Update: {
-                    "attempt_number"?: number,"created_at"?: string,"ended_at"?: string | null,"generation"?: number,"id"?: string,"input_height"?: number | null,"input_sha256"?: string | null,"input_width"?: number | null,"latency_ms"?: number | null,"model"?: string,"normalized_response"?: Json | null,"organization_id"?: string,"outcome"?: string,"prompt_version"?: string,"provider"?: string,"scan_id"?: string,"schema_version"?: number,"started_at"?: string,"usage_json"?: Json | null
+                    "attempt_number"?: number,"confidence_threshold"?: number | null,"created_at"?: string,"ended_at"?: string | null,"error_code"?: string | null,"generation"?: number,"id"?: string,"input_height"?: number | null,"input_sha256"?: string | null,"input_width"?: number | null,"job_id"?: string | null,"latency_ms"?: number | null,"lease_token"?: string | null,"model"?: string,"normalized_response"?: Json | null,"organization_id"?: string,"outcome"?: string,"policy_version"?: string | null,"prompt_version"?: string,"provider"?: string,"scan_id"?: string,"schema_version"?: number,"started_at"?: string,"usage_json"?: Json | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "scan_attempts_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "scan_jobs"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "scan_attempts_organization_id_scan_id_fkey"
       columns: ["organization_id","scan_id"]
 isOneToOne: false
@@ -328,13 +334,13 @@ isOneToOne: false
                   ]
                 },"scans": {
                   Row: {
-                    "captured_at": string | null,"completed_at": string | null,"completed_by": string | null,"confirmed_at": string | null,"created_at": string,"created_by": string,"crop_json": Json | null,"display_id": string,"display_score": number | null,"id": string,"image_deleted_at": string | null,"image_path": string | null,"job_generation": number,"organization_id": string,"pog_version_id": string,"retry_generation_count": number,"revision": number,"source": string,"status": string,"store_id": string,"total_refill": number | null,"updated_at": string
+                    "ai_summary": Json | null,"captured_at": string | null,"completed_at": string | null,"completed_by": string | null,"confirmed_at": string | null,"created_at": string,"created_by": string,"crop_json": Json | null,"display_id": string,"display_score": number | null,"failure_code": string | null,"id": string,"image_deleted_at": string | null,"image_path": string | null,"job_generation": number,"manual_takeover_at": string | null,"manual_takeover_by": string | null,"organization_id": string,"pog_version_id": string,"retry_generation_count": number,"revision": number,"source": string,"status": string,"store_id": string,"total_refill": number | null,"updated_at": string
                   }
                   Insert: {
-                    "captured_at"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"confirmed_at"?: string | null,"created_at"?: string,"created_by": string,"crop_json"?: Json | null,"display_id": string,"display_score"?: number | null,"id"?: string,"image_deleted_at"?: string | null,"image_path"?: string | null,"job_generation"?: number,"organization_id": string,"pog_version_id": string,"retry_generation_count"?: number,"revision"?: number,"source": string,"status": string,"store_id": string,"total_refill"?: number | null,"updated_at"?: string
+                    "ai_summary"?: Json | null,"captured_at"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"confirmed_at"?: string | null,"created_at"?: string,"created_by": string,"crop_json"?: Json | null,"display_id": string,"display_score"?: number | null,"failure_code"?: string | null,"id"?: string,"image_deleted_at"?: string | null,"image_path"?: string | null,"job_generation"?: number,"manual_takeover_at"?: string | null,"manual_takeover_by"?: string | null,"organization_id": string,"pog_version_id": string,"retry_generation_count"?: number,"revision"?: number,"source": string,"status": string,"store_id": string,"total_refill"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "captured_at"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"confirmed_at"?: string | null,"created_at"?: string,"created_by"?: string,"crop_json"?: Json | null,"display_id"?: string,"display_score"?: number | null,"id"?: string,"image_deleted_at"?: string | null,"image_path"?: string | null,"job_generation"?: number,"organization_id"?: string,"pog_version_id"?: string,"retry_generation_count"?: number,"revision"?: number,"source"?: string,"status"?: string,"store_id"?: string,"total_refill"?: number | null,"updated_at"?: string
+                    "ai_summary"?: Json | null,"captured_at"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"confirmed_at"?: string | null,"created_at"?: string,"created_by"?: string,"crop_json"?: Json | null,"display_id"?: string,"display_score"?: number | null,"failure_code"?: string | null,"id"?: string,"image_deleted_at"?: string | null,"image_path"?: string | null,"job_generation"?: number,"manual_takeover_at"?: string | null,"manual_takeover_by"?: string | null,"organization_id"?: string,"pog_version_id"?: string,"retry_generation_count"?: number,"revision"?: number,"source"?: string,"status"?: string,"store_id"?: string,"total_refill"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -437,6 +443,9 @@ isOneToOne: false
                            },
 "bootstrap_first_admin":
 { Args: { "p_org"?: string,"p_org_name"?: string,"p_user": string }; Returns: string
+                           },
+"claim_scan_job":
+{ Args: { "p_confidence_threshold": number,"p_model": string,"p_policy_version": string,"p_prompt_version": string,"p_provider": string,"p_schema_version": number }; Returns: Json
                            },
 "create_display":
 { Args: { "p_active_pog_version_id"?: string,"p_actor": string,"p_name": string,"p_request_id"?: string,"p_store_id": string }; Returns: {
@@ -594,6 +603,12 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"finish_scan_attempt":
+{ Args: { "p_error_code"?: string,"p_input"?: Json,"p_job": string,"p_latency_ms"?: number,"p_lease": string,"p_outcome": string,"p_result"?: Json,"p_retry_after_seconds"?: number,"p_retryable"?: boolean,"p_usage"?: Json }; Returns: Json
+                           },
+"heartbeat_scan_job":
+{ Args: { "p_job": string,"p_lease": string }; Returns: boolean
+                           },
 "list_organization_members":
 { Args: { "p_actor": string,"p_org": string }; Returns: {
               "active": boolean,"display_name": string,"email": string,"invited_at": string,"last_sign_in_at": string,"org_role": string,"revision": number,"stores": Json,"user_id": string
@@ -604,6 +619,9 @@ isOneToOne: false
                            },
 "mutate_scan_counts":
 { Args: { "p_action": string,"p_actor": string,"p_expected_revision": number,"p_items": Json,"p_key": string,"p_request_id": string,"p_scan_id": string }; Returns: Json
+                           },
+"photo_scan_workflow":
+{ Args: { "p_action": string,"p_actor": string,"p_image"?: Json,"p_input": Json,"p_key"?: string,"p_request_id"?: string,"p_resource": string }; Returns: Json
                            },
 "publish_pog_version":
 { Args: { "p_actor": string,"p_expected_revision": number,"p_request_id"?: string,"p_version_id": string }; Returns: {
@@ -659,6 +677,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"scan_analysis_action":
+{ Args: { "p_action": string,"p_actor": string,"p_expected_revision": number,"p_key": string,"p_request_id"?: string,"p_scan": string }; Returns: Json
+                           },
 "settle_pog_upload":
 { Args: { "p_actor": string,"p_state": string,"p_upload_id": string }; Returns: {
               "actor_id": string,

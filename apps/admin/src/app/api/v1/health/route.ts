@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       configuration: "ok",
       database: "not_checked",
       authentication: "not_checked",
-      job_queue: "not_implemented",
+      job_queue: "not_checked",
     },
   };
   return jsonData(body, requestId);

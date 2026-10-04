@@ -1,7 +1,7 @@
 # Photo Capture, Import and Storage
 
 ## Status
-Not started.
+Implemented; acceptance incomplete. Backend tests and the simulator import/crop/upload/finalize flow pass (after crash fix A05); real-device camera capture, permission denial and background recovery remain unverified (progress-tracker.md).
 
 ## Dependencies
 Feature(s): 07. Read the linked domain contracts through the README before implementation.

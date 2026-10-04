@@ -39,7 +39,7 @@ describe("GET /api/v1/health", () => {
       configuration: "ok",
       database: "not_checked",
       authentication: "not_checked",
-      job_queue: "not_implemented",
+      job_queue: "not_checked",
     });
     expect(response.headers.get("x-request-id")).toBe(request_id);
   });

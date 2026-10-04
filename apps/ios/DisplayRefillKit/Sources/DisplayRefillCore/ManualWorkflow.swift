@@ -13,11 +13,31 @@ public struct ScanDetail: Decodable, Sendable {
         public let acceptedQuantity: Int?
         public let reviewState: String
         public let refillQuantity: Int?
+        /// Original AI observation (photo scans); nil means unknown or not analysed, never zero.
+        public let aiQuantity: Int?
+        public let reviewRequired: Bool?
         enum CodingKeys: String, CodingKey {
             case target
             case slotID = "slot_id", productID = "product_id", productName = "product_name"
             case slotLabel = "slot_label", refillThreshold = "refill_threshold"
             case acceptedQuantity = "accepted_quantity", reviewState = "review_state", refillQuantity = "refill_quantity"
+            case aiQuantity = "ai_quantity", reviewRequired = "review_required"
+        }
+    }
+    /// Server analysis state for polling (Feature 09). Absent from older servers.
+    public struct Analysis: Decodable, Sendable, Equatable {
+        public let generation: Int
+        public let failureCode: String?
+        public let retryAvailable: Bool
+        public let retriesRemaining: Int
+        public let alignment: String?
+        public let imageFlags: [String]
+        public let provider: String?
+        /// Deterministic mock output: not a reading of the actual photo.
+        public let synthetic: Bool
+        enum CodingKeys: String, CodingKey {
+            case generation, alignment, provider, synthetic
+            case failureCode = "failure_code", retryAvailable = "retry_available", retriesRemaining = "retries_remaining", imageFlags = "image_flags"
         }
     }
     public struct Product: Decodable, Sendable, Identifiable {
@@ -37,9 +57,11 @@ public struct ScanDetail: Decodable, Sendable {
     public let unresolvedSlotIDs: [String]
     public let provisionalTotalRefill: Int?
     public let totalRefill: Int?
+    public let source: String?
+    public let analysis: Analysis?
     public var editable: Bool { status == "needs_review" }
     enum CodingKeys: String, CodingKey {
-        case status, revision, slots, products
+        case status, revision, slots, products, source, analysis
         case scanID = "scan_id", createdAt = "created_at", completedAt = "completed_at", completedBy = "completed_by"
         case unresolvedSlotIDs = "unresolved_slot_ids", provisionalTotalRefill = "provisional_total_refill", totalRefill = "total_refill"
     }

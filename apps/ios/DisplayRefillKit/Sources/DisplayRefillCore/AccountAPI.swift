@@ -24,12 +24,12 @@ public struct URLSessionAccountAPI: AccountAPI {
         try await authorizedRequest("api/v1/me")
     }
 
-    func authorizedRequest<T: Decodable & Sendable>(_ path: String, method: String = "GET", body: Data? = nil, key: String? = nil) async throws(APIClientError) -> T {
+    func authorizedRequest<T: Decodable & Sendable>(_ path: String, method: String = "GET", body: Data? = nil, key: String? = nil, contentType: String = "application/json") async throws(APIClientError) -> T {
         let token = try await mapAuth { () async throws(AuthError) in try await sessions.validAccessToken() }
-        var (data, response) = try await send(path, token: token, method: method, body: body, key: key)
+        var (data, response) = try await send(path, token: token, method: method, body: body, key: key, contentType: contentType)
         if response.statusCode == 401 {
             let retryToken = try await mapAuth { () async throws(AuthError) in try await sessions.accessTokenAfterUnauthorized(rejectedToken: token) }
-            (data, response) = try await send(path, token: retryToken, method: method, body: body, key: key)
+            (data, response) = try await send(path, token: retryToken, method: method, body: body, key: key, contentType: contentType)
             if response.statusCode == 401 {
                 await sessions.expire()
                 throw .signedOut
@@ -38,12 +38,12 @@ public struct URLSessionAccountAPI: AccountAPI {
         return try APIResponseDecoder.decode(data: data, response: response)
     }
 
-    private func send(_ path: String, token: String, method: String, body: Data?, key: String?) async throws(APIClientError) -> (Data, HTTPURLResponse) {
+    private func send(_ path: String, token: String, method: String, body: Data?, key: String?, contentType: String) async throws(APIClientError) -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: URL(string: path, relativeTo: baseURL.appending(path: "/"))!)
         request.httpMethod = method
         request.httpBody = body
         request.setValue(key, forHTTPHeaderField: "Idempotency-Key")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue(UUID().uuidString.lowercased(), forHTTPHeaderField: "X-Request-Id")

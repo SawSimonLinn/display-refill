@@ -1,5 +1,6 @@
 import { looksLikeSupabaseSecretKey } from "@display-refill/domain";
 import { z } from "zod";
+import { MockVisionScenario } from "./vision";
 
 /**
  * Server configuration validation. Messages name the variable and the rule it
@@ -84,9 +85,12 @@ const AdminServerEnv = z.object({
   LOG_LEVEL: logLevel,
 });
 
-/** The only vision provider until feature 09 selects and benchmarks one. */
+/**
+ * Only the deterministic mock exists. Feature 09 keeps it that way until a
+ * real provider passes a benchmark and data-handling review (decision D20/D66).
+ */
 export const VisionProvider = z.enum(["mock"], {
-  error: "only 'mock' is available until a provider is selected (feature 09)",
+  error: "only 'mock' is available until a provider is benchmarked and approved",
 });
 
 const WorkerEnv = z.object({
@@ -98,6 +102,11 @@ const WorkerEnv = z.object({
     .optional()
     .transform((value) => (value === undefined || value === "" ? "mock" : value))
     .pipe(VisionProvider),
+  VISION_MOCK_SCENARIO: z
+    .string()
+    .optional()
+    .transform((value) => (value === undefined || value === "" ? "mixed" : value))
+    .pipe(z.enum(MockVisionScenario, { error: `must be one of ${MockVisionScenario.join(", ")}` })),
   VISION_MODEL: z.string().trim().optional(),
   VISION_API_KEY: z.string().optional(),
   SCAN_IMAGE_RETENTION_DAYS: positiveDays(90),
@@ -119,6 +128,7 @@ export interface WorkerConfig {
   supabaseServiceRoleKey: string;
   databaseUrl: string;
   visionProvider: z.infer<typeof VisionProvider>;
+  visionMockScenario: MockVisionScenario;
   visionModel: string | undefined;
   visionApiKey: string | undefined;
   scanImageRetentionDays: number;
@@ -164,6 +174,7 @@ export function loadWorkerConfig(env: Env = process.env): WorkerConfig {
     supabaseServiceRoleKey: e.SUPABASE_SERVICE_ROLE_KEY,
     databaseUrl: e.DATABASE_URL,
     visionProvider: e.VISION_PROVIDER,
+    visionMockScenario: e.VISION_MOCK_SCENARIO,
     visionModel: e.VISION_MODEL || undefined,
     visionApiKey: e.VISION_API_KEY || undefined,
     scanImageRetentionDays: e.SCAN_IMAGE_RETENTION_DAYS,

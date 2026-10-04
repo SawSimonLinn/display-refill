@@ -1,7 +1,7 @@
 # Durable Vision Analysis
 
 ## Status
-Not started.
+Implemented locally with the deterministic mock adapter; acceptance criteria demonstrated by local DB/API/worker/Swift tests and a simulator run (see progress-tracker.md). Real provider selection, benchmark and data-handling review remain open, so live vision is not available.
 
 ## Dependencies
 Feature(s): 08. Read the linked domain contracts through the README before implementation.

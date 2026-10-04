@@ -281,7 +281,7 @@ it('Feature 07 creates/reopens/completes a manual scan without vision, with atom
   expect(changedBody.status).toBe(409);
   expect((await h.api('/api/v1/scans', { method: 'POST', token: owner.token, body: { ...body, expected_pog_version_id: randomUUID() }, headers: { 'Idempotency-Key': randomUUID() } })).json.error.code).toBe('POG_CHANGED');
   expect((await h.api('/api/v1/scans', { method: 'POST', token: other.token, body, headers: { 'Idempotency-Key': randomUUID() } })).status).toBe(404);
-  expect((await h.api('/api/v1/scans', { method: 'POST', token: owner.token, body: { ...body, source: 'photo' }, headers: { 'Idempotency-Key': randomUUID() } })).status).toBe(422);
+  expect((await h.api('/api/v1/scans', { method: 'POST', token: owner.token, body: { ...body, source: 'photo' }, headers: { 'Idempotency-Key': randomUUID() } })).status).toBe(201);
   const currentDisplay = await h.service.from('displays').select('store_id').eq('id', display).single();
   const unassignedDisplay = randomUUID();
   const inserted = await h.service.from('displays').insert({ id: unassignedDisplay, organization_id: org, store_id: currentDisplay.data!.store_id, name: 'No POG synthetic' });

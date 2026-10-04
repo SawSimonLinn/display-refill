@@ -83,3 +83,8 @@ Migration 9 (feature 04, `…0900_catalog_management.sql`) adds the service-role
 - Count saves append correction evidence even for unchanged explicit verification; omitted slots remain unchanged. A save with `verified: false` leaves the edited slot pending, including when previously verified. Original AI observations remain untouched.
 - Confirmation locks the parent scan and all slots, uses accepted counts plus pinned target/threshold/product snapshots, stores every final/refill quantity, freezes total/score, inserts one confirmation and audit, then increments revision. Product totals are sums of stored per-slot finals and never consult the current catalog/POG.
 - A parent lock on slot writes serializes them with confirmation; insertion into a confirmed/completed scan is refused. The existing scan history guard now also rejects clearing a confirmed timestamp to null.
+
+## Implementation Notes (Feature 09)
+- Migration 14 (`…1400_vision_pipeline.sql`) adds `scans.failure_code` (present exactly when `status = 'failed'`), `scans.ai_summary` (immutable once set), `scans.manual_takeover_at/by`, and replaces the photo-only image check with `scans_image_source_check` so a taken-over scan keeps its image while `source = 'manual'`.
+- `scan_attempts` adds `job_id`, `lease_token` (unique per job), `error_code`, `policy_version`, `confidence_threshold`, and outcome `input_error`. Attempts remain undeletable; jobs and attempts have no client grant.
+- New service-role functions: `claim_scan_job`, `heartbeat_scan_job`, `finish_scan_attempt`, `scan_analysis_action`; private helper `fail_scan_job`. Audit events: `scan.analysis_completed`, `scan.analysis_failed` (no actor), `scan.analysis_retried`, `scan.manual_takeover`.

@@ -74,7 +74,7 @@ private func fakeJWT(role: String) -> String {
         let health = try await MockAPIClient().health()
         #expect(health.apiVersion == "v1")
         #expect(health.checks.authentication == "not_checked")
-        #expect(health.checks.jobQueue == "not_implemented")
+        #expect(health.checks.jobQueue == "not_checked")
     }
 
     @Test func decodesErrorEnvelope() async {

@@ -1,4 +1,5 @@
-import { ConfigurationError, createLogger, createVisionAdapter, loadWorkerConfig } from "@display-refill/server";
+import { ConfigurationError, createLogger, createVisionAdapter, createWorkerServiceClient, loadWorkerConfig } from "@display-refill/server";
+import { SupabaseQueueStore } from "./queue";
 import { runSelfCheck, runWorker } from "./worker";
 
 async function main(): Promise<number> {
@@ -14,7 +15,8 @@ async function main(): Promise<number> {
   }
 
   const logger = createLogger("scan-worker", config.logLevel);
-  const deps = { logger, vision: createVisionAdapter(config.visionProvider) };
+  const vision = createVisionAdapter(config.visionProvider, config.visionMockScenario);
+  const deps = { logger, vision, queue: new SupabaseQueueStore(createWorkerServiceClient(config)) };
 
   if (process.argv.includes("--once")) {
     await runSelfCheck(deps);

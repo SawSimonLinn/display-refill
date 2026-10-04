@@ -75,7 +75,8 @@ export const HealthStatus = z.strictObject({
     database: z.literal("not_checked"),
     // Supabase Auth is wired (feature 03); health does not probe it.
     authentication: z.literal("not_checked"),
-    job_queue: z.literal("not_implemented"),
+    // The durable queue exists (feature 09); health does not probe it.
+    job_queue: z.literal("not_checked"),
   }),
 });
 export type HealthStatus = z.infer<typeof HealthStatus>;

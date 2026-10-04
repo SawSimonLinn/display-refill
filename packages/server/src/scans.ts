@@ -24,6 +24,7 @@ export function scanDetail(row: Snapshot) {
     provisional: !final, provisional_total_refill: final ? null : calculation.total_refill,
     total_refill: row.total_refill, display_score: final ? row.display_score : calculation.display_score,
     confirmed_at: row.confirmed_at === null ? null : new Date(row.confirmed_at).toISOString(), completed_by: row.completed_by, completed_at: row.completed_at === null ? null : new Date(row.completed_at).toISOString(),
+    analysis: analysisSummary(row),
     unresolved_slot_ids: slots.filter((s) => s.accepted_quantity === null || (s.review_required && s.review_state !== "verified")).map((s) => s.pog_slot_id),
     products,
     slots: slots.map((s, index) => ({
@@ -33,6 +34,27 @@ export function scanDetail(row: Snapshot) {
       accepted_quantity: s.accepted_quantity, review_required: s.review_required, review_state: s.review_state,
       final_quantity: s.final_quantity, refill_quantity: final ? s.refill_quantity : calculation.slots[index]!.refill_quantity,
     })),
+  };
+}
+type AiSummary = { alignment?: string; image_flags?: string[]; provider?: string };
+/**
+ * Polling state for clients. Exposes the alignment/image flags and provider
+ * name only; attempt internals (model usage, lease tokens) stay server-side.
+ * `synthetic` marks deterministic mock output that is not a photo reading.
+ */
+function analysisSummary(row: ScanRow) {
+  const summary = (row.ai_summary ?? null) as AiSummary | null;
+  return {
+    generation: row.job_generation,
+    failure_code: row.failure_code,
+    retry_available: row.status === "failed" && row.source === "photo" && row.image_path !== null
+      && row.image_deleted_at === null && row.retry_generation_count < 2,
+    retries_remaining: Math.max(0, 2 - row.retry_generation_count),
+    alignment: summary?.alignment ?? null,
+    image_flags: summary?.image_flags ?? [],
+    provider: summary?.provider ?? null,
+    synthetic: summary?.provider === "mock",
+    manual_takeover_at: row.manual_takeover_at === null ? null : new Date(row.manual_takeover_at).toISOString(),
   };
 }
 export async function getScan(client: DbClient, scanId: string) {
@@ -69,6 +91,19 @@ export async function manualWorkflow(service: DbClient, actor: string, action: "
     p_expected_pog: pog ?? undefined, p_key: key, p_request_id: requestId,
   });
   if (error) return fromDbError(error);
+  const result = data as unknown as { payload: Snapshot; replayed: boolean };
+  return ok({ detail: scanDetail(result.payload), replayed: result.replayed });
+}
+
+/** Explicit retry or manual takeover; idempotency and the response snapshot commit in the same transaction. */
+export async function scanAnalysisAction(service: DbClient, actor: string, action: "retry" | "takeover", scanId: string, expectedRevision: number, key: string, requestId: string) {
+  const { data, error } = await service.rpc("scan_analysis_action", {
+    p_actor: actor, p_action: action, p_scan: scanId, p_expected_revision: expectedRevision, p_key: key, p_request_id: requestId,
+  });
+  if (error) {
+    if (error.message === "CONFLICT" && error.details === "RETRY_LIMIT") return fail("CONFLICT", "This photo has used every analysis retry. Enter counts manually.");
+    return fromDbError(error);
+  }
   const result = data as unknown as { payload: Snapshot; replayed: boolean };
   return ok({ detail: scanDetail(result.payload), replayed: result.replayed });
 }

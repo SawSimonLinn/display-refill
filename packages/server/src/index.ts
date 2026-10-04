@@ -14,3 +14,4 @@ export * from "./pog-images";
 export * from "./pogs";
 
 export * from "./scans";
+export * from "./photo-scans";

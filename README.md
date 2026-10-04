@@ -21,7 +21,7 @@ apps/admin/              Next.js 16 App Router: admin UI + /api/v1 route handler
 apps/ios/                SwiftUI app (XcodeGen spec) + DisplayRefillKit Swift package
 packages/domain/         Pure contracts: envelopes, error codes, vision schema, fixtures
 packages/server/         Server-only: config validation, logger, HTTP helpers, vision adapters
-workers/scan-worker/     Persistent worker process (mock vision; no job queue yet)
+workers/scan-worker/     Persistent worker: claims durable Postgres jobs, deterministic mock vision only
 supabase/                Migrations, seed and local config (see supabase/README.md)
 tests/db/                Database integration tests (local Supabase only)
 tests/api/               Black-box HTTP tests of the admin app + /api/v1 (local only)
@@ -118,22 +118,25 @@ npm run build:worker && npm run smoke -w @display-refill/scan-worker   # one-sho
 ```
 
 Invalid configuration exits with code 78 and a message listing each variable.
-`SIGINT`/`SIGTERM` stop the worker cleanly.
+`SIGINT`/`SIGTERM` stop claiming and wait for in-flight attempts (bounded by the
+45-second provider deadline). `VISION_MOCK_SCENARIO` selects a deterministic
+mock outcome (`mixed`, `good`, `poor_alignment`, `occluded`, `invalid`,
+`duplicate_ids`, `unknown_id`, `missing_slot`); no real provider is available.
 
 ## What is real and what is mocked
 
 | Area | State |
 | --- | --- |
-| `GET /api/v1/health` | Real. Reports `database: not_checked`, `authentication: not_checked`, `job_queue: not_implemented`. |
+| `GET /api/v1/health` | Real. Reports `database: not_checked`, `authentication: not_checked`, `job_queue: not_checked` (the queue exists; health does not probe it). |
 | `/api/v1/me`, `/members`, `/members/invite`, `/members/:user_id`, `/auth/password-reset` | Real (feature 03). |
 | `/api/v1/stores`, `/stores/:id`, `/stores/:id/displays`, `/displays/:id`, `/products`, `/products/:id`, `/pogs`, `/pogs/:id` | Real (feature 04; context/api-contracts.md). Other `/api/v1/*` paths return the JSON `404` envelope. |
 | Configuration validation | Real, for admin and worker. |
 | Web sign-in, reset, invite acceptance, sign-out | Real (Supabase Auth, httpOnly SSR cookies). Pages require a verified session; employees are sent to the iOS app. |
 | Admin pages | Overview, Members, Stores, Displays, Products and POGs (reference-image/rectangle editor, immutable publication and cloning) are real. Scans UI/workflows are not built. |
 | iOS app | Real sign-in, Keychain session, refresh, sign-out, reset request, authorized store list; History is an empty state. Compiled and tested for macOS only (no Xcode). |
-| Vision analysis | `MockVisionAdapter` returns the fixed fixture (one known count, one unknown occluded slot) for the requested slot IDs. No network. |
+| Vision analysis | Feature 09 pipeline is real (validation, normalization, review routing, attempt evidence); the only adapter is the deterministic `MockVisionAdapter`, whose results are labeled synthetic in the app. No real provider is selected and no network call is made. |
 | Database | Real (local): schema, RLS, triggers, private buckets, `publish_pog_version`, `create_scan`. See supabase/README.md. |
-| Job queue | Table exists; claiming/processing not implemented. The worker idles. |
+| Job queue | Real (feature 09): leases, heartbeats, per-store limit, retry budget, fenced results, explicit retry and manual takeover. See context/scan-lifecycle.md. |
 
 ## Conventions
 

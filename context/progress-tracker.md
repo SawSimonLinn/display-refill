@@ -1,10 +1,10 @@
 # Progress Tracker
 
 ## Current Phase
-Phase 0 — Foundation. Features 04–06 implemented and verified on the local stack (database, API, web dashboard). Feature 07 implemented with local backend and actual Swift client verification, but iOS acceptance remains open. Feature 03 verified locally (iOS logic on macOS only). Feature 02 complete locally. Nothing has been applied to a hosted project. **The iOS build (simulator/device) is still unverified** (no Xcode, E01/E02); Feature 07 does not close that gap.
+Phase 3 — Photo analysis. Features 04–06 are verified locally. Feature 07 runs as an actual iOS app; spoken VoiceOver/focus order and physical-device use remain unverified. Feature 08 (photo capture/storage) was found implemented but unrecorded at the start of the Feature 09 session; its backend tests pass, and its simulator import flow now passes after an import crash was fixed (A05). Physical camera capture is unverified. Feature 09 (durable analysis) is implemented locally with the deterministic mock adapter only; no real vision provider is selected. Nothing has been applied to hosted Supabase.
 
 ## Current Goal
-Verify Feature 07 on the actual iOS target, simulator/device and assistive technologies before treating its acceptance criteria as complete. Manual implementation and local client/backend checks are available; live vision remains out of scope.
+Close the open device and assistive-technology checks for Features 07–09 (list under Feature 09 below). Then run a small provider benchmark and data-handling review before any real vision provider is configured. Feature 10 (AI estimate review/correction UI) is next.
 
 ## Completed
 - Reworked the seven uploaded reference documents for this project.
@@ -17,22 +17,23 @@ Verify Feature 07 on the actual iOS target, simulator/device and assistive techn
 - Feature 04 store, display and product management (details, evidence and limitations below).
 - Feature 05 POG builder, reference-image validation and publication (details, evidence and limitations below).
 - Feature 06 authoritative backend refill engine, atomic count saving and confirmation (details, evidence and limitations below).
+- Feature 09 durable analysis queue/worker with the deterministic mock adapter, locally (evidence and open device/provider items below).
 
 ## In Progress
-Feature 07 iOS target/device, actual app-relaunch and accessibility acceptance verification (blocked by unavailable Xcode/iOS runtime).
+Open acceptance items carried forward (not blocking independent work): Feature 07 spoken VoiceOver/focus order; Features 07–09 physical-device use; Feature 08 real camera capture/permission/background recovery on a device; Feature 09 real-provider benchmark and data-handling review.
 
 ## Feature Status
 | Feature | Status | Evidence |
 | --- | --- | --- |
-| 01 Foundation | Implemented; iOS build unverified | TS checks pass (below); Swift compiled for macOS only |
+| 01 Foundation | Implemented; actual iOS simulator target builds | Earlier TS/macOS evidence below; fresh full-Xcode app build and iOS Core tests recorded under Feature 07 |
 | 02 Database and security | Complete (local) | 88/88 DB tests on a from-empty instance, acceptance audit, lint fixed (below) |
-| 03 Supabase Auth | Implemented; verified locally (iOS on macOS only) | DB 105/105, API 43/43, unit 54/54, Swift 28/28 + 3 live; browser pass (below) |
+| 03 Supabase Auth | Implemented; verified locally on web and iOS simulator | Earlier regressions below; Feature 07 now proves real iOS sign-in, Keychain restoration across process restart and persistent logout |
 | 04 Store/display/product management | Implemented; verified locally (no iOS client yet) | DB 120/120, API 59/59, unit 66/66, browser pass, 2 negative controls (below) |
 | 05 POG builder | Complete locally; accessibility/device gaps explicit | Migration 10, DB 120/120 regressions, API 70/70 (11 new real-workflow tests), unit 95/95, Chromium workflow/viewport checks (below) |
 | 06 Refill engine | Complete locally (backend only) | Migration 11; unit 110/110, DB 120/120, API 79/79; authorization, concurrency, retry and frozen-history evidence below |
-| 07 Manual iOS workflow | Implemented; iOS acceptance incomplete | Migration 12; DB 120/120, API 80/80, TS units 110/110; Swift macOS compile/model tests and actual local HTTP workflow pass. iOS build/relaunch/VoiceOver/Dynamic Type unverified |
-| 08 Photo capture/storage | Not started | Feature spec only |
-| 09 Vision pipeline | Not started | Mock adapter only; provider unselected |
+| 07 Manual iOS workflow | Implemented; acceptance incomplete | Actual signed iOS app: both default/largest-size simulator workflows and native accessibility audits pass, including keyboard, retry/conflict, restart/reopen/logout. Spoken VoiceOver remains required and unverified; physical device separately unverified. Fresh results below |
+| 08 Photo capture/storage | Implemented; acceptance incomplete | Migration 13, photo API 6/6, simulator import → crop → upload → finalize passes after crash fix A05. Real camera, permission-denied on device and device background recovery unverified |
+| 09 Vision pipeline | Implemented locally (mock adapter only) | Migration 14; DB 141/141 (21 new), API 89/89 (3 new), units 128/128, Swift 46 reported/41 run, simulator photo-analysis UI test passes; fencing negative control. Real provider not selected; device unverified |
 | 10 Review/corrections | Not started | Feature spec only |
 | 11 History/admin review | Not started | Feature spec only |
 | 12 Operations/retention | Not started | Runbook only |
@@ -387,3 +388,212 @@ Final post-refinement rechecks: `DOCKER_HOST=unix://$HOME/.colima/default/docker
 **Acceptance still open:** actual iOS app build, simulator/device manual UI flow, app termination/relaunch with Keychain + saved-ID navigation, VoiceOver and Dynamic Type. A fresh macOS client/model reopening a persisted scan is independent evidence of API/session wiring, not proof of actual iOS app relaunch. Hosted Auth/email, paid provider and device/network-background behavior remain untested. No hosted Supabase operations, SIMON.md edits or commits were performed.
 
 Next smallest unit: install/select Xcode, generate the existing iOS project, build/test its actual target and exercise Feature 07 (including stale edits, network loss, restart and accessibility). Feature 07 is not marked acceptance-complete.
+
+## Feature 07 — iOS Verification Recheck (2026-10-03, macOS 26.6.2 / 25G83)
+
+**Not acceptance-complete. Feature 08 was not started.** Read the tracker, current issues and Feature 07 spec; inspected XcodeGen project.yml, Package.swift, iOS app entry point/configuration and installed tools. Initial tree was clean. No application/API/DB behavior was changed. An exploratory Package.swift language-mode change was reverted; the manifest is unchanged.
+
+| Probe / command | Observed result |
+| --- | --- |
+| `xcode-select -p`; `xcodebuild -version`; `xcrun --find xcodebuild` | CLT selected at `/Library/Developer/CommandLineTools`; full Xcode required/not found |
+| Spotlight bundle-ID lookup and filesystem searches of Applications, user Applications/Downloads, Volumes, /opt and /Library/Developer | No full Xcode.app, xcodebuild binary, iPhoneSimulator.sdk or Xcode archive found. `/Applications/Developer.app` is Apple Developer (`developer.apple.wwdc-Release`), not Xcode. No DEVELOPER_DIR/SDKROOT/TOOLCHAINS override was set |
+| `xcrun --sdk iphonesimulator --show-sdk-path`; `xcrun --sdk iphoneos --show-sdk-path` | Both SDKs cannot be located; only macOS SDKs are in CLT |
+| Standalone `/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl list runtimes -j` / `list devices available` | **iOS 26.5, build 23F77**, available. iPhone 17 Pro UUID **C5F3DEA0-0C84-4ED2-84D8-60D0933463CC** available (initially Shutdown). Corrects the earlier inference that missing xcrun simctl meant no runtime |
+| Standalone simctl `boot <UUID>` then `bootstatus <UUID> -b` | Exit 0; initial data migration and system-app startup finished after approximately 73 s. Device became Booted. Returned it to Shutdown afterward; no app installed/launched and no device erased |
+| From apps/ios: `xcodebuild -scheme DisplayRefill -destination 'platform=iOS Simulator,id=C5F3DEA0-0C84-4ED2-84D8-60D0933463CC' build test` | Exit 1 before project compilation: xcodebuild requires full Xcode; active developer directory is CLT. Generated project and actual iOS app target remain unverified |
+| `/usr/bin/swift --version`; default `swift test --package-path apps/ios/DisplayRefillKit` | Swift 6.2.3; reproduced existing PackageDescription manifest link failure |
+| Inspect public/private PackageDescription interfaces and `nm -gU libPackageDescription.dylib` through CLT swift-demangle | Private interfaces date 2024 and identify Swift 5.10; public interfaces/dylib identify Swift 6.2.3. Old SwiftVersion initializer referenced by compilation differs from dylib SwiftLanguageMode ABI |
+| `swift package … --manifest-cache none -Xbuild-tools-swiftc -vfsoverlay -Xbuild-tools-swiftc /tmp/feature07-clt-overlay.json -Xbuild-tools-swiftc -module-cache-path -Xbuild-tools-swiftc /tmp/feature07-manifest-module-cache dump-package` | Exit 0 with unchanged manifest after replacing private-interface reads through temporary VFS overlay **and** using fresh cache. Confirmed package targets and iOS 17/macOS 14 platforms. Overlay alone with stale default cache still failed |
+| Initial host SwiftPM test with that overlay | Manifest/core compiled, then failed `no such module Testing`; added explicit framework/plugin/linker paths to the host-check helper |
+| `CLT_CHECK_DIR=/tmp/feature07-clt-check apps/ios/scripts/swiftpm-clt-check.sh` | Exit 0: SwiftPM compiled Core/UI and linked/executed package tests for **arm64 macOS 14**. Runner reports 39 tests in 8 suites; five opt-in test functions (three live Auth, live manual and real Keychain) skipped. All runnable auth/config/wire/manual tests pass. This is **not** an iOS target build |
+| `SWIFTC_FLAGS='-vfsoverlay /tmp/feature07-fallback-overlay.json -Xcc -ivfsoverlay -Xcc /tmp/feature07-fallback-overlay.json -Xfrontend -disable-cross-import-overlays' apps/ios/scripts/swiftc-check.sh` | Exit 0: Core/UI/app entry point macOS fallback compiled with warnings-as-errors; same runnable suite passes |
+| `bash -n apps/ios/scripts/swiftpm-clt-check.sh`; `git diff --check` | Pass |
+
+New file: `apps/ios/scripts/swiftpm-clt-check.sh` provides the verified temporary CLT workaround, supplies Testing search/link paths, and delegates to normal xcrun SwiftPM when full Xcode is selected. Updated iOS README/current issues/spec status. System files, application behavior and Package.swift remain unchanged. No backend operations were performed in this recheck; no hosted Supabase access, SIMON.md edits or commits.
+
+**Still no simulator app evidence for any requested UI scenario:** sign-in/store/display, blank versus zero, count entry/grouped backend quantities, confirmation/completion, network retry/conflicts, force-quit/relaunch saved scan, session persistence/logout, Dynamic Type layouts, accessibility labels/focus. Prior local macOS client/API evidence remains valid but does not satisfy these iOS checks. **VoiceOver interaction and physical-device checks are separately unverified.** Full Xcode with an iOS SDK must be installed/located and selected before these gaps can be closed. Runtime bootability and macOS SwiftPM success do not justify marking Feature 07 complete.
+
+
+## Feature 07 — Fresh Full-Xcode / Actual Simulator Verification (2026-10-03)
+
+**Acceptance incomplete.** This section supersedes the earlier missing-Xcode, iOS-build and app-relaunch gaps. Historical probes above describe their environment at that time, not the current installed tools.
+
+### Environment and commands
+
+- Host: macOS **26.6.2 (25G83)**. Full Xcode: `/Applications/Xcode.app`, **27.0 (27A266a)**; Swift **6.4**. XcodeGen **2.46.0** generated the existing project successfully.
+- Every build/test/tool command uses `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`. No `xcode-select -s` or system/SDK edits were made. Final `env -u DEVELOPER_DIR xcode-select -p` reports the installed Xcode developer directory.
+- `xcodebuild -checkFirstLaunchStatus`: exit **0**. `xcrun --find simctl` and both iOS SDK probes succeed; simulator SDK is **27.0**. No additional component is required to build/run the tested app. Xcode 27's simulator UI is **Device Hub**, under `Xcode.app/Contents/Applications/DeviceHub.app`.
+- Runtime: **iOS 26.5 (23F77)**. Device: **iPhone 17 Pro**, UUID **C5F3DEA0-0C84-4ED2-84D8-60D0933463CC**. `simctl boot`/`bootstatus`, actual app installation and launch work. No physical-device build/install was performed.
+- Plain `DEVELOPER_DIR=… xcrun swift test --package-path apps/ios/DisplayRefillKit` succeeds with the unchanged manifest. The legacy CLT overlay is unnecessary with full Xcode; no Package.swift/compiler-flag workaround is used for these builds.
+
+Initial actual-target compile: from `apps/ios`, `xcodegen generate`, then `DEVELOPER_DIR=… xcodebuild -scheme DisplayRefill -destination 'platform=iOS Simulator,id=C5F3DEA0-0C84-4ED2-84D8-60D0933463CC' -derivedDataPath /tmp/feature07-ios-derived CODE_SIGNING_ALLOWED=NO build`: **BUILD SUCCEEDED**, log `/tmp/feature07-ios-build.log`. That unsigned configuration is **not adequate for Keychain persistence evidence**. It initially returned to sign-in after restart. The harness now uses `CODE_SIGN_IDENTITY=-` with normal simulator signing, which generates the simulated application identity. Real Keychain restoration and persistent logout then pass. Auth/session-store implementation was not replaced or weakened.
+
+Reproducible actual-app test command (from repo root):
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+DOCKER_HOST=unix://$HOME/.colima/default/docker.sock \
+SIMULATOR_ID=C5F3DEA0-0C84-4ED2-84D8-60D0933463CC \
+  node scripts/run-ios-simulator-tests.mjs
+```
+
+The script refuses non-loopback Supabase, boots the simulator, builds/starts the real local production API on :3100, and exposes a loopback fault proxy on :3101. It provisions a synthetic employee/store/published POG with two slots and runs the generated **DisplayRefill** scheme using `xcodebuild … CODE_SIGN_IDENTITY=- API_BASE_URL=http://localhost:3101 SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_PUBLISHABLE_KEY=<local-public-key> test`. The private ignored fixture is copied only to the UI **test** bundle; the app contains public configuration only. The fixture is removed and synthetic access revoked afterward; retained scan rows remain local. No photo upload, worker/provider invocation or hosted operation occurs.
+
+### Observed functional results
+
+`/tmp/feature07-ios-1791072870320.xcresult` (log `/tmp/feature07-simulator-run12.log`) and `/tmp/feature07-ios-1791073331703.xcresult` (run13 log) contain complete functional assertion passes. **These overall UI suites fail because of accessibility audit findings; they are not reported as passing suites.**
+
+- Genuine Supabase Auth sign-in; assigned **Simulator Store** / active **Simulator Display** selection; start with its published POG and both counts unknown. Unknown disables increment/decrement and confirmation. Explicit **0** stays distinct from blank; direct entry plus Increase/Decrease are exercised.
+- Save entries **A1=0**, **A2=2**. The backend returns grouped refill **5**, with expandable slot details **3** and **2**. Revisions and displayed quantities come from the real Feature 06 API. No Swift refill calculation was added.
+- Proxy discards a successfully committed save response and returns synthetic **503**. Inputs remain **0/2**; retry sends the same idempotency key and equivalent request body; two HTTP requests produce only **revision 2**, not a second mutation. Existing Swift tests separately assert exact encoded bytes/key under transport/401 retries.
+- A second authorized RPC edit advances the scan to revision 3 with different counts. The app's stale save receives **409**; explicit reload keeps **0/2**, requires review/save and successfully saves at **revision 4**. No silent input loss.
+- Confirm transitions to immutable **confirmed** state; the employee explicitly accepts the completion dialog. Completion records the actor, status and time, preserves accepted/final/refill slot quantities and total **5**, and does not create another observation.
+- **Terminate → launch** restores the real iOS Keychain session. **Saved checks** opens the persisted scan through a fresh server detail fetch, displaying completed attestation and confirmed counts **0/2**. **Sign out → terminate → launch** stays at sign-in with no assigned-store screen.
+- The app's numeric fields receive keyboard focus; named controls work; the new Done control dismisses the keyboard. Error/recovery messages now scroll into view and request accessibility focus. Spoken VoiceOver focus/announcements are not inferred from that source or from keyboard tests.
+
+### Accessibility results and unresolved acceptance
+
+- The harness sets `simctl ui <UUID> content_size accessibility-extra-extra-extra-large`, captures real simulator screens, then returns to normal size/restores the prior reported setting when possible.
+- Native `performAccessibilityAudit` checks element descriptions, hit regions, Dynamic Type and clipped text. Description/hit-region checks and the largest count-entry audit pass. Count fields scale in height, controls stack vertically at accessibility sizes, and text can wrap vertically. This is actual iOS evidence, not macOS font behavior.
+- **Clipped-text audits remain failing**, including the product refill label, completed-attestation label/date and reports without a resolvable element. The latest run, `/tmp/feature07-ios-1791074124029.xcresult` / `/tmp/feature07-simulator-run14.log`, also flags the test helper's conservative attempt to make the entire largest refill label visible. Full-width/multiline sizing, unrestricted line limits and layout priority did not produce a clean audit. Do not classify these warnings as false positives without further inspection.
+- Overall latest `xcodebuild test` exits **65**. All completed-flow/relaunch/logout assertions have evidence from signed runs, but a **passing full iOS UI suite and complete Dynamic Type/accessibility acceptance are still missing**. Remaining work: inspect the unresolved native audit elements in Accessibility Inspector, verify every affected row/expanded group at large sizes, correct genuine clipping or document a proven tool limitation, then rerun the suite. [Apple's audit guide](https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app) describes these as potential clipping concerns at larger sizes.
+- **VoiceOver separately unverified:** spoken labels, swipe focus order, adjustment gestures, error announcements and confirmation/completion dialog focus were not exercised end-to-end.
+- **Physical device separately unverified:** iOS 17 minimum compatibility, real Keychain/provisioning, touch/keyboard behavior and device/network/background operation remain untested. No hosted Auth/email or paid provider test was performed.
+
+### Changes and regression evidence
+
+- `ManualCheckView.swift`: scroll/focus recovery notices; slot-specific keyboard focus + Done; short Unknown placeholder; scaled count-field height; vertical accessible-size count controls; multiline informational/refill/completion text. Counts/refill authority, confirmed immutability and API/Auth behavior remain unchanged.
+- `apps/ios/project.yml`, `Verification/ManualWorkflowUITests.swift`, `scripts/run-ios-simulator-tests.mjs`: generated-project UI test target and repeatable real local workflow/fault injections. Missing private fixture causes an explicit opt-in skip in an ordinary scheme test.
+- `apps/ios/README.md`: full-Xcode/session environment, simulator signing and harness instructions. The earlier host-only CLT helper is retained as an optional legacy fallback.
+- Full-Xcode SwiftPM: **39 tests / 8 suites reported passing**, with **five opt-in live/Keychain tests skipped**. Real local Auth/Keychain/manual behavior is exercised by the separate iOS UI harness. Final log `/tmp/feature07-full-xcode-swift-final4.log`.
+- Actual iOS Core regression suite: **39 tests / 8 suites reported passing**, same opt-in skips, within the generated scheme. This is distinct from the macOS SwiftPM pass.
+- `npm run typecheck`, `npm run lint`, `npm test`: exit **0**, all workspace checks and **110/110** TS unit tests. Logs `/tmp/feature07-typecheck.log`, `/tmp/feature07-lint.log`, `/tmp/feature07-unit.log`.
+- `DOCKER_HOST=… npm run test:db`: exit **0**, **120/120** local DB tests; no schema reset/migration changes in this verification pass. Log `/tmp/feature07-db-regression.log`.
+- `DOCKER_HOST=… npm run test:api`: exit **0**, **80/80** local API integration tests across eight files, 89.50 seconds. Log `/tmp/feature07-api-regression.log`.
+- `npm run check:client-config`, `npm run check:db-scripts`, `node --check scripts/run-ios-simulator-tests.mjs`, `git diff --check`: pass.
+
+No Feature 08 work, SIMON.md edits, hosted Supabase operations or commits were made. **Next unit remains Feature 07 accessibility investigation, not Feature 08.**
+
+
+## Feature 07 — Dynamic Type Layout Fix and Final Native UI Checks (2026-10-03)
+
+**Native UI failures resolved; Feature 07 remains not acceptance-complete.** This section supersedes the earlier open clipping/reachability findings. Spoken VoiceOver, speech announcements and focus-order operation have not been exercised. Physical-device checks remain separately unverified. Feature 08 has not started.
+
+### Failure evidence and fixes
+
+- Read the tracker, current issues, UI context and Feature 07 spec; inspected the prior failed log `/tmp/feature07-simulator-run14.log` and exported its screenshot/diagnostic attachments from `/tmp/feature07-ios-1791074124029.xcresult`. The prior run had seven native text-clipping findings and one full-label reach failure. The product, completion and date/action rows used the Form/table layout path.
+- `ManualCheckView.swift` now uses a native vertical ScrollView with content-sized sections. Section headings have header traits. Informational/validation text remains multiline; action labels wrap with content-sized height and a minimum 44-point touch target. Native semantic fonts, unrestricted Dynamic Type, scaled count-field heights, vertical accessibility-size count controls, slot-specific keyboard focus and Done remain supported. Disabled actions retain a semantic disabled color.
+- Product disclosure labels present the product name and server quantity on separate rows. Their combined accessibility label still identifies product and refill quantity; expandable slot details remain available. No authoritative quantity calculation or API/Auth behavior changed.
+- First rerun of the original UI test: **exit 0**, **1/1 UI test**, zero failures, 216.504 seconds. Log `/tmp/feature07-layout-run1.log`, bundle `/tmp/feature07-ios-1791075991946.xcresult`. The original clipping audits and full-label bounds assertions passed without exclusions.
+- Expanded rerun: the full largest-size workflow passed (470.667 seconds), but the repeated default scenario exposed intermittent coarse-scroll overshoot at its largest-size disclosure checkpoint. Overall **exit 65**; log `/tmp/feature07-layout-run2.log`, bundle `/tmp/feature07-ios-1791076257322.xcresult`. This is retained as failed evidence, not a passing suite.
+- The reach helper now uses measured slow drags near full-label bounds. It retains the same navigation/keyboard/tab-bar clearance, full-label visibility and hittability conditions, and the same bounded attempts. Final diagnostics show the refill label advancing from y=1127.33 to 875.33 to 623.33 points, then a measured final drag into the viewport 124…784. Completion labels likewise reach these bounds. No assertions or audit categories were removed; no findings are filtered or called false positives. No text is shrunk, accessibility sizes capped, or required content removed.
+- UI tests now execute both a default-size workflow and a workflow whose manual entry, retry/conflict, confirmation and completion use the largest size. Added native audit checkpoints cover unknown-count validation and retry/conflict messages. The test-only local controller resets its observation ledger between scenarios; server idempotency records remain intact.
+
+### Actual final environment, commands and results
+
+Environment: **Xcode 27.0 (27A266a)** at `/Applications/Xcode.app`; iOS Simulator SDK **27.0**; **iPhone 17 Pro**, UUID **C5F3DEA0-0C84-4ED2-84D8-60D0933463CC**, runtime **iOS 26.5 (23F77)**; host macOS **26.6.2 (25G83)**. Every Xcode command used session-scoped `DEVELOPER_DIR`; system toolchain selection was not changed.
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+DOCKER_HOST=unix://$HOME/.colima/default/docker.sock \
+node scripts/run-ios-simulator-tests.mjs
+```
+
+The harness generates the actual Xcode project, builds/signs the app with `CODE_SIGN_IDENTITY=-`, and executes `xcodebuild -scheme DisplayRefill -destination 'platform=iOS Simulator,id=C5F3DEA0-0C84-4ED2-84D8-60D0933463CC' -derivedDataPath /tmp/feature07-ios-derived -parallel-testing-enabled NO … test`. Local public configuration points at API/proxy localhost:3100/3101 and Supabase 127.0.0.1:54321. Service credentials stay in the local provisioning process. The private fixture is test-bundle-only, removed afterward; synthetic access is revoked.
+
+**Final result: exit 0, `TEST SUCCEEDED`, 2/2 iOS UI tests, zero failures.** Largest-size scenario: **411.367 seconds**; default-size scenario (including largest-size checkpoints): **182.342 seconds**. Final log `/tmp/feature07-layout-run3.log`; valid bundle `/tmp/feature07-ios-1791077097962.xcresult`; exported screenshots `/tmp/feature07-layout-final-attachments`. The app was built and run on iOS; this result is independent of host SwiftPM.
+
+Observed in both scenarios:
+
+- Real Supabase employee sign-in, assigned store/active display, published-POG manual creation; vision absent.
+- Blank counts remain Unknown, explicit 0 remains 0; missing counts block confirmation. Native numeric entry and named increment/decrement actions work with the keyboard; Done dismisses it. Count fields grow by more than 1.5× at the largest size.
+- Server revision/quantities drive grouped refill 5 and slot details 3/2. Product names and quantities wrap, and full disclosure/completion labels can be scrolled within the unobscured viewport.
+- Native `.sufficientElementDescription`, `.hitRegion`, `.textClipped` and `.dynamicType` audits pass at the unknown-validation, retry, conflict, count, refill and completion checkpoints. Screenshots were exported and inspected. Native audits do not establish spoken VoiceOver or focus-order operation.
+- Discarded committed-save response: exact key/equivalent body replay, retained 0/2, revision 2. Competing revision: safe 409, explicit reload retains 0/2, save advances to revision 4. Recovery actions remain reachable at the largest size.
+- Confirmation freezes the saved counts. Completion records the synthetic employee attestation while the backend slot snapshot and refill total remain unchanged.
+- Process termination/relaunch restores the actual Keychain session; saved-scan ID reopens completed server detail with counts 0/2. Logout persists across another process termination/relaunch.
+
+### Regression checks and the five intentional Swift skips
+
+- `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test --package-path apps/ios/DisplayRefillKit`: **exit 0, 34 executed tests pass; five opt-in tests skipped** (runner reports 39 tests / eight suites). Final log `/tmp/feature07-layout-swift-final3.log`. The actual iOS scheme's Core tests also pass with the same intentional skips.
+- `npm run typecheck`, `npm run lint`, `npm test`: **exit 0**, **110/110** TypeScript unit tests. Logs `/tmp/feature07-layout-typecheck.log`, `/tmp/feature07-layout-lint.log`, `/tmp/feature07-layout-unit.log`.
+- `npm run check:client-config`, `npm run check:db-scripts`, `node --check scripts/run-ios-simulator-tests.mjs`, `git diff --check`: pass. Client artifacts contain only publishable configuration.
+- No production backend/schema changes were made in this fix. The earlier 120/120 DB and 80/80 API regressions remain applicable to the unchanged backend; this turn additionally exercises its real manual endpoints through both native workflows. Those full DB/API suites were not rerun in this layout-only pass.
+
+| Intentionally skipped test | Why opt-in | Feature 07 evidence / limitation |
+| --- | --- | --- |
+| Live Auth: `signInLoadsOnlyAuthorizedStoresThenRefreshesAndSignsOut` | Needs isolated loopback fixture credentials (`DISPLAY_REFILL_LIVE=1`) | Real sign-in/store authorization and logout are exercised by the native UI harness. Forced expired-token refresh is covered by ordinary unit tests, not exercised by this UI run |
+| Live Auth: `invalidRefreshTokenReturnsToSignInWithoutLooping` | Needs a running loopback Auth/API fixture | Ordinary refresh/unauthorized tests pass; invalid-refresh server integration was not rerun by this opt-in suite |
+| Live Auth: `passwordResetRequestIsAccepted` | Makes a local Auth/API reset request | Feature 03 behavior, outside the manual Feature 07 acceptance flow; not rerun here |
+| Live Manual: `actualSwiftClientCompletesLocalManualWorkflowAndRestoresSession` | Needs synthetic employee/display credentials (`DISPLAY_REFILL_MANUAL_LIVE=1`) | The native UI harness exercises real endpoints and adds actual app-process/Keychain relaunch evidence; prior independent live-client evidence is retained above |
+| Keychain: `saveLoadDelete` | Opt-in to avoid ordinary tests writing the runner's real Keychain (`DISPLAY_REFILL_KEYCHAIN_TEST=1`) | Actual simulator app Keychain restoration and persistent logout pass; host-login Keychain suite remains skipped |
+
+The skips are deliberate and are not counted as executed passes. The live manual and Keychain skips do not leave the manual/relaunch/session criteria without evidence because the genuine iOS app exercises them separately. They do not replace or satisfy spoken VoiceOver acceptance. **Remaining required check: spoken VoiceOver navigation, announcements and focus order. Physical-device verification remains separately unverified. Feature 07 is not marked acceptance-complete.** No hosted Supabase operations, SIMON.md edits or commits; no Feature 08 work.
+
+## Feature 08 — State Found at Feature 09 Start (2026-10-03)
+
+The working tree held uncommitted Feature 08 code (migration 13, photo routes, `photo-scans.ts`, iOS `PhotoWorkflow`/`PhotoCheckView`/`PhotoImage`, tests, decisions D57–D61) with **no tracker evidence**; this tracker still said "not started". Observed this session:
+
+- Baseline before any Feature 09 change: `node scripts/run-api-tests.mjs test/photo-scans.test.ts` → **6/6 pass**.
+- First simulator photo run: the app **crashed right after a photo was chosen** (A05: collapsed crop-slider range). Feature 08's iOS import had never worked on iOS. Fixed in `PhotoCheckView.cropSlider`; import → upright preview → crop → upload → finalize now passes in the simulator (results under Feature 09).
+- `analysis_available` is now `true` (Feature 09); the Feature 08 test was updated accordingly.
+- **Still unverified for Feature 08:** real AVFoundation camera capture, camera permission allowed/denied on a device, device background/resume during upload, and weak network. Simulator imports are not evidence of physical camera capture.
+
+## Feature 09 — Implementation and Evidence (2026-10-03, local only)
+
+### What exists
+- **Migration 14** `supabase/migrations/20261003001400_vision_pipeline.sql`: `claim_scan_job`, `heartbeat_scan_job`, `finish_scan_attempt`, `scan_analysis_action` (service role only), private `fail_scan_job`; `scans.failure_code`/`ai_summary`/`manual_takeover_at/by`; attempt `job_id`/`lease_token`/`error_code`/`policy_version`/`confidence_threshold`/`input_error`. Decisions D62–D68. Types regenerated (`db:types:check` OK).
+- **Domain** `packages/domain/src/vision.ts`: `normalizeVisionOutput`, `REVIEW_POLICY` (`review-v1`, 0.80), `VISION_PROMPT_VERSION` (`count-v1`).
+- **Server** `packages/server/src/vision.ts`: typed adapter input (validated image bytes, reference bytes, slots without targets), `VisionProviderError`, 256 KiB response bound, `sanitizeVisionUsage`, `buildVisionPrompt`, mock scenarios; `VISION_MOCK_SCENARIO` config; `createWorkerServiceClient`. `scans.ts`: `analysis` block and `scanAnalysisAction`.
+- **Worker** `workers/scan-worker/src/{queue,pipeline,worker,main}.ts`: claim loop (1 s, idle backoff to 10 s, two jobs per process), 20 s heartbeat, 45 s deadline even when an adapter ignores abort, JPEG re-check before the provider, outcome classification, logs with IDs/codes only. Defect A04 fixed: the bundled worker crashed at startup (sharp inlined); `sharp` is now external and a worker dependency.
+- **API**: `POST /api/v1/scans/:id/retry`, `POST /api/v1/scans/:id/manual-takeover`; `GET /scans/:id` returns `analysis`; health `job_queue: not_checked`.
+- **iOS**: `ScanDetail.analysis`/`source`/slot `aiQuantity`/`reviewRequired`; `PhotoWorkflow.pollAnalysis` (2 s ×5 → 3 → 4 → 5 s; stops outside queued/processing, on background or leaving the screen; resumes by scan ID), 30-second delay notice, `retryAnalysis` with persisted exact body/key, `AnalysisState`/`ReviewSummary`. `PhotoCheckView` gets a "Photo analysis" section with VoiceOver announcements, retry button, synthetic-provider label, and no percentage progress. No AI review/confirmation UI (Feature 10).
+- **Tests**: `tests/db/test/vision-pipeline.test.ts` (21), `tests/api/test/vision-pipeline.test.ts` (3), worker unit tests (13), domain normalization (4 new), server vision (3 new), Swift polling/retry (6 new), extended simulator `testPhotoImportCropAndRecovery`, harness `PHOTO_TESTS=1` with `/control/start-worker`.
+
+### Acceptance criteria → evidence
+| Criterion | Evidence |
+| --- | --- |
+| Mock good/poor-alignment/occluded/invalid responses produce correct review or failure state | DB: good → needs_review, revision 2→3→4, accepted copies, no review; poor → all null + review; occluded → slot null/occluded, every slot reviewed (image flag); invalid → one retry then `failed`/`INVALID_OUTPUT`. API: mixed → `A1` 1 / `A2` null+occluded, `unresolved_slot_ids` only A2, provisional total null; retry → poor alignment all unknown. Simulator: review-ready summary "1 of 2 slots have estimates; 1 need verification" with synthetic label |
+| Timeout, retryable and permanent errors follow the budget | DB: 5xx → requeued 3.5–6.5 s; 429 Retry-After 120 → ~120 s; third attempt (provider never answers, 50 ms test deadline) → `failed`/`PROVIDER_TIMEOUT`, attempts 1–3 recorded; Retry-After 86400 capped at ~300 s; `PROVIDER_CONFIGURATION` fails after 1 attempt. Explicit retry: creator/manager only, stale revision 409, idempotent replay, fresh generation budget, third retry → `RETRY_LIMIT`. Worker units: deadline enforced when the adapter ignores abort |
+| Worker restart reclaims expired work without duplicating accepted results | DB: expired lease reclaimed as attempt 2 with a new token; attempt 1 → `timeout`/`LEASE_EXPIRED`; the slow holder's late result and a third duplicate delivery are `fenced`; one commit, one audit event, original revision kept, billing usage of the dead attempt retained. Lease expiry on attempt 3 → `ANALYSIS_TIMEOUT`. Six concurrent claims → exactly one claim/attempt. Store limit: 2 live leases in store A, store B still served, freed slot admits the third |
+| Manual takeover during a provider call prevents late writes | DB: takeover while the adapter is blocked → late success `fenced`; scan `needs_review`/`manual`, generation 1, `ai_summary` null, all AI/accepted null and pending, job cancelled, attempt `cancelled`/`MANUAL_TAKEOVER` with the late usage recorded, heartbeat false, nothing claimable; Feature 06 counts then succeed. A 25 ms heartbeat aborts a hanging provider call after takeover. Takeover from awaiting_upload expires the intent and blocks upload authorization. API: peer 403, manager 200, counts + confirm afterwards (total 4) |
+| Missing slot output becomes unknown; wrong/duplicate IDs cannot be accepted | Domain units; worker units; DB: missing → null/ambiguous; duplicate and unknown IDs → `INVALID_SLOT_IDS`, no AI values written. SQL refuses (VALIDATION_FAILED) a normalized result with a missing slot, a foreign slot, an extra field, or a known count under poor alignment, and recomputes review (supplied `review_required:false` with confidence 0.5 → stored as review required) |
+| Provider/model/prompt versions and usage recorded without leaking secrets | DB: attempt row has provider, model, `count-v1`, schema 1, `review-v1`, threshold 0.8, input sha256/dimensions, sanitized usage. A provider error containing a sentinel key and a signed-style URL, and usage carrying `authorization`/`signed_url`, leave **no trace** in attempts, jobs, scan, audit metadata or worker logs. Clients get `42501` reading jobs/attempts; another organization sees no scan |
+| Polling states exposed to iOS | API `analysis` block; Swift tests for schedule, review-ready summary, 30 s delay with no worker, connectivity loss, poor alignment, retry with exact body/key after a lost response, failed-without-retry/takeover/404 stop. Simulator: queued → delay notice with no worker → worker started → review-ready → relaunch resumes |
+
+### Negative control
+`finish_scan_attempt` was temporarily redefined in the local database with `v_fenced := false`: **3 tests failed** (expired-lease reclaim, takeover during provider call, heartbeat abort after takeover). Restoring the migration's definition: 21/21. The database was later reset from empty for the full suites.
+
+### Commands and observed results (macOS 26.6.2, Node 22.13.1, local Supabase on Colima)
+| Command | Result |
+| --- | --- |
+| `npm run db:reset` (from empty, migrations 1–14 + seed) | exit 0 |
+| `npm run db:types:check` | OK, types match applied schema |
+| `npm run test:db` | **141/141**, 11 files (21 new in `vision-pipeline.test.ts`) |
+| `npm run test:api` | First run after reset: **88/89**. Feature 07 concurrent manual create returned 500 twice (A06, not reproduced). Two further full harness runs plus one manual-server run: **89/89** each |
+| `npm test` | **128/128** (admin 3, domain 67, server 45, worker 13) |
+| `npm run typecheck`, `npm run lint`, `npm run build`, `npm run check:client-config`, `npm run check:db-scripts`, `git diff --check` | all exit 0 |
+| Bundled worker `node workers/scan-worker/dist/main.js` | starts after A04 fix; used by the simulator harness to process the job |
+| `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test --package-path apps/ios/DisplayRefillKit` | exit 0: 46 tests reported, 41 executed, the same 5 opt-in tests skipped |
+| `DEVELOPER_DIR=… PHOTO_TESTS=1 node scripts/run-ios-simulator-tests.mjs` (iPhone 17 Pro sim, iOS 26.5, Xcode 27.0) | Run 1: test compile error (await in autoclosure). Run 2: app crash on import (A05). Run 3: all analysis checkpoints passed, then the sign-out step couldn't reach the tab bar from the nested screen (test navigation). **Run 4: TEST SUCCEEDED**, photo UI test 134.6 s, 48 on-simulator Core tests pass; bundle `/tmp/feature07-ios-1791081751918.xcresult`, log in session scratchpad `feature09-ios-photo-run4.log` |
+| `DEVELOPER_DIR=… node scripts/run-ios-simulator-tests.mjs` (full suite, Feature 07 regression) | **TEST SUCCEEDED**: 3/3 UI tests: largest-size manual workflow 539.4 s, default manual workflow 180.4 s, photo/analysis 136.3 s; 48 Core tests; bundle `/tmp/feature07-ios-1791082345298.xcresult`, log `feature09-ios-full.log` in session scratchpad |
+
+Screenshots exported and inspected: upright crop, "Photo queued for analysis. This is taking longer than usual. Keep waiting, or start a manual check." (indeterminate spinner only), review-ready summary with the synthetic-provider warning, wrapping at the largest accessibility size, manual fallback. Native `.sufficientElementDescription/.hitRegion/.textClipped/.dynamicType` audits passed at the delayed, review-ready and largest-text checkpoints.
+
+### Not verified / outstanding
+- **Real vision provider:** none selected; the benchmark (held-out photos, exact-count accuracy, unknown rate, high-confidence error) and data-handling review (retention, training use, region) have not started. Only `VISION_PROVIDER=mock` is accepted, and mock output is labeled synthetic. No paid API was called.
+- **Spoken VoiceOver** for the new analysis announcements and the retry button, and the Feature 07 focus order: unverified.
+- **Physical device:** a paired iPhone (iPhone17,1, "La boo boo") is listed by `devicectl`, but no device build/install/run was attempted. It needs your signing team, a LAN-reachable local API/Supabase and a person operating the camera.
+- **Not implemented here:** 24-hour `awaiting_upload` → `UPLOAD_EXPIRED` sweep (R12), operator vision-disable switch, cost telemetry and multi-host worker deployment (Feature 12); AI-estimate review/acceptance UI and the iOS takeover action (Feature 10).
+- A06 transient 500 after a container restart: open.
+
+### Device checks you need to perform (iPhone, local synthetic backend reachable over LAN)
+1. Camera permission: first launch → Photo check → Take photo → **Allow**; capture the display in portrait and landscape; confirm the preview is upright and the crop outline matches.
+2. Deny camera (Settings → Display Refill → Camera off): confirm the denial message, the Settings button, Photos import and the manual check all work.
+3. Import a HEIC photo from the library; confirm upload succeeds (server stores a JPEG without location metadata).
+4. Upload over weak Wi-Fi or with airplane mode toggled mid-upload; retry must reuse the same photo and must not create a second scan.
+5. With the worker stopped: confirm "queued" then, after 30 s, the delay notice with the manual option. Start the worker (`VISION_MOCK_SCENARIO=mixed`): the summary and synthetic warning appear without relaunch. Background the app during processing, return, and confirm polling resumes.
+6. Run worker scenarios `poor_alignment` and `invalid` (twice): confirm the alignment message, and the failed state with **Retry analysis** working once per generation.
+7. VoiceOver on: confirm status changes are announced, the retry button is reachable, and focus order on the photo screen is sensible; repeat the Feature 07 manual flow focus-order check.
+
+No hosted Supabase operations, SIMON.md edits or commits were made.

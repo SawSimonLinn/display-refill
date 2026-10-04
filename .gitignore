@@ -60,3 +60,6 @@ apps/ios/DisplayRefill/Config/Local.xcconfig
 supabase/.temp/
 supabase/.branches/
 SIMON.md
+
+# Synthetic simulator test credentials (test bundle only; never app resources)
+apps/ios/Verification/LocalFixture.json

@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { AdminServerConfig } from "./config";
+import type { AdminServerConfig, WorkerConfig } from "./config";
 import type { Database } from "./database.types";
 
 export type DbClient = SupabaseClient<Database>;
@@ -36,4 +36,9 @@ export function createCallerClient(config: AdminServerConfig, accessToken: strin
     auth: STATELESS,
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
+}
+
+/** Worker service client: private Storage reads and the service-only queue functions. */
+export function createWorkerServiceClient(config: Pick<WorkerConfig, "supabaseUrl" | "supabaseServiceRoleKey">): DbClient {
+  return createClient<Database>(config.supabaseUrl, config.supabaseServiceRoleKey, { auth: STATELESS });
 }

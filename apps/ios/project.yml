@@ -35,6 +35,17 @@ targets:
         product: DisplayRefillCore
       - package: DisplayRefillKit
         product: DisplayRefillUI
+  DisplayRefillUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Verification
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.displayrefill.uitests
+    dependencies:
+      - target: DisplayRefill
 schemes:
   DisplayRefill:
     build:
@@ -43,3 +54,4 @@ schemes:
     test:
       targets:
         - package: DisplayRefillKit/DisplayRefillCoreTests
+        - name: DisplayRefillUITests

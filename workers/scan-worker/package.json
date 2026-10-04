@@ -3,18 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Persistent scan-analysis worker. Feature 01: configuration, mock vision adapter and lifecycle only; no job queue yet.",
+  "description": "Persistent scan-analysis worker: claims durable Postgres jobs with leases, calls the vision adapter and persists fenced results (feature 09).",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
     "start": "node --env-file-if-exists=.env dist/main.js",
     "smoke": "node --env-file-if-exists=.env dist/main.js --once",
-    "build": "esbuild src/main.ts --bundle --platform=node --target=node22 --format=esm --sourcemap --outfile=dist/main.js",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node22 --format=esm --sourcemap --external:sharp --outfile=dist/main.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
     "@display-refill/domain": "0.1.0",
-    "@display-refill/server": "0.1.0"
+    "@display-refill/server": "0.1.0",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

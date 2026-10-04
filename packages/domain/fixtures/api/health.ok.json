@@ -8,7 +8,7 @@
       "configuration": "ok",
       "database": "not_checked",
       "authentication": "not_checked",
-      "job_queue": "not_implemented"
+      "job_queue": "not_checked"
     }
   },
   "request_id": "0b0e7a9c-3f0e-4c7a-9a39-5b1f8a3c2d10"
