@@ -1,0 +1,8 @@
+draft_slot,position_left_to_right,product_name_from_pog,package_size,unit_definition,target_quantity,refill_threshold,identity_status,quantity_status
+M1-01,1,Watermelon Bowls,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-02,2,Pineapple Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-03,3,Mixed Melon Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-04,4,Grape Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-05,5,Mandarin Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-06,6,Berry Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed
+M1-07,7,Pineapple / Kiwi / Strawberry Bowl,,one sellable container,,,requires owner confirmation,target and trigger unconfirmed

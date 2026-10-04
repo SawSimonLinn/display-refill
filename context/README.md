@@ -2,7 +2,11 @@
 
 A complete planning handoff for an employee SwiftUI app, Next.js/TypeScript admin/API, and Supabase Auth/Postgres/Storage backend. Supabase Auth is mandatory. Start with manual counts and single-image scans; live video/AR and custom model training are outside MVP.
 
-This folder contains specifications. Features 01 (repository foundation), 02 (database and security), 03 (Supabase Auth and memberships), 04 (store, display and product management), 05 (POG builder/reference validation/publication), and 06 (authoritative backend refill engine) are implemented; Feature 07 runs as an actual iOS app (spoken VoiceOver and physical device still unverified); Feature 08 photo capture/storage is implemented with simulator evidence (physical camera unverified); Feature 09 durable analysis is implemented locally with a deterministic mock adapter only (no real provider selected); Feature 10 estimate review/corrections is implemented locally against that mock output (spoken VoiceOver and physical device unverified); Feature 11 history/manager review is implemented locally on iOS (simulator) and web (spoken VoiceOver and physical device unverified); Features 12–13 are **not started**. Features 03–06 are verified locally; the iOS simulator/device build and hosted email paths are not (see the tracker). The repository README at the root explains how to run what exists; [progress tracker](progress-tracker.md) records verification evidence. The seven uploaded Markdown references have been rewritten, with their filenames preserved. See [reference mapping](reference-mapping.md) for provenance and removed assumptions.
+This folder contains specifications. Features 01 (repository foundation), 02 (database and security), 03 (Supabase Auth and memberships), 04 (store, display and product management), 05 (POG builder/reference validation/publication), and 06 (authoritative backend refill engine) are implemented; Feature 07 runs as an actual iOS app (spoken VoiceOver and physical device still unverified); Feature 08 photo capture/storage is implemented with simulator evidence (physical camera unverified); Feature 09 durable analysis is implemented locally with a deterministic mock adapter only (no real provider selected); Feature 10 estimate review/corrections is implemented locally against that mock output (spoken VoiceOver and physical device unverified); Feature 11 history/manager review is implemented locally on iOS (simulator) and web (spoken VoiceOver and physical device unverified); Feature 12’s operations foundation is implemented locally with synthetic cleanup/recovery evidence; staging/production acceptance remains open. Feature 13 local preparation has started; [pilot readiness packet](pilot/readiness.md) separates implemented behavior, verified evidence and outstanding release gates. Features 03–06 are verified locally; the iOS simulator/device build and hosted email paths are not (see the tracker). The repository README at the root explains how to run what exists; [progress tracker](progress-tracker.md) records verification evidence. The seven uploaded Markdown references have been rewritten, with their filenames preserved. See [reference mapping](reference-mapping.md) for provenance and removed assumptions.
+
+## Current owner-requested workflow
+
+[Feature 14 — Production worksheet](feature-specs/14-production-worksheet.md) supersedes the employee entry flow: HAVE includes display plus prepared backup, PAR is manager-only, and MAKE uses the latest finished check for each of four sections today. Photos are deferred. Existing scan/POG/history contracts remain intact. See the progress tracker for verification and open device checks.
 
 ## Read First
 1. [Project overview](project-overview.md) — purpose, scope, workflow and success targets.
@@ -42,6 +46,7 @@ This folder contains specifications. Features 01 (repository foundation), 02 (da
 11. [Scan History and Manager Review](feature-specs/11-history-admin-review.md)
 12. [Operations, Retention and Recovery](feature-specs/12-operations-retention.md)
 13. [Pilot Evaluation and Release](feature-specs/13-pilot-release.md)
+14. [Production Worksheet — HAVE / MAKE](feature-specs/14-production-worksheet.md)
 
 ## Examples
 - [POG draft](examples/pog-draft.json): synthetic normalized rectangles; product names are illustrative, not a ready-to-submit API payload.
@@ -59,4 +64,4 @@ Examples are fixtures for implementing tests, not evidence that tests have run. 
 - Durable worker results cannot overwrite manual takeover or newer human revisions.
 - Confirmed counts are historical evidence; completion is an employee attestation.
 
-Resolve conflicting requirements by updating the relevant contract and decision log before changing code. Keep progress evidence truthful. Open verification: device/VoiceOver checks for Features 07–10 and a provider benchmark before live vision. Next implementation unit: Feature 12.
+Resolve conflicting requirements by updating the relevant contract and decision log before changing code. Keep progress evidence truthful. Open verification: device/VoiceOver checks for Features 07–10 and a provider benchmark before live vision. Next work: Feature 12 hosted/policy acceptance after owner decisions; Feature 13 pilot preparation is in progress; no real-store or real-provider acceptance is demonstrated.

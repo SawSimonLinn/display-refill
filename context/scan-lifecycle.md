@@ -9,6 +9,7 @@
 | queued | Worker claims lease | processing | Current generation and active job |
 | processing | Validated detections committed | needs_review | Current lease token/generation; photo not superseded |
 | processing | Permanent/exhausted failure | failed | Failure code persisted |
+| queued/processing | Image retention expires | failed | Operator cleanup fences generation/jobs; IMAGE_UNAVAILABLE; metadata retained |
 | processing | Retryable failure | queued | Attempt budget remains; backoff set |
 | failed | Explicit retry | queued | Image retained; photo mode; retry limit enforced |
 | awaiting_upload/queued/processing/failed | Manual takeover | needs_review | Authorized actor; generation incremented; old job cancelled |
@@ -38,3 +39,6 @@ Migration `…1400_vision_pipeline.sql` implements the table above for worker an
 
 ## Implemented (Feature 10)
 No state or queue change. iOS now calls manual takeover from the photo screen once analysis is past the 30-second delay notice or has failed, then opens the same scan's counts. A 409 (analysis committed first, or another device acted) reloads the scan instead of retrying. Review saves and confirmation keep the Feature 06 revision rules; the database additionally refuses clearing `review_required` once review starts (D69).
+
+## Feature 12 Operational Controls
+The service-only database vision switch blocks new photo creates, enqueues/retry generations and worker claims across independent processes. It does not revoke manual workflows or force-cancel already running bounded attempts; queued jobs remain durable and manual takeover stays available. Cleanup expires 24-hour awaiting-upload scans with `UPLOAD_EXPIRED`. Retention reserves eligible terminal/review photo objects in durable cleanup jobs under the scan lock; new analysis retry is refused once deletion is reserved. Counts and review history remain. Metrics and explicit cleanup commands are in operations-runbook.md; no production schedule is active.

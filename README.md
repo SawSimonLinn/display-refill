@@ -150,3 +150,19 @@ mock outcome (`mixed`, `good`, `review`, `poor_alignment`, `occluded`, `invalid`
   only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`;
   the iOS app only `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`.
   Both reject a secret/service-role key placed in the publishable slot.
+
+Feature 12 adds explicit local operations commands (from `workers/scan-worker`):
+`npm run start -- --metrics` and `npm run start -- --cleanup` after building.
+Cleanup deletes private images in bounded durable batches and preserves records;
+90-day image / 365-day metadata durations remain proposals, and metadata deletion
+is not implemented. No destructive schedule is installed. Shared auth limits and
+the operator vision switch live in Postgres. Startup, scheduling, deployment,
+rollback and backup/restore procedures and outstanding owner decisions are in
+[the operations runbook](context/operations-runbook.md). Staging/production and
+real-provider recovery have not been verified.
+
+
+### Daily production worksheet
+The employee Today tab now uses four sections (fruit mobile, salad mobile, fruit case, veggie case). Enter HAVE including display and prepared backup stock; the server calculates MAKE. PAR is configured by assigned managers or admins at `/production` → PAR setup using existing catalog products. Each product belongs to one section. Today's list uses only the latest finished check per section; unfinished coverage is marked partial. Existing scans/history are retained and photo work is deferred.
+
+Apply additive local migrations18–20 without resetting retained test accounts. Follow `context/feature-specs/14-production-worksheet.md` and the progress tracker for exact setup, API semantics and test limits. A rebuilt app must be installed to see this change on a physical phone; source/simulator verification does not update the installed phone app.

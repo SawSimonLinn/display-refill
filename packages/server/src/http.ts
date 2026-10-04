@@ -1,4 +1,6 @@
 import { API_ERROR_STATUS, type ApiErrorCode, REQUEST_ID_HEADER } from "@display-refill/domain";
+import { createLogger } from "./logger";
+import { LogLevel } from "./config";
 import type { z } from "zod";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -7,6 +9,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export function resolveRequestId(headers: Headers): string {
   const supplied = headers.get(REQUEST_ID_HEADER)?.trim();
   return supplied && UUID.test(supplied) ? supplied.toLowerCase() : crypto.randomUUID();
+}
+
+function logResponse(requestId: string, status: number, code?: string) {
+  const level = LogLevel.safeParse(process.env.LOG_LEVEL);
+  createLogger("admin-api", level.success ? level.data : "info").info("api response", {
+    request_id: requestId, status, error_code: code,
+  });
 }
 
 /** User-specific API responses must never enter shared caches. */
@@ -18,6 +27,7 @@ function baseHeaders(requestId: string, extra?: HeadersInit): Headers {
 }
 
 export function jsonData(data: unknown, requestId: string, init?: { status?: number; headers?: HeadersInit }): Response {
+  logResponse(requestId, init?.status ?? 200);
   return Response.json(
     { data, request_id: requestId },
     { status: init?.status ?? 200, headers: baseHeaders(requestId, init?.headers) },
@@ -30,6 +40,7 @@ export function jsonError(
   requestId: string,
   init?: { fieldErrors?: Record<string, string[]>; headers?: HeadersInit },
 ): Response {
+  logResponse(requestId, API_ERROR_STATUS[code], code);
   return Response.json(
     { error: { code, message, field_errors: init?.fieldErrors ?? {} }, request_id: requestId },
     { status: API_ERROR_STATUS[code], headers: baseHeaders(requestId, init?.headers) },

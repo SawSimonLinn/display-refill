@@ -163,3 +163,17 @@ All are GET, verified bearer or cookie session, `Cache-Control: no-store`. Each 
 - No route mutates history; `PATCH|PUT|DELETE /scans/:id` and `POST /scans/:id/history` are 405. Mutations remain the Feature 06–10 routes with their existing authorization (another employee's scan: 403).
 - New error code `IMAGE_DELETED` (410) in `packages/domain/src/api.ts`; iOS decodes it as `.imageDeleted`.
 - The web dashboard pages `/scans` and `/scans/:id` call the same server functions (`listScanHistory`, `getScanRecord`) with the signed-in caller's client.
+
+
+## Production worksheet (Feature 14)
+`GET/POST /api/v1/production/:store_id` uses existing verified Supabase sessions and fresh stored membership checks. Inaccessible stores return 404; configure/events require store manager or organization admin. Cookie writes require same-origin. POST requires Idempotency-Key; edits/finish require expected_revision. Unknown request fields are rejected. Service-only production_read/production_mutate functions own calculations and mutations; client table access is denied.
+
+GET views: `config` returns items and can_manage (PAR omitted for employees); `day` (default) returns store-local date, four ordered sections, latest finished checks, in_progress flags, total_make and complete; `check&check_id=UUID` returns a snapshot without PAR; `events` returns the latest 100 actor/time/before/after events to managers. No historical-day query or event pagination is implemented yet.
+
+POST actions:
+- configure: product_id, section, par, category, product_type, sort_order, active; existing items also require item_id and expected_revision. Returns config.
+- start: section; resumes caller's current-day draft or creates a new snapshot. Returns check.
+- counts: check_id, expected_revision, items[{id,have}], with integer HAVE 0–9999 or null. Returns updated check.
+- finish: check_id, expected_revision; refuses unknown counts and freezes the result. Returns check.
+
+Sections: fruit_mobile, salad_mobile, fruit_case, veggie_case. Every check includes id/store_id/section/business_date/revision/status/updated_at/finished_at/created_by, items and total_make. Items include id/product_id/product_name/category/product_type/sort_order/have/make. PAR never appears in check/day responses, including manager responses. Null is uncounted, not zero. Finished checks remain immutable. A manager may save a draft started by another user; another employee may read it but cannot write it. Actor identity and store scope never come from the request body.

@@ -56,8 +56,8 @@ export async function runWorker(deps: WorkerDeps, signal: AbortSignal): Promise<
     let job;
     try {
       job = await queue.claim(policy);
-    } catch (error) {
-      logger.warn("claim failed; backing off", { error: error instanceof Error ? error.message : "UNKNOWN" });
+    } catch {
+      logger.warn("claim failed; backing off", { error_code: "QUEUE_CLAIM_UNAVAILABLE" });
       await sleep(idle, signal);
       idle = Math.min(idle * 2, maxIdle);
       continue;

@@ -4,7 +4,7 @@ export async function register() {
   const { getAdminConfig } = await import("./server/config");
   const result = getAdminConfig();
   if (!result.ok) {
-    console.error(result.error.message);
-    console.error("API routes will respond 503 CONFIGURATION_INVALID until this is fixed.");
+    console.error(result.error.message); // Names and validation rules only, never values.
+    process.exit(78); // EX_CONFIG: do not leave a listening but unprepared server running.
   }
 }

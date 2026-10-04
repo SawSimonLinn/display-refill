@@ -1,0 +1,26 @@
+# Physical iPhone and spoken accessibility acceptance
+
+**Full acceptance checks remain pending.** A focused physical synthetic manual smoke test passed on 2026-10-03; see [session evidence](device-session-2026-10-03.md). It does not complete the camera or spoken-accessibility scripts below. Use local synthetic mock/backend first, labeling output synthetic. A device install/signing session requires the owner's device/team availability; external builds are not authorized. Real provider/photo execution needs separate authorization. Record app/build/schema, phone/OS, network, tester, date, expected/observed outcome, artifact, issue ID and pass/fail for every row in checks.csv. A simulator audit cannot substitute for speech or camera hardware.
+
+## Physical iPhone script
+
+1. Sign in as assigned employee; verify only assigned store/display, blank counts unknown and explicit zero distinct. Complete manual save → server refill → confirm → completion; completion preserves counts/score. Repeat with vision disabled/provider unavailable; backend connectivity remains necessary.
+2. Allow first camera permission; capture portrait and landscape, retake, upright crop against reference and no letterbox drift. Deny permission in Settings; denial guidance, Settings link, Photos import and manual mode remain reachable.
+3. Import HEIC and rotated EXIF images; verify canonical server JPEG upright and metadata removed. Test size/malformed rejection and clear actionable errors using synthetic files.
+4. Interrupt upload on weak Wi-Fi/airplane mode, background during upload/finalize, resume and retry same key; one scan/object/job, no false saved state. Kill/relaunch: saved server scan recoverable; unsaved in-memory drafts are not promised durable. Reauthenticate after session expiry without losing ability to reopen saved scan.
+5. Stop worker; observe queued delay and manual takeover. Resume worker; polling recovers. Test poor alignment, low/null confidence, occlusion, wrong product and invalid synthetic response; show test-analysis warning. Takeover fences late AI results.
+6. Unknowns block confirm. Physically count hidden stock; enter count/reason and explicit verification. Accept unchanged uncertain estimate and prove verification ledger; correct known estimate and preserve original AI. Concurrent manager/device save yields reloadable 409; confirmed mistakes require a new check.
+7. Confirm, refill then record completion; never claim completion is measured stock. Relaunch and reopen saved/history record; original POG remains. Test retained/deleted photo and expired signed-link renewal. Logout, force quit/relaunch: sign-in, no prior sensitive screen/session; revoke membership and prove next API/image request denied (previous signed links may remain valid until expiry).
+8. Repeat essential controls at largest Dynamic Type in light/dark, with keyboard visible, orientation changes and small supported device. Controls/text reachable; record tap and spoken results separately.
+
+## Spoken iOS VoiceOver script (human listens and operates)
+
+Turn VoiceOver on; navigate by swipe/rotor and activate with double tap, without relying on sight. Read sign-in labels/errors; store/display selection; slot expected product, target/trigger, unknown vs zero and count editor/stepper. Verify focus order, section headings, keyboard dismissal and no traps.
+
+Hear upload/queued/delayed/ready/failure announcements once at the appropriate time; announcements should not interrupt count editing or move focus unexpectedly. Reach retake, crop controls, import, retry and manual takeover. Hear synthetic warning, provisional recommendation and why each review is required. Checkbox/switch reads its state and count; saved/unsaved/conflict notices are announced, recovery action focused/reachable. Confirm unavailable until resolution, then confirm/completion reachable. History row conveys status/time/recommended refill; Load more, record sections, original/accepted count and removed-photo message reachable. Verify logout and sign-in after relaunch. Record exact spoken phrases and focus sequence; native automated audits are only supporting evidence.
+
+## Web accessibility script
+
+Use actual supported browser + spoken screen reader (macOS Safari/VoiceOver or chosen deployment browser/AT); record versions. Keyboard-only Tab/Shift-Tab/Enter/Space/Escape through login/reset/logout, navigation, filters/native selects, management forms and conflict recovery. Focus visible, logical and retained after save/reload; errors linked to fields and announced; no trap.
+
+Admin creates reference/crop/slots using numeric inputs entirely without rectangle dragging; publishes. Manager assigns only own display; employee management denied. Read names/units/coordinates/target/trigger labels and validation. History filters, pagination/Load more, scan record, image alternative/removed-photo message and completion semantics spoken correctly. At 200%/400% zoom and narrow/tablet viewport verify reflow, dialogs, target reach and no content loss; inspect light/dark contrast with measured values (normal text >=4.5:1, large text and relevant controls >=3:1). Automated tree/contrast tools supplement human operation. Record limitations and defects; no blanket accessibility pass from Chromium keyboard evidence alone.

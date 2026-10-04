@@ -68,6 +68,51 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"image_cleanup_jobs": {
+                  Row: {
+                    "attempts": number,"available_at": string,"bucket": string,"completed_at": string | null,"created_at": string,"id": string,"last_error_code": string | null,"lease_token": string | null,"lease_until": string | null,"object_path": string,"reason": string,"scan_id": string | null,"state": string
+                  }
+                  Insert: {
+                    "attempts"?: number,"available_at"?: string,"bucket": string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"last_error_code"?: string | null,"lease_token"?: string | null,"lease_until"?: string | null,"object_path": string,"reason": string,"scan_id"?: string | null,"state"?: string
+                  }
+                  Update: {
+                    "attempts"?: number,"available_at"?: string,"bucket"?: string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"last_error_code"?: string | null,"lease_token"?: string | null,"lease_until"?: string | null,"object_path"?: string,"reason"?: string,"scan_id"?: string | null,"state"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "image_cleanup_jobs_scan_id_fkey"
+      columns: ["scan_id"]
+isOneToOne: false
+      referencedRelation: "scans"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"operation_rate_windows": {
+                  Row: {
+                    "hits": number,"key_hash": string,"started_at": string
+                  }
+                  Insert: {
+                    "hits": number,"key_hash": string,"started_at": string
+                  }
+                  Update: {
+                    "hits"?: number,"key_hash"?: string,"started_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"operation_settings": {
+                  Row: {
+                    "singleton": boolean,"updated_at": string,"vision_enabled": boolean
+                  }
+                  Insert: {
+                    "singleton"?: boolean,"updated_at"?: string,"vision_enabled"?: boolean
+                  }
+                  Update: {
+                    "singleton"?: boolean,"updated_at"?: string,"vision_enabled"?: boolean
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"organization_memberships": {
                   Row: {
                     "active": boolean,"created_at": string,"id": string,"organization_id": string,"revision": number,"role": string,"updated_at": string,"user_id": string
@@ -179,6 +224,112 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"production_checks": {
+                  Row: {
+                    "business_date": string,"created_at": string,"created_by": string,"finished_at": string | null,"id": string,"organization_id": string,"revision": number,"section": string,"status": string,"store_id": string,"updated_at": string
+                  }
+                  Insert: {
+                    "business_date": string,"created_at"?: string,"created_by": string,"finished_at"?: string | null,"id"?: string,"organization_id": string,"revision"?: number,"section": string,"status"?: string,"store_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "business_date"?: string,"created_at"?: string,"created_by"?: string,"finished_at"?: string | null,"id"?: string,"organization_id"?: string,"revision"?: number,"section"?: string,"status"?: string,"store_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_checks_organization_id_store_id_fkey"
+      columns: ["organization_id","store_id"]
+isOneToOne: false
+      referencedRelation: "stores"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"production_counts": {
+                  Row: {
+                    "backup": number | null,"backup_required": boolean,"category": string,"check_id": string,"have": number | null,"id": string,"item_id": string,"make": number | null,"organization_id": string,"par_snapshot": number,"product_id": string,"product_name": string,"product_type": string,"shared_size": number,"sort_order": number
+                  }
+                  Insert: {
+                    "backup"?: number | null,"backup_required"?: boolean,"category": string,"check_id": string,"have"?: number | null,"id"?: string,"item_id": string,"make"?: never,"organization_id": string,"par_snapshot": number,"product_id": string,"product_name": string,"product_type": string,"shared_size"?: number,"sort_order": number
+                  }
+                  Update: {
+                    "backup"?: number | null,"backup_required"?: boolean,"category"?: string,"check_id"?: string,"have"?: number | null,"id"?: string,"item_id"?: string,"make"?: never,"organization_id"?: string,"par_snapshot"?: number,"product_id"?: string,"product_name"?: string,"product_type"?: string,"shared_size"?: number,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_counts_organization_id_check_id_fkey"
+      columns: ["organization_id","check_id"]
+isOneToOne: false
+      referencedRelation: "production_checks"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_counts_organization_id_item_id_fkey"
+      columns: ["organization_id","item_id"]
+isOneToOne: false
+      referencedRelation: "production_items"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_counts_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"production_events": {
+                  Row: {
+                    "actor_id": string,"after_value": Json | null,"before_value": Json | null,"check_id": string | null,"created_at": string,"id": string,"item_id": string | null,"kind": string,"organization_id": string,"store_id": string
+                  }
+                  Insert: {
+                    "actor_id": string,"after_value"?: Json | null,"before_value"?: Json | null,"check_id"?: string | null,"created_at"?: string,"id"?: string,"item_id"?: string | null,"kind": string,"organization_id": string,"store_id": string
+                  }
+                  Update: {
+                    "actor_id"?: string,"after_value"?: Json | null,"before_value"?: Json | null,"check_id"?: string | null,"created_at"?: string,"id"?: string,"item_id"?: string | null,"kind"?: string,"organization_id"?: string,"store_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_events_organization_id_store_id_fkey"
+      columns: ["organization_id","store_id"]
+isOneToOne: false
+      referencedRelation: "stores"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_events_store_id_check_id_fkey"
+      columns: ["store_id","check_id"]
+isOneToOne: false
+      referencedRelation: "production_checks"
+      referencedColumns: ["store_id","id"]
+    },{
+      foreignKeyName: "production_events_store_id_item_id_fkey"
+      columns: ["store_id","item_id"]
+isOneToOne: false
+      referencedRelation: "production_items"
+      referencedColumns: ["store_id","id"]
+    }
+                  ]
+                },"production_items": {
+                  Row: {
+                    "active": boolean,"category": string,"id": string,"organization_id": string,"par": number,"product_id": string,"product_type": string,"revision": number,"section": string,"sort_order": number,"store_id": string,"updated_at": string,"updated_by": string
+                  }
+                  Insert: {
+                    "active"?: boolean,"category"?: string,"id"?: string,"organization_id": string,"par": number,"product_id": string,"product_type"?: string,"revision"?: number,"section": string,"sort_order"?: number,"store_id": string,"updated_at"?: string,"updated_by": string
+                  }
+                  Update: {
+                    "active"?: boolean,"category"?: string,"id"?: string,"organization_id"?: string,"par"?: number,"product_id"?: string,"product_type"?: string,"revision"?: number,"section"?: string,"sort_order"?: number,"store_id"?: string,"updated_at"?: string,"updated_by"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_items_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_items_organization_id_store_id_fkey"
+      columns: ["organization_id","store_id"]
+isOneToOne: false
+      referencedRelation: "stores"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"products": {
@@ -444,6 +595,28 @@ isOneToOne: false
 "bootstrap_first_admin":
 { Args: { "p_org"?: string,"p_org_name"?: string,"p_user": string }; Returns: string
                            },
+"claim_image_cleanup":
+{ Args: { "p_batch"?: number }; Returns: {
+              "attempts": number,
+"available_at": string,
+"bucket": string,
+"completed_at": string | null,
+"created_at": string,
+"id": string,
+"last_error_code": string | null,
+"lease_token": string | null,
+"lease_until": string | null,
+"object_path": string,
+"reason": string,
+"scan_id": string | null,
+"state": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "image_cleanup_jobs"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "claim_scan_job":
 { Args: { "p_confidence_threshold": number,"p_model": string,"p_policy_version": string,"p_prompt_version": string,"p_provider": string,"p_schema_version": number }; Returns: Json
                            },
@@ -603,11 +776,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"finish_image_cleanup":
+{ Args: { "p_id": string,"p_lease": string,"p_success": boolean }; Returns: boolean
+                           },
 "finish_scan_attempt":
 { Args: { "p_error_code"?: string,"p_input"?: Json,"p_job": string,"p_latency_ms"?: number,"p_lease": string,"p_outcome": string,"p_result"?: Json,"p_retry_after_seconds"?: number,"p_retryable"?: boolean,"p_usage"?: Json }; Returns: Json
                            },
 "heartbeat_scan_job":
 { Args: { "p_job": string,"p_lease": string }; Returns: boolean
+                           },
+"hit_operation_limit":
+{ Args: { "p_hash": string,"p_limit": number,"p_seconds": number }; Returns: number
                            },
 "list_organization_members":
 { Args: { "p_actor": string,"p_org": string }; Returns: {
@@ -620,8 +799,20 @@ isOneToOne: false
 "mutate_scan_counts":
 { Args: { "p_action": string,"p_actor": string,"p_expected_revision": number,"p_items": Json,"p_key": string,"p_request_id": string,"p_scan_id": string }; Returns: Json
                            },
+"operations_metrics":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "photo_scan_workflow":
 { Args: { "p_action": string,"p_actor": string,"p_image"?: Json,"p_input": Json,"p_key"?: string,"p_request_id"?: string,"p_resource": string }; Returns: Json
+                           },
+"prepare_image_cleanup":
+{ Args: { "p_batch"?: number,"p_days"?: number }; Returns: number
+                           },
+"production_mutate":
+{ Args: { "p_actor": string,"p_body": Json,"p_key": string,"p_request_id"?: string,"p_store": string }; Returns: Json
+                           },
+"production_read":
+{ Args: { "p_actor": string,"p_check"?: string,"p_store": string,"p_view"?: string }; Returns: Json
                            },
 "publish_pog_version":
 { Args: { "p_actor": string,"p_expected_revision": number,"p_request_id"?: string,"p_version_id": string }; Returns: {

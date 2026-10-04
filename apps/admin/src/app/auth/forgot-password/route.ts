@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   const email = Email.safeParse(field(form, "email"));
   if (!email.success) return seeOther(config, "/forgot-password?error=invalid");
-  for (const limited of [limits.passwordResetPerClient.hit(clientKey(request.headers)), limits.passwordResetPerEmail.hit(email.data)]) {
+  for (const limited of [await limits.passwordResetPerClient.hit(clientKey(request.headers)), await limits.passwordResetPerEmail.hit(email.data)]) {
     if (!limited.allowed) return seeOther(config, "/forgot-password?error=rate_limited");
   }
   await requestPasswordReset(config, email.data, logger, requestId);

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const parsed = PasswordResetRequest.safeParse(body.value);
   if (!parsed.success) return jsonError("VALIDATION_FAILED", "Enter a valid email address.", requestId, { fieldErrors: fieldErrorsOf(parsed.error) });
 
-  for (const limited of [limits.passwordResetPerClient.hit(clientKey(request.headers)), limits.passwordResetPerEmail.hit(parsed.data.email)]) {
+  for (const limited of [await limits.passwordResetPerClient.hit(clientKey(request.headers)), await limits.passwordResetPerEmail.hit(parsed.data.email)]) {
     if (!limited.allowed) {
       return jsonError("RATE_LIMITED", "Too many reset requests. Try again later.", requestId, { headers: { "retry-after": String(limited.retryAfterSeconds) } });
     }

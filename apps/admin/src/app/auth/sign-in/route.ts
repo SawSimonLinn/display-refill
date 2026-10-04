@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const password = field(form, "password");
   if (!email.success || password.length === 0 || password.length > 200) return back("invalid");
 
-  const limited = limits.signInPerEmail.hit(email.data);
+  const limited = await limits.signInPerEmail.hit(email.data);
   if (!limited.allowed) return back("rate_limited");
 
   const supabase = await createSessionClient(config);

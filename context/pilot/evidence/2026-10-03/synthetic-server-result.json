@@ -1,0 +1,67 @@
+{
+  "scan_id": "725770f2-d574-48d9-8980-2caa0ade67b5",
+  "status": "completed",
+  "revision": 4,
+  "total_refill": 5,
+  "completed_by": "9b8161f1-4251-4afe-a442-58fca0733fc9",
+  "source": "manual",
+  "slots": [
+    {
+      "label": "A1",
+      "accepted": 0,
+      "final": 0,
+      "refill": 3,
+      "ai": null,
+      "review_state": "verified"
+    },
+    {
+      "label": "A2",
+      "accepted": 2,
+      "final": 2,
+      "refill": 2,
+      "ai": null,
+      "review_state": "verified"
+    }
+  ],
+  "corrections": [
+    {
+      "label": "A1",
+      "previous": null,
+      "corrected": 0,
+      "original_ai": null,
+      "reason": "manual_count",
+      "verified": true
+    },
+    {
+      "label": "A2",
+      "previous": null,
+      "corrected": 2,
+      "original_ai": null,
+      "reason": "manual_count",
+      "verified": true
+    }
+  ],
+  "ledger": [
+    {
+      "key": "866813AA-390B-46BC-B77F-161017964076",
+      "body": {
+        "expected_revision": 1,
+        "items": [
+          {
+            "reason": "manual_count",
+            "verified": true,
+            "slot_id": "435c7e20-0b63-44bd-b127-cd29efc9f042",
+            "quantity": 0
+          },
+          {
+            "reason": "manual_count",
+            "verified": true,
+            "slot_id": "e9c130a5-5b36-4756-9bcb-b77ff1c5f7ff",
+            "quantity": 2
+          }
+        ]
+      },
+      "status": 200
+    }
+  ]
+}

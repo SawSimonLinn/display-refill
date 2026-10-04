@@ -100,3 +100,12 @@ describe("MockVisionAdapter", () => {
     );
   });
 });
+
+it("operational logging removes hostile exceptions, bodies, binary data and URLs", () => {
+  const lines: string[] = [];
+  const log = createLogger("operations", "info", (_, line) => lines.push(line));
+  log.warn("cleanup failed", { error: new Error("credential-SENTINEL https://signed.example/x"),
+    nested: { request_body: "body-SENTINEL", prompt: "prompt-SENTINEL", personal_email: "person@example.com" },
+    data: new Uint8Array([83,69,78]), arbitrary: "https://signed.example/x?token=credential-SENTINEL" });
+  expect(lines.join("")).not.toMatch(/SENTINEL|signed\.example|person@example|83,69/);
+});

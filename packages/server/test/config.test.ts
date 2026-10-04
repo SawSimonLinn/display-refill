@@ -117,3 +117,12 @@ describe("malformed URLs", () => {
     expect(error.problems).toEqual([{ variable: "APP_ORIGIN", problem: "must be an http:// or https:// URL" }]);
   });
 });
+
+it("bounds retention and separate-worker concurrency/batch configuration without echoing values", () => {
+  expect(loadWorkerConfig(workerEnv)).toMatchObject({ concurrency: 2, cleanupBatchSize: 100, scanImageRetentionDays: 90 });
+  for (const [variable, value] of [["WORKER_CONCURRENCY", "0"], ["CLEANUP_BATCH_SIZE", "1001"], ["SCAN_IMAGE_RETENTION_DAYS", "999999999999999999999999999999"]]) {
+    const error = configError(() => loadWorkerConfig({ ...workerEnv, [variable!]: value }));
+    expect(error.problems[0]?.variable).toBe(variable);
+    expect(error.message).not.toContain(value!);
+  }
+});

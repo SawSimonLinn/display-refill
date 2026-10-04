@@ -64,7 +64,8 @@ const positiveDays = (fallback: number) =>
     .optional()
     .transform((value) => (value === undefined || value === "" ? String(fallback) : value))
     .pipe(z.string().regex(/^[1-9][0-9]*$/, { error: "must be a whole number of days, at least 1" }))
-    .transform(Number);
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(36500, { error: "must be at most 36500 days" }));
 
 export const LogLevel = z.enum(["debug", "info", "warn", "error"], {
   error: "must be one of debug, info, warn, error",
@@ -109,6 +110,8 @@ const WorkerEnv = z.object({
     .pipe(z.enum(MockVisionScenario, { error: `must be one of ${MockVisionScenario.join(", ")}` })),
   VISION_MODEL: z.string().trim().optional(),
   VISION_API_KEY: z.string().optional(),
+  WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(2),
+  CLEANUP_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
   SCAN_IMAGE_RETENTION_DAYS: positiveDays(90),
   SCAN_METADATA_RETENTION_DAYS: positiveDays(365),
   LOG_LEVEL: logLevel,
@@ -131,6 +134,8 @@ export interface WorkerConfig {
   visionMockScenario: MockVisionScenario;
   visionModel: string | undefined;
   visionApiKey: string | undefined;
+  concurrency: number;
+  cleanupBatchSize: number;
   scanImageRetentionDays: number;
   scanMetadataRetentionDays: number;
   logLevel: LogLevel;
@@ -177,6 +182,8 @@ export function loadWorkerConfig(env: Env = process.env): WorkerConfig {
     visionMockScenario: e.VISION_MOCK_SCENARIO,
     visionModel: e.VISION_MODEL || undefined,
     visionApiKey: e.VISION_API_KEY || undefined,
+    concurrency: e.WORKER_CONCURRENCY,
+    cleanupBatchSize: e.CLEANUP_BATCH_SIZE,
     scanImageRetentionDays: e.SCAN_IMAGE_RETENTION_DAYS,
     scanMetadataRetentionDays: e.SCAN_METADATA_RETENTION_DAYS,
     logLevel: e.LOG_LEVEL,

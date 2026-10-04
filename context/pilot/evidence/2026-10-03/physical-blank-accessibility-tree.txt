@@ -1,0 +1,116 @@
+Attributes: Application, 0x10b776d00, pid: 22819, label: 'Display Refill'
+Element subtree:
+ →Application, 0x10b776d00, pid: 22819, label: 'Display Refill'
+    Window (Main), 0x10b775cc0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b777340, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b775f40, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10b774c80, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10b775900, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10b774a00, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10b774140, {{0.0, 0.0}, {402.0, 874.0}}
+                Other, 0x10b774b40, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10b775e00, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10b774dc0, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10b774000, {{0.0, 0.0}, {402.0, 874.0}}
+                        Other, 0x10b774640, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x10b776e40, {{0.0, 0.0}, {402.0, 874.0}}
+                            NavigationBar, 0x10b775680, {{0.0, 62.0}, {402.0, 107.7}}, identifier: 'Simulator Display'
+                              Button, 0x10b775a40, {{16.0, 62.0}, {44.0, 44.0}}, identifier: 'BackButton', label: 'Simulator Store'
+                              StaticText, 0x10b775040, {{16.0, 116.0}, {253.7, 50.0}}, label: 'Simulator Display'
+                            Other, 0x10b7757c0, {{0.0, 0.0}, {402.0, 874.0}}
+                              Other, 0x10b777480, {{0.0, 0.0}, {402.0, 874.0}}
+                                Other, 0x10b777700, {{0.0, 0.0}, {402.0, 874.0}}
+                                  Other, 0x10b72c3c0, {{0.0, 0.0}, {402.0, 874.0}}
+                                    ScrollView, 0x10b72c500, {{0.0, 0.0}, {402.0, 874.0}}
+                                      Other, 0x10b72c640, {{0.0, 0.0}, {402.0, 874.0}}
+                                        Other, 0x10b72c140, {{0.0, 0.0}, {402.0, 156.0}}
+                                        Other, 0x10b72c280, {{0.0, 741.0}, {402.0, 133.0}}
+                                      Other, 0x10b72c000, {{0.0, 0.0}, {402.0, 874.0}}
+                                        Other, 0x108593340, {{0.0, 741.0}, {402.0, 133.0}}
+                                      Other, 0x108592f80, {{0.0, 169.7}, {402.0, 1270.0}}
+                                        StaticText, 0x108593200, {{32.0, 201.7}, {165.7, 23.0}}, label: 'Counts reflect this check.'
+                                        StaticText, 0x108593480, {{32.0, 240.7}, {106.7, 23.0}}, label: 'October 3, 2026'
+                                        StaticText, 0x1085935c0, {{32.0, 279.7}, {57.0, 23.0}}, label: '11:09 PM'
+                                        StaticText, 0x108593980, {{32.0, 318.7}, {165.0, 23.0}}, label: 'Revision 1 · needs_review'
+                                        StaticText, 0x108593d40, {{32.0, 397.7}, {82.7, 23.0}}, label: 'Pinned slots'
+                                        StaticText, 0x108593840, {{32.0, 440.7}, {158.0, 23.0}}, label: 'Synthetic Garden Salad'
+                                        StaticText, 0x108593e80, {{32.0, 471.7}, {109.3, 23.0}}, label: 'Slot A1 · Target 3'
+                                        StaticText, 0x108593700, {{32.0, 502.7}, {149.7, 23.0}}, label: 'Refill trigger: 1 or fewer'
+                                        StaticText, 0x108591540, {{32.0, 533.7}, {151.3, 23.0}}, label: 'Physical count required'
+                                        TextField, 0x108591680, {{32.0, 572.3}, {338.0, 23.0}}, label: 'Count for Synthetic Garden Salad, slot A1', placeholderValue: 'Unknown'
+                                        Button, 0x108593c00, {{33.3, 621.2}, {84.3, 23.0}}, label: 'Decrease count for slot A1', Disabled
+                                          StaticText, 0x1085930c0, {{33.3, 621.2}, {84.3, 23.0}}, label: 'Decrease', Disabled
+                                          Image, 0x1087d75c0, {{33.3, 626.3}, {14.0, 14.0}}, identifier: 'minus.circle', label: 'Remove', Disabled
+                                        Button, 0x1087d6800, {{291.7, 621.2}, {78.3, 23.0}}, label: 'Increase count for slot A1', Disabled
+                                          StaticText, 0x1087d6580, {{291.7, 621.2}, {78.3, 23.0}}, label: 'Increase', Disabled
+                                          Image, 0x1087d6f80, {{291.7, 626.3}, {14.0, 14.0}}, identifier: 'plus.circle', label: 'Add', Disabled
+                                        StaticText, 0x1087d7ac0, {{32.0, 662.7}, {318.7, 23.0}}, label: 'Enter an integer from 0 to 999; blank is unknown.'
+                                        StaticText, 0x1087d6300, {{32.0, 709.7}, {158.0, 23.0}}, label: 'Synthetic Garden Salad'
+                                        StaticText, 0x1087d4a00, {{32.0, 740.7}, {112.0, 23.0}}, label: 'Slot A2 · Target 4'
+                                        StaticText, 0x1087d5900, {{32.0, 771.7}, {151.3, 23.0}}, label: 'Physical count required'
+                                        TextField, 0x1087d61c0, {{32.0, 810.3}, {338.0, 23.0}}, label: 'Count for Synthetic Garden Salad, slot A2', placeholderValue: 'Unknown'
+                                        Button, 0x1087d6d00, {{33.3, 859.2}, {84.3, 23.0}}, label: 'Decrease count for slot A2', Disabled
+                                          StaticText, 0x1087d5a40, {{33.3, 859.2}, {84.3, 23.0}}, label: 'Decrease', Disabled
+                                          Image, 0x1087d5f40, {{33.3, 864.3}, {14.0, 14.0}}, identifier: 'minus.circle', label: 'Remove', Disabled
+                                        Button, 0x1087d7200, {{291.7, 859.2}, {78.3, 23.0}}, label: 'Increase count for slot A2', Disabled
+                                          StaticText, 0x1087d57c0, {{291.7, 859.2}, {78.3, 23.0}}, label: 'Increase', Disabled
+                                          Image, 0x1087d6440, {{291.7, 864.3}, {14.0, 14.0}}, identifier: 'plus.circle', label: 'Add', Disabled
+                                        StaticText, 0x1087d70c0, {{32.0, 900.7}, {318.7, 23.0}}, label: 'Enter an integer from 0 to 999; blank is unknown.'
+                                        StaticText, 0x1087d66c0, {{32.0, 983.7}, {259.3, 23.0}}, label: 'Unconfirmed server recommendations'
+                                        StaticText, 0x1087d5400, {{32.0, 1022.7}, {132.3, 23.0}}, label: 'Refill total: Unknown'
+                                        Button, 0x10b6de080, {{32.0, 1061.7}, {338.0, 58.0}}, label: 'Synthetic Garden Salad: Refill Unknown'
+                                          StaticText, 0x10b6de940, {{32.0, 1061.7}, {338.0, 58.0}}, label: 'Synthetic Garden Salad: Refill Unknown'
+                                            StaticText, 0x10b6dea80, {{32.0, 1065.7}, {151.7, 23.0}}, label: 'Synthetic Garden Salad'
+                                            StaticText, 0x10b6df340, {{32.0, 1092.7}, {95.7, 23.0}}, label: 'Refill Unknown'
+                                          Image, 0x10b6dc640, {{363.3, 1085.7}, {6.0, 10.0}}, identifier: 'collapsed'
+                                        Button, 0x10b6df5c0, {{32.0, 1186.2}, {136.3, 23.0}}, label: 'Save and review refill', Disabled
+                                        StaticText, 0x10b6df700, {{32.0, 1235.7}, {310.7, 48.0}}, label: 'Saving attests that you physically counted each entered slot.'
+                                        Button, 0x10b6df840, {{32.0, 1310.2}, {181.3, 23.0}}, label: 'Confirm counts and refill list', Disabled
+                                        StaticText, 0x10b6df980, {{32.0, 1359.7}, {302.7, 48.0}}, label: 'All counts must be entered, saved and verified before confirmation.'
+                                      Other, 0x10b6dfac0, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 3 pages', value: 0%
+                                        Other, 0x10b6dfc00, {{396.0, 660.0}, {3.0, 128.0}}
+                                      Other, 0x10b6dfd40, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 3 pages', value: 0%
+                                        Other, 0x10b6dfe80, {{396.0, 660.0}, {3.0, 128.0}}
+                            Toolbar, 0x10b708000, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                              Other, 0x10b708140, {{0.0, 0.0}, {402.0, 874.0}}
+                Other, 0x10b708280, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10b7083c0, {{0.0, 791.0}, {402.0, 83.0}}
+                    Other, 0x10b708500, {{0.0, 0.0}, {402.0, 874.0}}
+                      TabBar, 0x10b708640, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar'
+                        Other, 0x10b708780, {{43.7, 791.0}, {315.0, 62.0}}
+                          Other, 0x10b7088c0, {{43.7, 791.0}, {107.7, 54.0}}
+                          Other, 0x10b708a00, {{43.7, 791.0}, {315.0, 62.0}}
+                            Button, 0x10b708b40, {{47.7, 795.0}, {107.7, 54.0}}, identifier: 'checklist', label: 'Check', Selected
+                              Image, 0x10b708c80, {{85.7, 801.3}, {32.0, 27.3}}, identifier: 'checklist', label: 'Checklist with checkmarks'
+                            Button, 0x10b708dc0, {{147.3, 795.0}, {107.7, 54.0}}, identifier: 'list.bullet.rectangle', label: 'History'
+                              Image, 0x10b708f00, {{184.7, 802.3}, {33.0, 25.0}}, identifier: 'list.bullet.rectangle.fill', label: 'Bulleted list in a rectangle, filled'
+                            Button, 0x10b709040, {{247.0, 795.0}, {107.7, 54.0}}, identifier: 'clock', label: 'Saved checks'
+                              Image, 0x10b709180, {{287.3, 801.3}, {27.3, 27.3}}, identifier: 'clock.fill', label: 'clock'
+                          Other, 0x10b7092c0, {{43.7, 791.0}, {315.0, 62.0}}
+                          Other, 0x10b709400, {{47.7, 795.0}, {107.7, 54.0}}
+                            Other, 0x10b709540, {{47.7, 795.0}, {107.7, 54.0}}
+                              Other, 0x10b709680, {{47.7, 795.0}, {107.7, 54.0}}
+                              Other, 0x10b7097c0, {{47.7, 795.0}, {107.7, 54.0}}
+                                Other, 0x10b709900, {{47.7, 795.0}, {107.7, 54.0}}
+                                  Other, 0x10b709a40, {{47.7, 795.0}, {107.7, 54.0}}
+                                    Other, 0x10b709b80, {{47.7, 795.0}, {107.7, 54.0}}
+                                  Other, 0x10b709cc0, {{47.7, 795.0}, {107.7, 54.0}}
+                                Other, 0x10b709e00, {{47.7, 795.0}, {107.7, 54.0}}
+                    Other, 0x10b709f40, {{0.0, 791.0}, {402.0, 83.0}}
+                      Other, 0x10b70a080, {{0.0, 791.0}, {402.0, 83.0}}
+                        Other, 0x10b70a1c0, {{0.0, 791.0}, {402.0, 83.0}}
+                          Other, 0x10b70a300, {{0.0, 791.0}, {402.0, 83.0}}
+                            Other, 0x10b70a440, {{0.0, 791.0}, {402.0, 83.0}}
+                              Other, 0x10b70a580, {{0.0, 791.0}, {402.0, 83.0}}
+                          Other, 0x10b70a6c0, {{0.0, 791.0}, {402.0, 83.0}}
+                            Other, 0x10b70a800, {{0.0, 791.0}, {402.0, 83.0}}
+    Window, 0x10b70a940, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b70aa80, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10b70abc0, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x10b776d00, pid: 22819, label: 'Display Refill'
+Query chain:
+ →Find: Target Application 'com.displayrefill.app'
+  Output: {
+    Application, 0x10b70ad00, pid: 22819, label: 'Display Refill'
+  }

@@ -120,3 +120,38 @@ Do not reintroduce the original template's collaboration workspace or vendors. T
 | D76 | A retention-deleted photo is a distinct 410 `IMAGE_DELETED` for callers who can read the scan; list/record expose `image_state`/`image.deleted_at` so clients show the retention message without requesting a link | "Photo removed under retention policy" must be explicit, not a generic missing-photo error; callers who cannot read the scan still get 404 |
 | D77 | History is newest first over `(created_at, id)` (reverse of D42's catalog lists), with a cursor holding the exact Postgres timestamp text. A filter naming an inaccessible store/display/organization is 404, matching the detail route. Web date filters are calendar days in the selected store's zone (UTC across all stores), sent as `from`/`to` instants | Stable review paging under equal timestamps; filters never expand or reveal RLS; store-local days are what managers mean by "a day" |
 | D78 | iOS adds a History tab (server history of assigned stores) and keeps the Feature 07 "Saved checks" tab unchanged | The verified Feature 07 relaunch/reopen workflow depends on it; removing it is a separate decision |
+
+## Feature 12 Decisions (2026-10-03)
+| ID | Decision | Reason |
+| --- | --- | --- |
+| D79 | Service-only `operation_settings` owns a shared vision switch. It rejects new photo creates, enqueues/explicit retries and claims across processes; already running attempts may finish. Manual create, review, confirmation, completion and takeover remain available | A process-local flag would disagree between independent API/worker instances. Disabling does not cancel accepted work or rewrite evidence |
+| D80 | Cleanup has durable per-object jobs, five-minute fenced leases, bounded batches, recorded success/error and exponential retries capped at 24 hours. Only Storage success marks `image_deleted_at`; absent objects are successful deletes | Recovers process death between Storage and database operations. Keeps scan metadata, corrections, attempts and audit untouched |
+| D81 | Proposed 90-day retention runs locally; remote CLI requires both an explicit approved-retention assertion and exact project hostname confirmation. No schedule is installed. Metadata retention config remains reserved and deletes nothing | Owner approval of durations, backup expiry and production scheduling is outstanding |
+| D82 | Abandoned objects use a conservative minimum 24-hour object age and 24 hours past a matching intent's expiry, with no pending intent or current scan/version reference. Every POG version reference (including drafts/clones) is protected; referenced POG deletion is not implemented | Prevents in-flight finalize/replay and shared-reference races; delays deletion beyond the proposed minimum rather than risking retained history |
+| D83 | Password/invite limits use atomic shared Postgres windows, HMAC scope/identity keys and fail closed on database errors. Photo-create quotas and worker two-active-per-store controls remain database-authoritative | Separate API/worker processes no longer reset app auth throttles. Edge IP trust and global provider cost/concurrency budget still need deployment decisions |
+| D84 | Creation-based image expiry also covers queued/processing scans: under the scan lock, increment generation, cancel active jobs/attempts, fail with IMAGE_UNAVAILABLE and audit scan.retention_expired before reserving deletion. Manual takeover remains available | An offline worker must not silently extend the image policy; a late provider result remains fenced. Already running bounded external calls may finish, as during manual takeover |
+
+
+## Feature 13 preparation (2026-10-03)
+| ID | Decision | Reason |
+| --- | --- | --- |
+| D85 | Pilot evidence separates implemented sources, local synthetic verification and actual store/device/provider release gates | Mock and simulator success cannot establish live vision, camera or spoken accessibility |
+| D86 | Countable held-out exact-count denominator includes unknown/missing/failed predictions; hidden physical totals reported separately | Prevent abstention from inflating accuracy and visible counts from masquerading as total stock |
+| D87 | Provider candidates/configuration and data-handling implications documented in pilot/provider-options.md; none selected or enabled | Provider name, photo disclosure, paid-call budget and retention approval remain independent owner decisions |
+
+
+## Production worksheet pivot (owner confirmed 2026-10-03)
+| ID | Decision | Reason |
+| --- | --- | --- |
+| D88 | Sequential fruit mobile, salad mobile, fruit case, veggie case; employee HAVE/MAKE only; photos deferred | Match the actual daily worksheet and remove horizontal table entry |
+| D89 | HAVE includes display plus prepared backup; each product has one owning section per store | Count each physical package once, including cooler stock |
+| D90 | MAKE=max(0,PAR-HAVE) without legacy trigger logic; manager/admin PAR is independent of POG geometry and snapshotted on start | Stocking policy differs from visible display capacity; changes never rewrite prior results |
+| D91 | Current store-local day uses latest finished check per section; drafts shown separately and missing sections make totals partial | Do not add morning and afternoon shortages together or silently treat blanks as zero |
+| D92 | Separate production tables and service-only functions; immutable finals and append-only events; no changes to scan engine | Preserve existing scan history and security semantics while introducing the new workflow |
+| D93 | Products already referenced today cannot move owning section until a later day | Avoid the same product appearing in two latest-section totals; existing snapshots must remain intact |
+
+
+## Actual morning list and shared stock (2026-10-04)
+- D94: Owner supplied108 rows for FM-615 University Place: fruit mobile7, salad9, fruit case51, veggie case41. Preserve exact names and supplied PAR, not historical HAVE/MAKE. The imported copy is local only.
+- D95 (supersedes D89/D93 for multi-section products): Owner explicitly confirmed separate display counts and shared cooler backup counted once. Five exact repeated names share product identities; near-matching names remain distinct. Each section has its own PAR/display count. Shared backup belongs to the earliest configured section’s snapshot and is required before finishing it. Combined MAKE=max(0,sum(PAR)-sum(display HAVE)-backup). Nonshared HAVE continues to include backup.
+- D96: A shared group's final recommendation waits for every required section's latest finished check today. Display surplus plus backup is deducted from section shortages in fixed section order; filtered section MAKE shows this allocation. Drafts do not replace finished data; current-day membership changes that would invalidate shared snapshots are refused.

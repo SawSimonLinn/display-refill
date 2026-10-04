@@ -20,6 +20,8 @@ export const fail = (
 
 /** Error message codes raised by trusted functions and triggers (decision D26). */
 const DB_CODES: Record<string, { code: ApiErrorCode; message: string }> = {
+  IMAGE_UNAVAILABLE: { code: "DEPENDENCY_UNAVAILABLE", message: "Photo is unavailable under retention policy. Enter counts manually." },
+  VISION_DISABLED: { code: "DEPENDENCY_UNAVAILABLE", message: "Image analysis is disabled. Use a manual check or manual takeover." },
   NOT_FOUND: { code: "NOT_FOUND", message: "Not found." },
   FORBIDDEN: { code: "FORBIDDEN", message: "You do not have permission to do that." },
   CONFLICT: { code: "CONFLICT", message: "This record changed or already exists. Reload and try again." },

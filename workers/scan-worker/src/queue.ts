@@ -72,13 +72,13 @@ export class SupabaseQueueStore implements QueueStore {
       p_schema_version: policy.schemaVersion, p_policy_version: policy.policyVersion,
       p_confidence_threshold: policy.confidenceThreshold,
     });
-    if (error) throw new QueueError(error.message || "CLAIM_FAILED");
+    if (error) throw new QueueError(error.message === "VISION_DISABLED" ? "VISION_DISABLED" : "CLAIM_FAILED");
     return (data as unknown as ClaimedJob | null) ?? null;
   }
 
   async heartbeat(job: ClaimedJob): Promise<boolean> {
     const { data, error } = await this.client.rpc("heartbeat_scan_job", { p_job: job.job_id, p_lease: job.lease_token });
-    if (error) throw new QueueError(error.message || "HEARTBEAT_FAILED");
+    if (error) throw new QueueError("HEARTBEAT_FAILED");
     return data === true;
   }
 
@@ -96,7 +96,7 @@ export class SupabaseQueueStore implements QueueStore {
       p_usage: evidence.usage as Json | undefined,
       p_input: evidence.input as Json | undefined,
     });
-    if (error) throw new QueueError(error.message || "FINISH_FAILED");
+    if (error) throw new QueueError("FINISH_FAILED");
     return data as unknown as FinishResult;
   }
 

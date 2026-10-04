@@ -1,7 +1,7 @@
 # Operations, Retention and Recovery
 
 ## Status
-Not started.
+Local operations foundation implemented. Acceptance remains incomplete: owner-approved policy, staging/production deployment, monitoring delivery, rollback and full database/Storage restore rehearsal are outstanding. See progress-tracker.md for synthetic local evidence.
 
 ## Dependencies
 Feature(s): 09, 11. Read the linked domain contracts through the README before implementation.

@@ -7,6 +7,7 @@ import { createLogger, MockVisionAdapter } from "@display-refill/server";
 import sharp from "sharp";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 import { attemptPolicy, processJob } from "../../../workers/scan-worker/src/pipeline";
+import { runCleanup } from "../../../workers/scan-worker/src/retention";
 import { SupabaseQueueStore } from "../../../workers/scan-worker/src/queue";
 import { adminBaseUrl, type ApiUser, createHarness, type Harness, SEED } from "../src/harness";
 
@@ -266,10 +267,14 @@ it("keeps estimates, corrections, confirmation and completion distinct and uncha
   expect(after.display.name).toBe("Renamed Case");
   expect((await history(mgr1, { display_id: d1, status: "completed" })).json.data.items.find((i: { scan_id: string }) => i.scan_id === id).pog.version_number).toBe(1);
 
-  // Retention removes the photo (the Feature 12 job will set image_deleted_at; simulated here).
-  const path = (await h.db.query("select image_path from public.scans where id = $1", [id])).rows[0].image_path as string;
-  await h.service.storage.from("display-scans").remove([path]);
-  await h.db.query("update public.scans set image_deleted_at = now() where id = $1", [id]);
+  // Synthetic clock fixture: run the actual Feature 12 cleanup through Storage.
+  await h.db.query("begin");
+  try {
+    await h.db.query("set local session_replication_role='replica'");
+    await h.db.query("update public.scans set created_at=now()-interval '91 days' where id=$1", [id]);
+    await h.db.query("commit");
+  } catch (error) { await h.db.query("rollback"); throw error; }
+  await runCleanup(h.service, logger);
   const removed = (await get(`/api/v1/scans/${id}/history`, owner)).json.data;
   expect(removed.image.state).toBe("deleted");
   expect(removed.image.deleted_at).toMatch(/Z$/);
@@ -309,4 +314,19 @@ it("web review pages show assigned stores to managers, the organization to admin
   expect((await h.page(`/scans?store_id=${s2}`, adminJar)).html).toContain(inS2);
   const employee = await h.page("/scans", employeeJar);
   expect(employee.location).toBe("/no-access?reason=employee");
+});
+
+it("operator vision disable returns manual guidance without weakening history authorization or manual creation", async () => {
+  await h.db.query("update public.operation_settings set vision_enabled=false,updated_at=now()");
+  try {
+    const blocked = await post("/api/v1/scans", { display_id: d2, source: "photo", expected_pog_version_id: version }, emp2);
+    expect(blocked.status, blocked.text).toBe(503);
+    expect(blocked.json.error.message).toContain("manual");
+    const id = await manualScan(emp2, d2);
+    expect((await get(`/api/v1/scans/${id}`, emp2)).status).toBe(200);
+    expect((await get(`/api/v1/scans/${id}/history`, owner)).status).toBe(404);
+    expect((await get(`/api/v1/scans/${id}/image`, owner)).status).toBe(404);
+  } finally {
+    await h.db.query("update public.operation_settings set vision_enabled=true,updated_at=now()");
+  }
 });

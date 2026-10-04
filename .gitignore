@@ -63,3 +63,5 @@ SIMON.md
 
 # Synthetic simulator test credentials (test bundle only; never app resources)
 apps/ios/Verification/LocalFixture.json
+
+apps/ios/Verification/ProductionFixture.json

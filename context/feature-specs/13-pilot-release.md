@@ -1,7 +1,7 @@
 # Pilot Evaluation and Release
 
 ## Status
-Not started.
+Local preparation started 2026-10-03; acceptance incomplete. [Pilot readiness packet](../pilot/readiness.md), [provider options](../pilot/provider-options.md), and [device/accessibility scripts](../pilot/device-accessibility.md) prepared. No store trial, real-provider benchmark or distribution; Feature 12 remote/policy gates remain open. See progress-tracker.md for actual evidence.
 
 ## Dependencies
 Feature(s): 12. Read the linked domain contracts through the README before implementation.

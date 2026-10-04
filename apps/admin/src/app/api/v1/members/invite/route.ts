@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (!org.ok) return jsonFailure(org, requestId);
   const key = parseIdempotencyKey(request.headers);
   if (!key.ok) return jsonFailure(key, requestId);
-  const limited = limits.invitesPerActor.hit(ctx.user.id);
+  const limited = await limits.invitesPerActor.hit(ctx.user.id);
   if (!limited.allowed) {
     return jsonError("RATE_LIMITED", "Too many invitations. Try again later.", requestId, { headers: { "retry-after": String(limited.retryAfterSeconds) } });
   }

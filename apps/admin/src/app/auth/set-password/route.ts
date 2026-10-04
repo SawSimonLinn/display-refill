@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const password = field(form, "password");
   if (!NewPassword.safeParse(password).success) return back("weak");
   if (password !== field(form, "confirm_password")) return back("mismatch");
-  if (!limits.setPasswordPerUser.hit(userData.user.id).allowed) return back("rate_limited");
+  if (!(await limits.setPasswordPerUser.hit(userData.user.id)).allowed) return back("rate_limited");
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {

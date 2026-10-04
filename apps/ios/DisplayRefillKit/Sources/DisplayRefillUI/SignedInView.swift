@@ -18,11 +18,16 @@ public struct SignedInView: View {
     public var body: some View {
         TabView {
             NavigationStack {
-                StoreListView(stores: me.stores, api: api, userID: me.userID.uuidString)
-                    .refreshable { await onReload() }
-                    .toolbar { accountMenu }
+                Group {
+                    if let productionAPI = api as? any ProductionAPI {
+                        ProductionTodayView(stores: me.stores, api: productionAPI, userID: me.userID.uuidString)
+                    } else {
+                        StoreListView(stores: me.stores, api: api, userID: me.userID.uuidString)
+                    }
+                }
+                .toolbar { accountMenu }
             }
-            .tabItem { Label("Check", systemImage: "checklist") }
+            .tabItem { Label("Today", systemImage: "checklist") }
 
             if let historyAPI = api as? any ScanHistoryAPI {
                 NavigationStack {

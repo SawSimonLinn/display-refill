@@ -1,0 +1,34 @@
+{
+  "store_id": "3d7f56a4-c0cd-4bcc-ae70-eb1deb0223e0",
+  "store_number": "FM-615",
+  "store_name": "University Place",
+  "organization_id": "bb5cad1c-c76a-45ad-9ce2-d754a1504225",
+  "source_sha256": "5251c5187f558049b2afc2600c691d7adc0a98575ed679ae3ae365a8a16b1ee7",
+  "rows": 108,
+  "products": 103,
+  "sections": [
+    {
+      "section": "fruit_case",
+      "rows": 51,
+      "par": 334
+    },
+    {
+      "section": "fruit_mobile",
+      "rows": 7,
+      "par": 60
+    },
+    {
+      "section": "salad_mobile",
+      "rows": 9,
+      "par": 26
+    },
+    {
+      "section": "veggie_case",
+      "rows": 41,
+      "par": 216
+    }
+  ],
+  "scope": "local Supabase only",
+  "historical_counts_imported": false,
+  "import_actor": "cd7f4a87-5a02-492c-be91-3a50f9868d7e"
+}
