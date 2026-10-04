@@ -16,8 +16,13 @@ public struct ScanDetail: Decodable, Sendable {
         /// Original AI observation (photo scans); nil means unknown or not analysed, never zero.
         public let aiQuantity: Int?
         public let reviewRequired: Bool?
+        /// Self-reported, uncalibrated model confidence; nil when none was reported.
+        public let confidence: Double?
+        public let flags: [String]?
+        /// Frozen at confirmation; nil before it.
+        public let finalQuantity: Int?
         enum CodingKeys: String, CodingKey {
-            case target
+            case target, confidence, flags, finalQuantity = "final_quantity"
             case slotID = "slot_id", productID = "product_id", productName = "product_name"
             case slotLabel = "slot_label", refillThreshold = "refill_threshold"
             case acceptedQuantity = "accepted_quantity", reviewState = "review_state", refillQuantity = "refill_quantity"
@@ -64,6 +69,36 @@ public struct ScanDetail: Decodable, Sendable {
         case status, revision, slots, products, source, analysis
         case scanID = "scan_id", createdAt = "created_at", completedAt = "completed_at", completedBy = "completed_by"
         case unresolvedSlotIDs = "unresolved_slot_ids", provisionalTotalRefill = "provisional_total_refill", totalRefill = "total_refill"
+    }
+}
+/// Why the server routed a slot to review, in plain language. Explanations
+/// describe what the photo could not establish; they never assert product identity.
+public enum ReviewReason: String, CaseIterable, Sendable {
+    case noEstimate, noConfidence, wrongProduct, occluded, outOfFrame, ambiguous, lowVisibility, photoIssue, lowConfidence
+    public var explanation: String {
+        switch self {
+        case .noEstimate: "No estimate. Enter the number you count."
+        case .noConfidence: "The estimate came without a confidence rating. Check it."
+        case .wrongProduct: "The photo may show a different product here. Check the labels yourself; the photo can't confirm which product this is."
+        case .occluded: "Units may be hidden behind others. Count by hand; the photo can't show hidden stock."
+        case .outOfFrame: "Part of this slot is outside the photo."
+        case .ambiguous: "The photo was unclear for this slot."
+        case .lowVisibility: "This slot was hard to see in the photo."
+        case .photoIssue: "A photo or alignment issue affects every slot."
+        case .lowConfidence: "Low-confidence estimate. Check it."
+        }
+    }
+    /// The server decides `review_required`; this only explains it. Slot flags come first,
+    /// then missing values; otherwise a photo-wide issue or low confidence caused it.
+    public static func reasons(for slot: ScanDetail.Slot, analysis: ScanDetail.Analysis?) -> [ReviewReason] {
+        guard slot.reviewRequired == true else { return [] }
+        let byFlag: [String: ReviewReason] = ["wrong_product": .wrongProduct, "occluded": .occluded, "out_of_frame": .outOfFrame, "ambiguous": .ambiguous, "low_visibility": .lowVisibility]
+        var reasons = (slot.flags ?? []).compactMap { byFlag[$0] }
+        if slot.aiQuantity == nil { reasons.append(.noEstimate) } else if slot.confidence == nil { reasons.append(.noConfidence) }
+        let photoIssue = !(analysis?.imageFlags.isEmpty ?? true) || (analysis?.alignment.map { $0 != "good" } ?? false)
+        if photoIssue { reasons.append(.photoIssue) }
+        if reasons.isEmpty { reasons.append(.lowConfidence) }
+        return reasons
     }
 }
 public struct ManualDisplay: Decodable, Sendable, Identifiable {
@@ -122,8 +157,8 @@ private struct CountRequest: Encodable {
     struct Item: Encodable {
         let slotID: String
         let quantity: Int
-        let verified = true
-        let reason = "manual_count"
+        var verified = true
+        var reason = "manual_count"
         enum CodingKeys: String, CodingKey { case quantity, verified, reason, slotID = "slot_id" }
     }
     let expectedRevision: Int
@@ -140,15 +175,69 @@ public final class ManualWorkflow {
     public private(set) var conflict = false
     private let api: any ManualScanAPI
     private var pending: (String, String, Data, String)?
+    /// Unchanged estimates the person explicitly checked; unsaved until `save()`.
+    public private(set) var checked: Set<String> = []
     public init(api: any ManualScanAPI) { self.api = api }
     public var hasPendingRequest: Bool { pending != nil }
+    /// Photo scans in review show AI estimates that need explicit verification.
+    /// Manual and taken-over scans keep the Feature 07 physical-count flow.
+    public var reviewsEstimates: Bool { scan?.source == "photo" }
     public var dirty: Bool {
         guard let scan else { return false }
-        return scan.slots.contains { inputs[$0.id, default: ""] != ($0.acceptedQuantity.map(String.init) ?? "") }
+        return scan.slots.contains { changed($0) || pendingCheck($0) }
     }
     public var valid: Bool {
         guard let scan else { return false }
+        // Blank stays unknown only where the server value is already unknown; the API cannot clear a count.
+        if reviewsEstimates { return scan.slots.allSatisfy { !changed($0) || Self.quantity(inputs[$0.id, default: ""]) != nil } }
         return scan.slots.allSatisfy { Self.quantity(inputs[$0.id, default: ""]) != nil }
+    }
+    public var canSave: Bool {
+        guard let scan, scan.editable, valid, !conflict, pending == nil else { return false }
+        return !reviewsEstimates || !reviewItems(scan).isEmpty
+    }
+    public var canConfirm: Bool {
+        guard let scan, scan.editable, valid, !dirty, !conflict, pending == nil else { return false }
+        return scan.unresolvedSlotIDs.isEmpty
+    }
+    /// Server-unresolved slots first, each group in the server's pinned order. Ordering
+    /// follows saved state only, so rows never move while someone is typing.
+    public var orderedSlots: [ScanDetail.Slot] {
+        guard let scan else { return [] }
+        let unresolved = Set(scan.unresolvedSlotIDs)
+        return scan.slots.filter { unresolved.contains($0.id) } + scan.slots.filter { !unresolved.contains($0.id) }
+    }
+    public enum SlotReview: Equatable, Sendable {
+        case unsavedEdit, checkedUnsaved, verified, needsVerification, estimate
+    }
+    public func review(of slot: ScanDetail.Slot) -> SlotReview {
+        if changed(slot) { return .unsavedEdit }
+        if pendingCheck(slot) { return .checkedUnsaved }
+        if slot.reviewState == "verified" { return .verified }
+        return scan?.unresolvedSlotIDs.contains(slot.id) == true ? .needsVerification : .estimate
+    }
+    /// An unchanged, known, unverified estimate can be explicitly accepted.
+    public func canCheck(_ slot: ScanDetail.Slot) -> Bool {
+        reviewsEstimates && scan?.editable == true && !changed(slot) && slot.acceptedQuantity != nil && slot.reviewState != "verified"
+    }
+    public func setChecked(_ slotID: String, _ on: Bool) {
+        guard pending == nil else { return }
+        if on { checked.insert(slotID) } else { checked.remove(slotID) }
+    }
+    private func changed(_ slot: ScanDetail.Slot) -> Bool {
+        inputs[slot.id, default: ""] != (slot.acceptedQuantity.map(String.init) ?? "")
+    }
+    private func pendingCheck(_ slot: ScanDetail.Slot) -> Bool { checked.contains(slot.id) && canCheck(slot) }
+    /// Only changed counts and explicit checks are sent; untouched estimates stay unverified.
+    private func reviewItems(_ scan: ScanDetail) -> [CountRequest.Item] {
+        scan.slots.compactMap { slot in
+            let flagged = slot.flags?.contains("wrong_product") == true
+            if pendingCheck(slot), let quantity = slot.acceptedQuantity {
+                return CountRequest.Item(slotID: slot.id, quantity: quantity, reason: flagged ? "wrong_product" : "visibility_check")
+            }
+            guard changed(slot), let quantity = Self.quantity(inputs[slot.id, default: ""]) else { return nil }
+            return CountRequest.Item(slotID: slot.id, quantity: quantity, reason: flagged ? "wrong_product" : slot.aiQuantity == nil ? "manual_count" : "count_corrected")
+        }
     }
     public nonisolated static func quantity(_ text: String) -> Int? {
         guard !text.isEmpty, text.allSatisfy({ $0.isASCII && $0.isNumber }), let n = Int(text), (0...999).contains(n) else { return nil }
@@ -161,7 +250,10 @@ public final class ManualWorkflow {
         do {
             let latest = try await api.detail(id: id)
             scan = latest
-            if !preserve { inputs = Dictionary(uniqueKeysWithValues: latest.slots.map { ($0.id, $0.acceptedQuantity.map(String.init) ?? "") }) }
+            if !preserve {
+                inputs = Dictionary(uniqueKeysWithValues: latest.slots.map { ($0.id, $0.acceptedQuantity.map(String.init) ?? "") })
+                checked = []
+            }
             pending = nil
             conflict = false
             message = preserve ? "Latest revision loaded. Your entries are retained; review them before saving over the latest counts." : nil
@@ -172,12 +264,12 @@ public final class ManualWorkflow {
         await submit(path: "api/v1/scans", method: "POST", object: CreateManualRequest(displayID: display.id, expectedPogVersionID: pog.versionID))
     }
     public func save() async {
-        guard let scan, scan.editable, valid, !conflict else { return }
-        let items = scan.slots.map { CountRequest.Item(slotID: $0.id, quantity: Self.quantity(inputs[$0.id, default: ""])!) }
+        guard let scan, canSave else { return }
+        let items = reviewsEstimates ? reviewItems(scan) : scan.slots.map { CountRequest.Item(slotID: $0.id, quantity: Self.quantity(inputs[$0.id, default: ""])!) }
         await submit(path: "api/v1/scans/\(scan.scanID)/counts", method: "PATCH", object: CountRequest(expectedRevision: scan.revision, items: items))
     }
     public func confirm() async {
-        guard let scan, scan.editable, valid, !dirty, scan.unresolvedSlotIDs.isEmpty, !conflict else { return }
+        guard let scan, canConfirm else { return }
         await submit(path: "api/v1/scans/\(scan.scanID)/confirm", method: "POST", object: RevisionRequest(expectedRevision: scan.revision))
     }
     public func complete() async {
@@ -200,6 +292,7 @@ public final class ManualWorkflow {
             let result = try await api.mutate(path: request.0, method: request.1, body: request.2, key: request.3)
             scan = result
             inputs = Dictionary(uniqueKeysWithValues: result.slots.map { ($0.id, $0.acceptedQuantity.map(String.init) ?? "") })
+            checked = []
             pending = nil
             message = nil
             conflict = false

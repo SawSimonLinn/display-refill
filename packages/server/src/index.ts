@@ -15,3 +15,4 @@ export * from "./pogs";
 
 export * from "./scans";
 export * from "./photo-scans";
+export * from "./scan-history";

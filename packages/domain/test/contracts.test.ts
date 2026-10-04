@@ -147,3 +147,15 @@ describe("normalizeVisionOutput", () => {
     expect(REVIEW_POLICY).toEqual({ version: "review-v1", confidenceThreshold: 0.8 });
   });
 });
+
+describe("scan history query (Feature 11)", () => {
+  it("accepts narrowing filters and rejects anything else", async () => {
+    const { ScanHistoryQuery } = await import("../src/scan");
+    expect(ScanHistoryQuery.parse({})).toEqual({ limit: 25 });
+    expect(ScanHistoryQuery.parse({ status: "completed", limit: "100", from: "2026-10-01T00:00:00Z", to: "2026-10-02T00:00:00-04:00" }).limit).toBe(100);
+    for (const bad of [{ status: "verified" }, { limit: "0" }, { limit: "101" }, { store_id: "s1" }, { from: "2026-10-01" }, { store: "x" },
+      { from: "2026-10-02T00:00:00Z", to: "2026-10-02T00:00:00Z" }]) {
+      expect(ScanHistoryQuery.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+});

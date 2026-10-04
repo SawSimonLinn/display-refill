@@ -1,7 +1,7 @@
 # Confidence Review and Correction Capture
 
 ## Status
-Not started.
+Implemented locally against the deterministic mock adapter: migration 15, API/DB integration tests, Swift unit tests and a simulator workflow (takeover, review, accept, correct, confirm, new-check offer) with native accessibility audits. Spoken VoiceOver, physical device and any real provider remain unverified. Evidence in progress-tracker.md.
 
 ## Dependencies
 Feature(s): 07, 09. Read the linked domain contracts through the README before implementation.

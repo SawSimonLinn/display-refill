@@ -259,13 +259,13 @@ isOneToOne: false
                   ]
                 },"scan_corrections": {
                   Row: {
-                    "actor_id": string,"corrected_quantity": number,"created_at": string,"id": string,"organization_id": string,"original_ai_quantity": number | null,"previous_quantity": number | null,"reason": string | null,"scan_id": string,"scan_revision": number,"scan_slot_id": string
+                    "actor_id": string,"corrected_quantity": number,"created_at": string,"id": string,"organization_id": string,"original_ai_quantity": number | null,"previous_quantity": number | null,"reason": string | null,"scan_id": string,"scan_revision": number,"scan_slot_id": string,"verified": boolean | null
                   }
                   Insert: {
-                    "actor_id": string,"corrected_quantity": number,"created_at"?: string,"id"?: string,"organization_id": string,"original_ai_quantity"?: number | null,"previous_quantity"?: number | null,"reason"?: string | null,"scan_id": string,"scan_revision": number,"scan_slot_id": string
+                    "actor_id": string,"corrected_quantity": number,"created_at"?: string,"id"?: string,"organization_id": string,"original_ai_quantity"?: number | null,"previous_quantity"?: number | null,"reason"?: string | null,"scan_id": string,"scan_revision": number,"scan_slot_id": string,"verified"?: boolean | null
                   }
                   Update: {
-                    "actor_id"?: string,"corrected_quantity"?: number,"created_at"?: string,"id"?: string,"organization_id"?: string,"original_ai_quantity"?: number | null,"previous_quantity"?: number | null,"reason"?: string | null,"scan_id"?: string,"scan_revision"?: number,"scan_slot_id"?: string
+                    "actor_id"?: string,"corrected_quantity"?: number,"created_at"?: string,"id"?: string,"organization_id"?: string,"original_ai_quantity"?: number | null,"previous_quantity"?: number | null,"reason"?: string | null,"scan_id"?: string,"scan_revision"?: number,"scan_slot_id"?: string,"verified"?: boolean | null
                   }
                   Relationships: [
                     {

@@ -1,7 +1,7 @@
 import DisplayRefillCore
 import SwiftUI
 
-/// Assigned stores and device-saved manual scan links. Full history is Feature 11.
+/// Assigned stores, server history of those stores (Feature 11) and device-saved scan links.
 public struct SignedInView: View {
     let me: Me
     let api: any ManualScanAPI
@@ -23,6 +23,14 @@ public struct SignedInView: View {
                     .toolbar { accountMenu }
             }
             .tabItem { Label("Check", systemImage: "checklist") }
+
+            if let historyAPI = api as? any ScanHistoryAPI {
+                NavigationStack {
+                    HistoryView(stores: me.stores, api: historyAPI, userID: me.userID.uuidString)
+                        .toolbar { accountMenu }
+                }
+                .tabItem { Label("History", systemImage: "list.bullet.rectangle") }
+            }
 
             NavigationStack {
                 SavedChecksView(api: api, userID: me.userID.uuidString)

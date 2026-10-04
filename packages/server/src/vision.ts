@@ -142,7 +142,7 @@ export function buildVisionPrompt(request: VisionRequest): string {
  * every review/failure path can be exercised without a paid provider.
  */
 export const MockVisionScenario = [
-  "mixed", "good", "poor_alignment", "occluded", "invalid", "duplicate_ids", "unknown_id", "missing_slot",
+  "mixed", "good", "review", "poor_alignment", "occluded", "invalid", "duplicate_ids", "unknown_id", "missing_slot",
 ] as const;
 export type MockVisionScenario = (typeof MockVisionScenario)[number];
 
@@ -174,6 +174,9 @@ export class MockVisionAdapter implements VisionAdapter {
       }
       case "good":
         return { raw: { ...base, slots: ids.map((id, i) => slot(id, (i % 4) + 1, 0.93)) }, usage };
+      // Feature 10 review routing, cycling per slot: low confidence, possible wrong product, no confidence, high confidence.
+      case "review":
+        return { raw: { ...base, slots: ids.map((id, i) => [slot(id, 3, 0.62), slot(id, 2, 0.91, ["wrong_product"]), slot(id, 4, null), slot(id, 5, 0.97)][i % 4]!) }, usage };
       case "poor_alignment":
         return { raw: { ...base, alignment: "poor", slots: ids.map((id) => slot(id, 2, 0.9)) }, usage };
       case "occluded":

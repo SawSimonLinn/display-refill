@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { CreatePhoto, FinalizePhoto, createCallerClient, createServiceClient, finalizeScanPhoto, jsonData, jsonError, jsonFailure, parseIdempotencyKey, photoResponse, photoTransaction, readJsonBody, resolveRequestId, uploadScanPhoto } from "@display-refill/server";
+import { CreatePhoto, FinalizePhoto, createCallerClient, createServiceClient, finalizeScanPhoto, jsonData, jsonError, jsonFailure, parseIdempotencyKey, photoResponse, photoTransaction, readJsonBody, resolveRequestId, scanImageAccess, uploadScanPhoto } from "@display-refill/server";
 import { authenticateApi } from "./api-auth";
 export async function photoHandler(request: Request, action: "create" | "upload" | "renew" | "finalize" | "access", id?: string) {
   const rid = resolveRequestId(request.headers);
@@ -9,12 +9,9 @@ export async function photoHandler(request: Request, action: "create" | "upload"
   if (id && !z.uuid().safeParse(id).success) return jsonError("NOT_FOUND", "Scan not found.", rid);
   const service = createServiceClient(auth.ctx.config), actor = auth.ctx.user.id;
   if (action === "access") {
-    const caller = createCallerClient(auth.ctx.config, auth.ctx.accessToken);
-    const scan = await caller.from("scans").select("image_path,image_deleted_at").eq("id", id!).maybeSingle();
-    if (scan.error || !scan.data?.image_path || scan.data.image_deleted_at) return jsonError("NOT_FOUND", "Photo unavailable.", rid);
-    const signed = await service.storage.from("display-scans").createSignedUrl(scan.data.image_path, 300);
-    if (signed.error) return jsonError("DEPENDENCY_UNAVAILABLE", "Photo unavailable.", rid);
-    return jsonData({ url: signed.data.signedUrl, expires_at: new Date(Date.now()+300000).toISOString() }, rid);
+    // Same caller-scoped read as history and the record; see scanImageAccess.
+    const result = await scanImageAccess(createCallerClient(auth.ctx.config, auth.ctx.accessToken), service, id!);
+    return result.ok ? jsonData(result.value, rid) : jsonFailure(result, rid);
   }
   if (action === "upload") {
     const result = await uploadScanPhoto(service, actor, id!, request);

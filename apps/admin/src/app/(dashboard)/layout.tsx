@@ -32,7 +32,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
       <div className="flex flex-1 flex-col">
         <div role="status" className="flex items-center gap-2 border-b border-border bg-warning-surface px-4 py-2 text-sm text-foreground">
           <TriangleAlert aria-hidden className="size-4 shrink-0 text-warning" />
-          <span>Development build. Scans, refill lists and photo analysis are not built yet.</span>
+          <span>Development build. Photo analysis uses a synthetic test provider only; no real vision provider is configured.</span>
         </div>
         <main className="mx-auto w-full max-w-5xl flex-1 p-6">{children}</main>
       </div>

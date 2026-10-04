@@ -154,6 +154,42 @@ private final class FakeClock: @unchecked Sendable {
     await api.script(details: [.failure(.server(status: 404, code: .notFound, message: "gone", requestID: nil))])
     await model.pollAnalysis(sleep: { _ in Issue.record("must not keep polling after 404") }, now: Date.init)
 }
+@Test @MainActor func stalledAnalysisTakeoverReplaysExactRequestAndOpensCountsForSameScan() async throws {
+    let api = PhotoDouble(); let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let model = try await finishedWorkflow(api, root: root)
+    #expect(!model.takeoverAvailable) // only after the delay notice, unreachable delay or failure
+    await api.script(details: [.success(scanJSON(status: "queued", revision: 2))],
+                     mutations: [.failure(.transport(.networkConnectionLost)), .success(scanJSON(status: "needs_review", revision: 3, source: "manual", slots: [(nil, true)]))])
+    let clock = FakeClock(limit: 12)
+    clock.now = Date()
+    await model.pollAnalysis(sleep: { try clock.sleep($0) }, now: { clock.now })
+    #expect(model.analysis == .waiting(processing: false, delayed: true))
+    #expect(model.takeoverAvailable && !model.reviewAvailable)
+    await model.takeOver()
+    #expect(model.message?.contains("Can't reach the server") == true)
+    #expect(model.takeoverAvailable)
+    await model.takeOver()
+    #expect(model.analysis == .manual(status: "needs_review"))
+    #expect(model.reviewAvailable && !model.takeoverAvailable && model.scanID == "11111111-1111-4111-8111-111111111111")
+    let sent = await api.mutationRecords()
+    #expect(sent.count == 2 && sent.allSatisfy { $0.0 == "api/v1/scans/11111111-1111-4111-8111-111111111111/manual-takeover" })
+    #expect(sent[0].1 == sent[1].1 && sent[0].2 == sent[1].2)
+    #expect(String(decoding: sent[0].1, as: UTF8.self) == "{\"expected_revision\":2}")
+}
+@Test @MainActor func takeoverConflictShowsAnalysisThatFinishedFirst() async throws {
+    let api = PhotoDouble(); let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let model = try await finishedWorkflow(api, root: root)
+    await api.script(details: [.success(scanJSON(status: "failed", revision: 4, failure: "PROVIDER_CONFIGURATION"))])
+    await model.pollAnalysis(sleep: { _ in }, now: Date.init)
+    #expect(model.takeoverAvailable)
+    await api.script(details: [.success(scanJSON(status: "needs_review", revision: 5, alignment: "good", slots: [(2, true)]))],
+                     mutations: [.failure(.server(status: 409, code: .conflict, message: "", requestID: nil))])
+    await model.takeOver()
+    #expect(model.analysis.isReviewReady && model.reviewAvailable && !model.takeoverAvailable)
+    #expect(model.message?.contains("changed") == true)
+}
 @Test @MainActor func interruptedPhotoSubmissionRestoresExactBodyKeysAndCrop() async throws {
     let api = PhotoDouble()
     let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

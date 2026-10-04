@@ -112,8 +112,84 @@ final class ManualWorkflowUITests: XCTestCase {
     func testManualWorkflowAtLargestAccessibilitySize() async throws {
         try await runWorkflow(accessibilitySize: true)
     }
+    /// Feature 11: store history pages from the server, opens a completed record with its
+    /// correction trail and attestation, and a record whose photo retention removed.
+    func testHistoryPaginationRecordAndRemovedPhoto() async throws {
+        struct Seeded: Decodable { let completed, removed: String; let total: Int }
+        let f = try fixture()
+        _ = try await control("normal-type")
+        let seeded = try JSONDecoder().decode(Seeded.self, from: await control("seed-history"))
+        XCTAssertGreaterThan(seeded.total, 25)
+        app.launch()
+        if app.textFields["Email"].waitForExistence(timeout: 5) {
+            app.textFields["Email"].tap(); app.textFields["Email"].typeText(f.email)
+            app.secureTextFields["Password"].tap(); app.secureTextFields["Password"].typeText(f.password)
+            tap("Sign in")
+        }
+        let historyTab = app.tabBars.buttons["History"]
+        XCTAssertTrue(historyTab.waitForExistence(timeout: 20)); historyTab.tap()
+        let newest = app.buttons["history-row-" + seeded.completed]
+        XCTAssertTrue(newest.waitForExistence(timeout: 20), app.debugDescription)
+        XCTAssertTrue(newest.label.contains("Refill marked done"), newest.label)
+        XCTAssertTrue(newest.label.contains("Confirmed refill: 6 · marked done"), newest.label)
+        XCTAssertTrue(app.buttons["history-row-" + seeded.removed].label.contains("Photo removed (retention)"))
+        capture("history-first-page")
+        audit([.sufficientElementDescription, .hitRegion, .textClipped])
+        // Rows are lazy: the page summary exists only once scrolled near; flick there, then position it.
+        let summary = app.staticTexts["history-count"]
+        for _ in 0..<40 where !summary.exists { app.swipeUp() }
+        reach(summary)
+        XCTAssertEqual(summary.label, "Showing 25 checks. More are available.")
+        tap("Load more checks")
+        let all = app.staticTexts.matching(NSPredicate(format: "label == %@", "All \(seeded.total) checks shown.")).firstMatch
+        for _ in 0..<40 where !all.exists { app.swipeUp() }
+        reach(all)
+        XCTAssertTrue(all.waitForExistence(timeout: 15), summary.label)
+        XCTAssertFalse(app.buttons["Load more checks"].exists)
+        capture("history-all-pages")
+
+        for _ in 0..<60 where !newest.exists || !newest.isHittable { app.swipeDown() }
+        reach(newest, up: false); newest.tap()
+        for text in ["Confirmed refill quantity", "Refill 6", "Completion attestation", "Corrections and checks"] {
+            let element = app.staticTexts[text]
+            reach(element); XCTAssertTrue(element.waitForExistence(timeout: 15), text)
+        }
+        let attestation = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "This is an attestation, not a new stock count.")).firstMatch
+        reach(attestation); XCTAssertTrue(attestation.exists)
+        let correction = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Slot A2: 2 → 1")).firstMatch
+        reach(correction); XCTAssertTrue(correction.exists, app.debugDescription)
+        XCTAssertFalse(app.staticTexts["Provisional recommendation"].exists)
+        capture("history-completed-record")
+        audit([.sufficientElementDescription, .hitRegion, .textClipped])
+        _ = try await control("large-type")
+        reach(attestation, fully: true)
+        capture("history-record-largest-type")
+        audit([.sufficientElementDescription, .hitRegion, .dynamicType, .textClipped])
+        _ = try await control("normal-type")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let removedRow = app.buttons["history-row-" + seeded.removed]
+        for _ in 0..<60 where !removedRow.exists || !removedRow.isHittable { app.swipeDown() }
+        reach(removedRow, up: false); removedRow.tap()
+        let removedPhoto = app.staticTexts["history-photo-removed"]
+        reach(removedPhoto)
+        XCTAssertTrue(removedPhoto.waitForExistence(timeout: 15))
+        XCTAssertEqual(removedPhoto.label, "Photo removed under retention policy. Counts and review history remain.")
+        let source = app.staticTexts["Source: Manual (photo analysis taken over)"]
+        reach(source); XCTAssertTrue(source.exists)
+        capture("history-removed-photo")
+        _ = try await control("large-type")
+        reach(removedPhoto, fully: true)
+        audit([.sufficientElementDescription, .hitRegion, .dynamicType, .textClipped])
+        _ = try await control("normal-type")
+        app.navigationBars.buttons.firstMatch.tap()
+        // Later tests start from the sign-in screen.
+        tap("Account"); tap("Sign out")
+        XCTAssertTrue(app.textFields["Email"].waitForExistence(timeout: 15))
+    }
     func testPhotoImportCropAndRecovery() async throws {
         let f = try fixture()
+        _ = try await control("stop-worker") // this test starts with no worker running
         _ = try await control("normal-type")
         app.launch()
         if app.textFields["Email"].waitForExistence(timeout: 5) {
@@ -192,6 +268,136 @@ final class ManualWorkflowUITests: XCTestCase {
         for _ in 0..<5 where !app.buttons["Account"].firstMatch.isHittable {
             if app.keyboards.firstMatch.exists && app.buttons["Done"].firstMatch.exists { app.buttons["Done"].firstMatch.tap() }
             else if app.navigationBars.buttons.firstMatch.exists { app.navigationBars.buttons.firstMatch.tap() }
+        }
+        tap("Account"); tap("Sign out")
+    }
+    struct ReviewSnapshot: Decodable {
+        struct Slot: Decodable { let label: String; let accepted, ai, final: Int?; let review_state: String }
+        struct Correction: Decodable, Equatable { let label: String; let previous, corrected, original_ai: Int?; let reason: String?; let verified: Bool? }
+        let scan_id, status, source: String
+        let slots: [Slot]
+        let corrections: [Correction]
+        let ledger: [Snapshot.Request]
+    }
+    private func reviewSnapshot() async throws -> ReviewSnapshot { try JSONDecoder().decode(ReviewSnapshot.self, from: await control("snapshot")) }
+    private func importAndUpload(_ pickerLabel: String) async throws {
+        tap(pickerLabel)
+        let photo = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "Photo,")).firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 15), app.debugDescription)
+        photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.images["photo-preview"].waitForExistence(timeout: 15), app.debugDescription)
+        tap("Upload selected display photo")
+        let notice = app.staticTexts["photo-notice"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 20))
+        try await waitFor(notice, containing: "stored privately", seconds: 30)
+    }
+    /// Feature 10: stalled analysis is taken over on the same scan; AI estimates are reviewed,
+    /// explicitly accepted or corrected, saved through the backend and confirmed.
+    func testEstimateReviewCorrectionAndTakeover() async throws {
+        continueAfterFailure = true
+        let f = try fixture()
+        _ = try await control("reset-ledger")
+        _ = try await control("stop-worker") // takeover needs analysis to stall first
+        _ = try await control("normal-type")
+        app.launch()
+        if app.textFields["Email"].waitForExistence(timeout: 5) {
+            app.textFields["Email"].tap(); app.textFields["Email"].typeText(f.email)
+            app.secureTextFields["Password"].tap(); app.secureTextFields["Password"].typeText(f.password)
+            tap("Sign in")
+        }
+        let store = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Simulator Store")).firstMatch
+        XCTAssertTrue(store.waitForExistence(timeout: 20)); store.tap()
+        let display = app.buttons["Simulator Display"]
+        XCTAssertTrue(display.waitForExistence(timeout: 15)); display.tap()
+        tap("Photo check")
+        try await importAndUpload("Import photo")
+
+        // No worker: after the delay notice the same scan can continue as a manual check.
+        let status = app.staticTexts["analysis-status"]
+        reach(status)
+        try await waitFor(status, containing: "taking longer than usual", seconds: 50)
+        tap("Stop analysis and enter counts for this scan")
+        try await waitFor(status, containing: "continues as a manual check", seconds: 20)
+        let taken = try await reviewSnapshot()
+        XCTAssertEqual(taken.status, "needs_review")
+        XCTAssertEqual(taken.source, "manual")
+        XCTAssertTrue(taken.slots.allSatisfy { $0.accepted == nil && $0.ai == nil })
+        tap("Enter counts for this scan")
+        XCTAssertTrue(count("A1").waitForExistence(timeout: 15))
+        XCTAssertEqual(count("A1").value as? String, "Unknown")
+        XCTAssertFalse(app.staticTexts["review-remaining"].exists, "Taken-over scans use the manual count flow")
+        capture("takeover-manual-counts")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        // A new photo scan analysed by the deterministic review scenario: A1 low confidence (3), A2 possible wrong product (2).
+        try await importAndUpload("Import another photo (new scan)")
+        _ = try await control("start-worker?scenario=review")
+        reach(status)
+        try await waitFor(status, containing: "Analysis finished", seconds: 60)
+        XCTAssertTrue(status.label.contains("2 of 2 slots have estimates; 2 need verification"), status.label)
+        tap("Review estimates and counts")
+        let remaining = app.staticTexts["review-remaining"]
+        XCTAssertTrue(remaining.waitForExistence(timeout: 15))
+        XCTAssertEqual(remaining.label, "2 of 2 slots need your check.")
+        XCTAssertTrue(app.staticTexts["AI estimate: 3"].exists && app.staticTexts["AI estimate: 2"].exists)
+        let wrongProduct = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "can't confirm which product")).firstMatch
+        XCTAssertTrue(wrongProduct.exists, app.debugDescription)
+        XCTAssertEqual(count("A1").value as? String, "3")
+        reach(app.buttons["Confirm counts and refill list"])
+        XCTAssertFalse(app.buttons["Confirm counts and refill list"].isEnabled)
+        XCTAssertFalse(app.buttons["Save checks and corrections"].isEnabled)
+        capture("estimate-review-required")
+        audit([.sufficientElementDescription, .hitRegion, .textClipped, .dynamicType])
+
+        // Explicitly accept A1 unchanged; correct A2 with the stepper.
+        // The toggle trait may expose the checkbox as a switch rather than a button.
+        let check = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Estimate 3 for slot A1 is correct")).firstMatch
+        XCTAssertTrue(check.waitForExistence(timeout: 10), app.debugDescription)
+        print("Check control element type: \(check.elementType.rawValue)")
+        XCTAssertEqual(check.value as? String, "Not checked")
+        reach(check, up: false); check.tap()
+        XCTAssertEqual(check.value as? String, "Checked")
+        tap("Decrease count for slot A2")
+        XCTAssertEqual(count("A2").value as? String, "1")
+        tap("Save checks and corrections")
+        try await waitFor(remaining, containing: "No slots need your check", seconds: 15)
+        let saved = try await reviewSnapshot()
+        XCTAssertEqual(saved.ledger.last?.body.items.map { ["\($0.quantity)", $0.reason, String($0.verified)] },
+                       [["3", "visibility_check", "true"], ["1", "wrong_product", "true"]])
+        XCTAssertEqual(saved.slots.map(\.ai), [3, 2], "AI evidence is never overwritten")
+        XCTAssertEqual(saved.slots.map(\.accepted), [3, 1])
+        XCTAssertEqual(saved.slots.map(\.review_state), ["verified", "verified"])
+        XCTAssertEqual(saved.corrections, [
+            .init(label: "A1", previous: 3, corrected: 3, original_ai: 3, reason: "visibility_check", verified: true),
+            .init(label: "A2", previous: 2, corrected: 1, original_ai: 2, reason: "wrong_product", verified: true),
+        ])
+        reach(app.staticTexts["Refill total: 3"])
+        XCTAssertTrue(app.staticTexts["Refill total: 3"].exists)
+        capture("estimate-review-saved")
+        _ = try await control("large-type")
+        reach(remaining, fully: true)
+        capture("estimate-review-largest-text")
+        audit([.sufficientElementDescription, .hitRegion, .textClipped, .dynamicType])
+        _ = try await control("normal-type")
+
+        tap("Confirm counts and refill list"); tap("Confirm counts")
+        XCTAssertTrue(app.buttons["Mark refill completed"].waitForExistence(timeout: 15))
+        let confirmed = try await reviewSnapshot()
+        XCTAssertEqual(confirmed.status, "confirmed")
+        XCTAssertEqual(confirmed.slots.map(\.final), [3, 1])
+        reach(app.staticTexts["Confirmed count: 3"]); XCTAssertTrue(app.staticTexts["Confirmed count: 3"].exists)
+        let newCheck = app.buttons["Start a new check of this display"]
+        reach(newCheck, fully: true)
+        XCTAssertFalse(count("A1").exists, "Confirmed counts are read-only")
+        capture("confirmed-review-new-check-offer")
+        audit([.sufficientElementDescription, .hitRegion, .textClipped, .dynamicType])
+        // The audit can scroll the content; re-reach before tapping, as tap(_:) does elsewhere.
+        tap("Start a new check of this display")
+        XCTAssertTrue(app.buttons["Start manual check"].waitForExistence(timeout: 15))
+        let afterOffer = try await reviewSnapshot()
+        XCTAssertEqual(afterOffer.scan_id, confirmed.scan_id, "Opening the offer creates nothing until the person starts")
+        for _ in 0..<6 where !app.buttons["Account"].firstMatch.isHittable {
+            if app.navigationBars.buttons.firstMatch.exists { app.navigationBars.buttons.firstMatch.tap() }
         }
         tap("Account"); tap("Sign out")
     }

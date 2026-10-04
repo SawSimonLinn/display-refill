@@ -88,3 +88,10 @@ Migration 9 (feature 04, `…0900_catalog_management.sql`) adds the service-role
 - Migration 14 (`…1400_vision_pipeline.sql`) adds `scans.failure_code` (present exactly when `status = 'failed'`), `scans.ai_summary` (immutable once set), `scans.manual_takeover_at/by`, and replaces the photo-only image check with `scans_image_source_check` so a taken-over scan keeps its image while `source = 'manual'`.
 - `scan_attempts` adds `job_id`, `lease_token` (unique per job), `error_code`, `policy_version`, `confidence_threshold`, and outcome `input_error`. Attempts remain undeletable; jobs and attempts have no client grant.
 - New service-role functions: `claim_scan_job`, `heartbeat_scan_job`, `finish_scan_attempt`, `scan_analysis_action`; private helper `fail_scan_job`. Audit events: `scan.analysis_completed`, `scan.analysis_failed` (no actor), `scan.analysis_retried`, `scan.manual_takeover`.
+
+## Implementation Notes (Feature 10)
+- Migration 15 (`…1500_review_corrections.sql`) adds nullable `scan_corrections.verified`: `true`/`false` for every row written by `mutate_scan_counts` from Feature 10 on, `null` only for earlier rows (no fabricated history). `mutate_scan_counts` is otherwise unchanged (diffed against migration 11).
+- `private.guard_scan_slot` now also refuses clearing `review_required` (true → false) while the scan is `needs_review`; setting it true stays allowed because manual takeover does so after moving the scan to review. AI observation, snapshot and confirmed-slot immutability are unchanged. The rule applies to every role, including service role and database owner.
+
+## Implementation Notes (Feature 11)
+No migration. History uses the existing `scans (store_id, created_at desc, id desc)` index and RLS. Display, store and POG template names in history are current labels; product names, slot labels, targets, thresholds, the pinned version number and confirmed results come from scan snapshots / the immutable version (D74).

@@ -18,6 +18,7 @@ export const ApiErrorCode = z.enum([
   "METHOD_NOT_ALLOWED", // 405
   "CONFLICT", // 409
   "POG_CHANGED", // 409
+  "IMAGE_DELETED", // 410: the caller may read the scan, but its photo was removed under retention
   "VALIDATION_FAILED", // 422
   "POG_NOT_ASSIGNED", // 422
   "UNRESOLVED_COUNTS", // 422
@@ -37,6 +38,7 @@ export const API_ERROR_STATUS: Record<ApiErrorCode, number> = {
   METHOD_NOT_ALLOWED: 405,
   CONFLICT: 409,
   POG_CHANGED: 409,
+  IMAGE_DELETED: 410,
   VALIDATION_FAILED: 422,
   POG_NOT_ASSIGNED: 422,
   UNRESOLVED_COUNTS: 422,

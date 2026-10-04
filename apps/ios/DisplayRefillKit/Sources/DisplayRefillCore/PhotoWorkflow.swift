@@ -28,7 +28,7 @@ public protocol PhotoScanAPI: Sendable {
     func reference(version: String) async throws -> ReferenceAccess
     /// Authorized scan detail, used to poll analysis state.
     func detail(id: String) async throws -> ScanDetail
-    /// Revision-checked scan action (explicit analysis retry).
+    /// Revision-checked scan action (explicit analysis retry or manual takeover).
     func mutate(path: String, method: String, body: Data, key: String) async throws -> ScanDetail
 }
 
@@ -45,6 +45,10 @@ public enum AnalysisState: Equatable, Sendable {
     case manual(status: String)
     /// Polling could not reach the server; it keeps retrying while visible.
     case unreachable(delayed: Bool)
+}
+
+extension AnalysisState {
+    public var isReviewReady: Bool { if case .reviewReady = self { true } else { false } }
 }
 
 public struct ReviewSummary: Equatable, Sendable {
@@ -116,6 +120,9 @@ extension URLSessionAccountAPI: PhotoScanAPI {
         /// Exact retry request, kept until the server answers so a lost response replays safely.
         var retryBody: Data?
         var retryKey: String?
+        /// Exact manual-takeover request, kept the same way.
+        var takeoverBody: Data?
+        var takeoverKey: String?
     }
     public init(api: any PhotoScanAPI, display: ManualDisplay, userID: String, directory: URL? = nil) {
         self.api = api; self.display = display
@@ -210,6 +217,52 @@ extension URLSessionAccountAPI: PhotoScanAPI {
         }
     }
 
+    /// Stalled (past the delay notice), unreachable-and-delayed or failed analysis can be taken over.
+    public var takeoverAvailable: Bool {
+        guard finished, scanID != nil else { return false }
+        switch analysis {
+        case .waiting(_, true), .unreachable(true), .failed: return true
+        default: return false
+        }
+    }
+    /// Estimates or a taken-over scan continue on the count review screen.
+    public var reviewAvailable: Bool {
+        switch analysis {
+        case .reviewReady, .manual: return scanID != nil
+        default: return false
+        }
+    }
+
+    /// Continues this photo scan as a manual check: the server fences any late worker
+    /// result, keeps the photo and starts every count unknown.
+    public func takeOver() async {
+        guard !busy, takeoverAvailable, let id = scanID, var request = pending else { return }
+        busy = true; defer { busy = false }
+        do {
+            if request.takeoverBody == nil {
+                let current: Int
+                if let revision { current = revision } else { current = try await api.detail(id: id).revision }
+                request.takeoverBody = try JSONSerialization.data(withJSONObject: ["expected_revision": current], options: .sortedKeys)
+                request.takeoverKey = UUID().uuidString; pending = request; try persist()
+            }
+            guard let body = request.takeoverBody, let key = request.takeoverKey else { return }
+            let scan = try await api.mutate(path: "api/v1/scans/\(id)/manual-takeover", method: "POST", body: body, key: key)
+            apply(scan, delayed: false)
+            message = "Analysis stopped. Enter counts for this scan; the photo stays attached."
+        } catch {
+            switch error as? APIClientError {
+            case .signedOut: message = "Session expired. Sign in again; then reopen this display."
+            case .server(_, .conflict, _, _):
+                // Analysis finished or the scan changed first: drop the stale request and show the current state.
+                request.takeoverBody = nil; request.takeoverKey = nil; pending = request; try? persist()
+                message = "This scan changed before analysis could be stopped. Showing its current state."
+                if let scan = try? await api.detail(id: id) { apply(scan, delayed: false) }
+            case .server(_, .forbidden, _, _), .server(_, .notFound, _, _): message = "Access denied or scan unavailable. Manual mode remains available."
+            default: message = "Can't reach the server. Try again when connected; the same request will be sent."
+            }
+        }
+    }
+
     /// Explicit retry of a failed analysis. The server enforces the retry limit.
     public func retryAnalysis() async {
         guard !busy, case .failed(_, true) = analysis, let id = scanID, var request = pending else { return }
@@ -246,6 +299,10 @@ extension URLSessionAccountAPI: PhotoScanAPI {
         case "failed": analysis = .failed(code: scan.analysis?.failureCode, retryAvailable: scan.analysis?.retryAvailable ?? false)
         case "needs_review" where scan.source == "photo" && scan.analysis?.alignment != nil: analysis = .reviewReady(ReviewSummary(scan: scan))
         default: analysis = .manual(status: scan.status)
+        }
+        // Review has started; an unsent takeover can no longer apply.
+        if reviewAvailable, var request = pending, request.takeoverBody != nil {
+            request.takeoverBody = nil; request.takeoverKey = nil; pending = request; try? persist()
         }
     }
 

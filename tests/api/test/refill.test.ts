@@ -233,7 +233,10 @@ it('known AI estimates stay provisional until required verification, preserving 
 });
 it('known slots without required review may confirm while pending', async () => {
   const s = await scan();
-  await h.db.query("update public.scan_slots set accepted_quantity=1,review_required=false where scan_id=$1", [s.scan_id]);
+  // Synthetic stand-in for worker-committed high-confidence evidence. Since Feature 10 the slot guard
+  // refuses clearing required review once review has started, so this fixture bypasses triggers.
+  await h.db.query(`begin; set local session_replication_role = replica;
+    update public.scan_slots set accepted_quantity=1,review_required=false where scan_id='${s.scan_id}'; commit;`);
   const result = await mutate(s.scan_id, 'confirm', { expected_revision: 1 });
   expect(result.status).toBe(200);
   expect(result.json.data.slots.every((x: {

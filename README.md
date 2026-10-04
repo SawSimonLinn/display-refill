@@ -48,8 +48,8 @@ Versions recorded on the feature 01 machine (macOS 26, Apple Silicon):
 | ESLint | 9.39.5 | `eslint-config-next` 16.3.8 |
 | Tailwind CSS | 4.3.3 | semantic tokens in `apps/admin/src/app/globals.css` |
 | esbuild / tsx | 0.28.2 / 4.23.15 | worker build / dev |
-| Swift | 6.2.3 (Command Line Tools) | Swift 6 language mode |
-| Xcode | **not installed** | needed for the iOS build; see apps/ios/README.md |
+| Swift | 6.4 (Xcode 27.0; legacy CLT 6.2.3 remains, see E02) | Swift 6 language mode |
+| Xcode | 27.0 (27A266a), iOS SDK 27.0 | app build, Swift package tests and XCUITest on the iPhone 17 Pro simulator (iOS 26.5); see apps/ios/README.md. No physical-device build has been run |
 | Supabase CLI | 2.119.0 | root devDependency (`npx supabase`) |
 | Postgres (local) | 17 (`supabase/postgres:17.11.0.002`) | via `supabase start` |
 | supabase-js / pg | 2.117.2 / 8.23.1 | server package, admin app, database tests |
@@ -120,7 +120,7 @@ npm run build:worker && npm run smoke -w @display-refill/scan-worker   # one-sho
 Invalid configuration exits with code 78 and a message listing each variable.
 `SIGINT`/`SIGTERM` stop claiming and wait for in-flight attempts (bounded by the
 45-second provider deadline). `VISION_MOCK_SCENARIO` selects a deterministic
-mock outcome (`mixed`, `good`, `poor_alignment`, `occluded`, `invalid`,
+mock outcome (`mixed`, `good`, `review`, `poor_alignment`, `occluded`, `invalid`,
 `duplicate_ids`, `unknown_id`, `missing_slot`); no real provider is available.
 
 ## What is real and what is mocked
@@ -132,9 +132,9 @@ mock outcome (`mixed`, `good`, `poor_alignment`, `occluded`, `invalid`,
 | `/api/v1/stores`, `/stores/:id`, `/stores/:id/displays`, `/displays/:id`, `/products`, `/products/:id`, `/pogs`, `/pogs/:id` | Real (feature 04; context/api-contracts.md). Other `/api/v1/*` paths return the JSON `404` envelope. |
 | Configuration validation | Real, for admin and worker. |
 | Web sign-in, reset, invite acceptance, sign-out | Real (Supabase Auth, httpOnly SSR cookies). Pages require a verified session; employees are sent to the iOS app. |
-| Admin pages | Overview, Members, Stores, Displays, Products and POGs (reference-image/rectangle editor, immutable publication and cloning) are real. Scans UI/workflows are not built. |
-| iOS app | Real sign-in, Keychain session, refresh, sign-out, reset request, authorized store list; History is an empty state. Compiled and tested for macOS only (no Xcode). |
-| Vision analysis | Feature 09 pipeline is real (validation, normalization, review routing, attempt evidence); the only adapter is the deterministic `MockVisionAdapter`, whose results are labeled synthetic in the app. No real provider is selected and no network call is made. |
+| Admin pages | Overview, Members, Stores, Displays, Products and POGs (reference-image/rectangle editor, immutable publication and cloning) are real. Scans (Feature 11) is real: filtered, paginated history of the stores a manager reviews (organization for admins) and per-scan review records with estimates, corrections, confirmation, completion attestation and retained/removed photo. |
+| iOS app | Real against the local backend and verified in the iOS simulator: sign-in, Keychain session, store/display list, manual check (07), photo import/crop/upload (08), analysis polling/retry (09), estimate review, corrections and takeover (10). History tab (11) pages server history of assigned stores and opens review records; Saved checks still hold scan IDs only. Not verified: spoken VoiceOver, physical device, real camera capture. |
+| Vision analysis | Feature 09 pipeline is real (validation, normalization, review routing, attempt evidence); the only adapter is the deterministic `MockVisionAdapter`, whose results are labeled synthetic in the app. No real provider is selected and no network call is made. Feature 10 iOS estimate review/correction and takeover are real against this mock output. |
 | Database | Real (local): schema, RLS, triggers, private buckets, `publish_pog_version`, `create_scan`. See supabase/README.md. |
 | Job queue | Real (feature 09): leases, heartbeats, per-store limit, retry budget, fenced results, explicit retry and manual takeover. See context/scan-lifecycle.md. |
 

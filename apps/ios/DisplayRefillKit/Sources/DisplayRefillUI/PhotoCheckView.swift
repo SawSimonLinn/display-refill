@@ -84,9 +84,12 @@ struct PhotoCheckView: View {
             if let text = Self.statusText(state) { AccessibilityNotification.Announcement(text).post() }
         }
         .onChange(of: selection) { _, item in
+            guard let item else { return }
+            // Clear it so choosing the same library photo again (for a new scan) still triggers an import.
+            selection = nil
             Task {
                 do {
-                    guard let data = try await item?.loadTransferable(type: Data.self) else { return }
+                    guard let data = try await item.loadTransferable(type: Data.self) else { return }
                     let normalized = try await Task.detached { try PhotoImage.normalize(data) }.value
                     model.setPhoto(normalized)
                 } catch { model.notice("This photo could not be imported. Choose a still JPEG or HEIC photo, retake, or use manual mode.") }
@@ -120,10 +123,20 @@ struct PhotoCheckView: View {
                         Label("Test analysis: these estimates come from a synthetic test provider, not from your photo.", systemImage: "exclamationmark.triangle")
                             .accessibilityIdentifier("analysis-synthetic")
                     }
-                    Text("Estimates are not confirmed counts. Reviewing photo estimates isn't available in this version yet; start a manual check to record counts.")
+                    Text("Estimates are not confirmed counts. Check each estimate that needs it, correct any wrong number, then confirm.")
                 case .failed(_, let retryAvailable):
                     if retryAvailable { Button("Retry analysis") { Task { await model.retryAnalysis(); startPolling() } }.disabled(model.busy) }
                 default: EmptyView()
+                }
+                if model.reviewAvailable, let id = model.scanID {
+                    NavigationLink(model.analysis.isReviewReady ? "Review estimates and counts" : "Enter counts for this scan") {
+                        ManualCheckView(api: manualAPI, userID: userID, display: display, scanID: id)
+                    }
+                }
+                if model.takeoverAvailable {
+                    Button("Stop analysis and enter counts for this scan") { Task { await model.takeOver() } }
+                        .disabled(model.busy)
+                    Text("Keeps this photo with the scan. Any analysis result that arrives later is ignored.")
                 }
             }
         }

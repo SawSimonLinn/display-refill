@@ -17,7 +17,7 @@ const env = {...process.env, SUPABASE_URL:status.API_URL, SUPABASE_SERVICE_ROLE_
  NEXT_PUBLIC_SUPABASE_URL:status.API_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:status.PUBLISHABLE_KEY ?? status.ANON_KEY,
  APP_ORIGIN:'http://localhost:3100', NEXT_TELEMETRY_DISABLED:'1', LOG_LEVEL:'warn'};
 const next = `${root}/node_modules/.bin/next`;
-const checked = async promise => {const r = await promise; if(r.error) throw new Error(r.error.code ?? 'Fixture operation failed'); return r.data;};
+const checked = async promise => {const r = await promise; if(r.error) throw new Error([r.error.code, r.error.message].filter(Boolean).join(' ') || 'Fixture operation failed'); return r.data;};
 const service = createClient(status.API_URL, status.SECRET_KEY ?? status.SERVICE_ROLE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
 const ids = Object.fromEntries(['org','store','product','pog','version','display'].map(k=>[k,randomUUID()]));
 const email = `simulator-${randomUUID()}@example.com`, password = randomBytes(24).toString('base64url'), controlKey=randomBytes(24).toString('base64url');
@@ -30,13 +30,20 @@ execFileSync('xcrun',['simctl','bootstatus',device,'-b'],{stdio:'inherit'});
 const reportedSize=execFileSync('xcrun',['simctl','ui',device,'content_size'],{encoding:'utf8'}).trim();
 const originalSize=['unknown','unsupported',''].includes(reportedSize)?'large':reportedSize;
 execFileSync('xcrun',['simctl','ui',device,'content_size','large']);
-let actor, server, proxy, worker, fault=false;
+let actor, colleague, server, proxy, worker, workerScenario, fault=false;
 const ledger=[];
 async function snapshot() {
  const scans=await checked(service.from('scans').select('*,scan_slots(*)').eq('created_by',actor).order('created_at',{ascending:false}).limit(1));
  const scan=scans[0];
  return scan ? {scan_id:scan.id,status:scan.status,revision:scan.revision,total_refill:scan.total_refill,completed_by:scan.completed_by,
-   slots:scan.scan_slots.sort((a,b)=>a.slot_label_snapshot.localeCompare(b.slot_label_snapshot)).map(s=>({label:s.slot_label_snapshot,accepted:s.accepted_quantity,final:s.final_quantity,refill:s.refill_quantity})),ledger} : null;
+   source:scan.source,
+   slots:scan.scan_slots.sort((a,b)=>a.slot_label_snapshot.localeCompare(b.slot_label_snapshot)).map(s=>({label:s.slot_label_snapshot,accepted:s.accepted_quantity,final:s.final_quantity,refill:s.refill_quantity,ai:s.ai_quantity,review_state:s.review_state})),
+   corrections:await corrections(scan),ledger} : null;
+}
+async function corrections(scan) {
+ const labels=Object.fromEntries(scan.scan_slots.map(s=>[s.id,s.slot_label_snapshot]));
+ const rows=await checked(service.from('scan_corrections').select('*').eq('scan_id',scan.id).order('created_at'));
+ return rows.map(c=>({label:labels[c.scan_slot_id],previous:c.previous_quantity,corrected:c.corrected_quantity,original_ai:c.original_ai_quantity,reason:c.reason,verified:c.verified}));
 }
 try {
  for (const port of [3100,3101]) {
@@ -57,6 +64,10 @@ try {
  await checked(service.from('organization_memberships').insert({organization_id:ids.org,user_id:actor,role:'member'}));
  await checked(service.from('stores').insert({id:ids.store,organization_id:ids.org,name:'Simulator Store',store_number:'SIM',timezone:'UTC'}));
  await checked(service.from('store_memberships').insert({organization_id:ids.org,store_id:ids.store,user_id:actor,role:'employee'}));
+ // A second employee of the same store owns seeded history, so snapshots of the actor's own latest scan are unaffected.
+ colleague=(await checked(service.auth.admin.createUser({email:`simulator-colleague-${randomUUID()}@example.com`,password:randomBytes(24).toString('base64url'),email_confirm:true}))).user.id;
+ await checked(service.from('organization_memberships').insert({organization_id:ids.org,user_id:colleague,role:'member'}));
+ await checked(service.from('store_memberships').insert({organization_id:ids.org,store_id:ids.store,user_id:colleague,role:'employee'}));
  await checked(service.from('products').insert({id:ids.product,organization_id:ids.org,name:'Synthetic Garden Salad',short_name:'Garden',category:'fixture',container_type:'tub'}));
  await checked(service.from('pogs').insert({id:ids.pog,organization_id:ids.org,name:'Simulator POG'}));
  await checked(service.from('pog_versions').insert({id:ids.version,organization_id:ids.org,pog_id:ids.pog,version_number:1,reference_path:`${ids.org}/${ids.pog}/synthetic.jpg`,reference_width:100,reference_height:100,reference_validated_at:new Date().toISOString(),slots_need_review:false}));
@@ -64,7 +75,7 @@ try {
  await checked(service.from('pog_versions').update({state:'published',published_at:new Date().toISOString()}).eq('id',ids.version));
  const photo=await sharp({create:{width:800,height:400,channels:3,background:'#88aa44'}}).jpeg().toBuffer();
  await checked(service.storage.from('pog-images').upload(`${ids.org}/${ids.pog}/synthetic.jpg`,photo,{contentType:'image/jpeg'}));
- if(process.env.PHOTO_TESTS==='1'){writeFileSync('/tmp/feature08-import.jpg',photo);execFileSync('xcrun',['simctl','addmedia',device,'/tmp/feature08-import.jpg']);}
+ if(process.env.PHOTO_TESTS==='1'||process.env.REVIEW_TESTS==='1'){writeFileSync('/tmp/feature08-import.jpg',photo);execFileSync('xcrun',['simctl','addmedia',device,'/tmp/feature08-import.jpg']);}
  await checked(service.from('displays').insert({id:ids.display,organization_id:ids.org,store_id:ids.store,name:'Simulator Display',active_pog_version_id:ids.version}));
  proxy=createServer(async(req,res)=>{
    try {
@@ -74,13 +85,44 @@ try {
       if(req.url==='/control/large-type'||req.url==='/control/normal-type'){execFileSync('xcrun',['simctl','ui',device,'content_size',req.url.endsWith('large-type')?'accessibility-extra-extra-extra-large':'large']);res.writeHead(200).end('{}');return;}
       if(req.url==='/control/reset-ledger'){ledger.length=0;res.writeHead(200).end('{}');return;}
       if(req.url==='/control/fail-next-save'){fault=true;res.writeHead(200).end('{}');return;}
-      if(req.url==='/control/start-worker'){
+      // Tests that need an idle queue stop any worker an earlier test started in this run.
+      if(req.url==='/control/stop-worker'){
+       if(worker){const w=worker;worker=undefined;await new Promise(r=>{w.once('exit',r);w.kill('SIGTERM');});}
+       res.writeHead(200).end('{}');return;
+      }
+      if(req.url.startsWith('/control/start-worker')){
+       const scenario=new URL(req.url,'http://localhost').searchParams.get('scenario')??'mixed';
+       if(worker&&workerScenario!==scenario){worker.kill('SIGTERM');worker=undefined;}
+       workerScenario=scenario;
        // Shared local database: park other organizations' due work so this worker only analyses the fixture scan.
        await checked(service.from('scan_jobs').update({available_at:new Date(Date.now()+86_400_000).toISOString()}).neq('organization_id',ids.org).eq('state','queued'));
        await checked(service.from('scan_jobs').update({lease_until:new Date(Date.now()+86_400_000).toISOString()}).neq('organization_id',ids.org).eq('state','running'));
        worker??=spawn(process.execPath,[`${root}/workers/scan-worker/dist/main.js`],{cwd:`${root}/workers/scan-worker`,stdio:'ignore',
-        env:{...process.env,SUPABASE_URL:status.API_URL,SUPABASE_SERVICE_ROLE_KEY:status.SECRET_KEY??status.SERVICE_ROLE_KEY,DATABASE_URL:status.DB_URL,VISION_PROVIDER:'mock',VISION_MOCK_SCENARIO:'mixed',LOG_LEVEL:'warn'}});
+        env:{...process.env,SUPABASE_URL:status.API_URL,SUPABASE_SERVICE_ROLE_KEY:status.SECRET_KEY??status.SERVICE_ROLE_KEY,DATABASE_URL:status.DB_URL,VISION_PROVIDER:'mock',VISION_MOCK_SCENARIO:scenario,LOG_LEVEL:'warn'}});
        res.writeHead(200).end('{}');return;
+      }
+      if(req.url==='/control/seed-history'){
+       const rpc=async(name,args)=>{const d=await checked(service.rpc(name,args));return Array.isArray(d)?d[0]:d;};
+       const create=async source=>(await rpc('create_scan',{p_actor:colleague,p_display_id:ids.display,p_source:source,p_expected_pog_version_id:ids.version})).scan_id;
+       const slots=async id=>Object.fromEntries((await checked(service.from('scan_slots').select('pog_slot_id,slot_label_snapshot').eq('scan_id',id))).map(x=>[x.slot_label_snapshot,x.pog_slot_id]));
+       const counts=async(id,revision,action,items)=>(await rpc('mutate_scan_counts',{p_actor:colleague,p_scan_id:id,p_expected_revision:revision,p_action:action,p_items:items,p_key:randomUUID(),p_request_id:randomUUID()})).payload.revision;
+       for(let i=0;i<26;i++)await create('manual');
+       // Taken-over photo check, confirmed, whose photo retention has since removed (simulates the Feature 12 job).
+       const removed=await create('photo');
+       const taken=(await rpc('scan_analysis_action',{p_actor:colleague,p_action:'takeover',p_scan:removed,p_expected_revision:1,p_key:randomUUID(),p_request_id:randomUUID()})).payload.revision;
+       await checked(service.from('scans').update({image_path:`${ids.org}/${ids.store}/${removed}/validated-${"0".repeat(64)}.jpg`,captured_at:new Date().toISOString(),image_deleted_at:new Date().toISOString()}).eq('id',removed));
+       let s1=await slots(removed);
+       let rev=await counts(removed,taken,'counts',[{slot_id:s1.A1,quantity:1,verified:true,reason:'manual_count'},{slot_id:s1.A2,quantity:4,verified:true,reason:'manual_count'}]);
+       await counts(removed,rev,'confirm',null);
+       // Completed manual check with a correction trail (A2 counted 2, then corrected to 1).
+       const completed=await create('manual');
+       s1=await slots(completed);
+       rev=await counts(completed,1,'counts',[{slot_id:s1.A1,quantity:0,verified:true,reason:'manual_count'},{slot_id:s1.A2,quantity:2,verified:true,reason:'manual_count'}]);
+       rev=await counts(completed,rev,'counts',[{slot_id:s1.A2,quantity:1,verified:true,reason:'count_corrected'}]);
+       rev=await counts(completed,rev,'confirm',null);
+       await rpc('manual_scan_workflow',{p_actor:colleague,p_action:'complete',p_resource:completed,p_expected_revision:rev,p_key:randomUUID(),p_request_id:randomUUID()});
+       const {count}=await service.from('scans').select('id',{count:'exact',head:true}).eq('store_id',ids.store);
+       res.writeHead(200,{'content-type':'application/json'}).end(JSON.stringify({completed,removed,total:count}));return;
       }
       if(req.url==='/control/stale') {
        const s=await snapshot();
@@ -97,7 +139,7 @@ try {
      if(fault&&response.ok){fault=false;res.writeHead(503,{'content-type':'application/json'}).end(JSON.stringify({error:{code:'DEPENDENCY_UNAVAILABLE',message:'Synthetic lost response',field_errors:{}},request_id:randomUUID()}));return;}
     }
     res.writeHead(response.status,{'content-type':response.headers.get('content-type')??'application/json','cache-control':'no-store'}).end(bytes);
-   }catch{res.writeHead(500).end('{}');}
+   }catch(error){console.error('Harness proxy/control failure:',error?.message??'unknown');res.writeHead(500).end('{}');}
  });
  await new Promise(resolve=>proxy.listen(3101,'localhost',resolve));
  const fixture=`${root}/apps/ios/Verification/LocalFixture.json`;
@@ -105,7 +147,9 @@ try {
  execFileSync('xcodegen',['generate'],{cwd:`${root}/apps/ios`,env:process.env,stdio:'inherit'});
  const args=['-scheme','DisplayRefill','-destination',`platform=iOS Simulator,id=${device}`,
  '-derivedDataPath','/tmp/feature07-ios-derived','-resultBundlePath',`/tmp/feature07-ios-${Date.now()}.xcresult`,
- '-parallel-testing-enabled','NO',...(process.env.PHOTO_TESTS==='1'?['-only-testing:DisplayRefillUITests/ManualWorkflowUITests/testPhotoImportCropAndRecovery','-only-testing:DisplayRefillCoreTests']:[]),'CODE_SIGN_IDENTITY=-','API_BASE_URL=http://localhost:3101',`SUPABASE_URL=${status.API_URL}`,
+ '-parallel-testing-enabled','NO',...(process.env.PHOTO_TESTS==='1'?['-only-testing:DisplayRefillUITests/ManualWorkflowUITests/testPhotoImportCropAndRecovery','-only-testing:DisplayRefillCoreTests']:[]),
+ ...(process.env.HISTORY_TESTS==='1'?['-only-testing:DisplayRefillUITests/ManualWorkflowUITests/testHistoryPaginationRecordAndRemovedPhoto','-only-testing:DisplayRefillCoreTests']:[]),
+ ...(process.env.REVIEW_TESTS==='1'?['-only-testing:DisplayRefillUITests/ManualWorkflowUITests/testEstimateReviewCorrectionAndTakeover','-only-testing:DisplayRefillCoreTests']:[]),'CODE_SIGN_IDENTITY=-','API_BASE_URL=http://localhost:3101',`SUPABASE_URL=${status.API_URL}`,
  `SUPABASE_PUBLISHABLE_KEY=${status.PUBLISHABLE_KEY??status.ANON_KEY}`,'test'];
  const code=await new Promise(resolve=>{
   const child=spawn('xcodebuild',args,{cwd:`${root}/apps/ios`,env:process.env,stdio:['ignore','pipe','pipe']});
@@ -117,6 +161,7 @@ try {
  try{execFileSync('xcrun',['simctl','ui',device,'content_size',originalSize]);}catch{}
  try{unlinkSync(`${root}/apps/ios/Verification/LocalFixture.json`);}catch{}
  if(actor){await service.from('store_memberships').update({active:false}).eq('user_id',actor);await service.from('organization_memberships').update({active:false}).eq('user_id',actor);await service.auth.admin.updateUserById(actor,{ban_duration:'876000h'});}
+ if(colleague){await service.from('store_memberships').update({active:false}).eq('user_id',colleague);await service.from('organization_memberships').update({active:false}).eq('user_id',colleague);await service.auth.admin.updateUserById(colleague,{ban_duration:'876000h'});}
  if(worker)worker.kill('SIGTERM');
  if(proxy)await new Promise(r=>proxy.close(r)); if(server)server.kill('SIGTERM');
 }

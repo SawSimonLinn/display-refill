@@ -111,13 +111,21 @@ struct ManualCheckView: View {
                             Text(scan.createdAt, style: .time).manualTextLayout()
                             Text("Revision \(scan.revision) · \(scan.status)").manualTextLayout()
                         }
+                        if model.reviewsEstimates { estimateSummary(scan) }
                         ManualSection("Pinned slots") {
-                            ForEach(scan.slots) { slot in
+                            if model.reviewsEstimates && scan.editable {
+                                Text("Slots that need your check are listed first.").foregroundStyle(.secondary).manualTextLayout()
+                            }
+                            ForEach(model.orderedSlots) { slot in
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(slot.productName).font(.headline).manualTextLayout()
                                     Text("Slot \(slot.slotLabel) · Target \(slot.target)").manualTextLayout()
                                     if let trigger = slot.refillThreshold { Text("Refill trigger: \(trigger) or fewer").manualTextLayout() }
-                                    Text(model.inputs[slot.id, default: ""] != (slot.acceptedQuantity.map(String.init) ?? "") ? "Unsaved physical count" : slot.reviewState == "verified" ? "Verified on server" : "Physical count required").manualTextLayout()
+                                    if model.reviewsEstimates {
+                                        estimateDetails(slot, scan: scan)
+                                    } else {
+                                        Text(model.inputs[slot.id, default: ""] != (slot.acceptedQuantity.map(String.init) ?? "") ? "Unsaved physical count" : slot.reviewState == "verified" ? "Verified on server" : "Physical count required").manualTextLayout()
+                                    }
                                     if scan.editable {
                                         TextField("Unknown", text: Binding(
                                             get: { model.inputs[slot.id, default: ""] },
@@ -142,6 +150,9 @@ struct ManualCheckView: View {
                                         }.disabled(model.hasPendingRequest).buttonStyle(ManualActionStyle()).frame(minHeight: 44)
                                         if ManualWorkflow.quantity(model.inputs[slot.id, default: ""]) == nil {
                                             Text("Enter an integer from 0 to 999; blank is unknown.").foregroundStyle(.secondary).manualTextLayout()
+                                        }
+                                        if model.canCheck(slot), let estimate = slot.acceptedQuantity {
+                                            checkButton(slot, estimate: estimate)
                                         }
                                     } else {
                                         Text("Confirmed count: \(slot.acceptedQuantity.map(String.init) ?? "Unknown")").monospacedDigit().manualTextLayout()
@@ -171,11 +182,13 @@ struct ManualCheckView: View {
                         }
                         ManualSection {
                             if scan.editable {
-                                Button("Save and review refill") { Task { await model.save(); remember() } }
-                                    .disabled(!model.valid || model.conflict || model.hasPendingRequest)
-                                Text("Saving attests that you physically counted each entered slot.").manualTextLayout()
+                                Button(model.reviewsEstimates ? "Save checks and corrections" : "Save and review refill") { Task { await model.save(); remember() } }
+                                    .disabled(!model.canSave)
+                                Text(model.reviewsEstimates
+                                     ? "Saving records each corrected count and each estimate you checked as verified by you. The original estimates are kept."
+                                     : "Saving attests that you physically counted each entered slot.").manualTextLayout()
                                 Button("Confirm counts and refill list") { confirming = true }
-                                    .disabled(!model.valid || model.dirty || !scan.unresolvedSlotIDs.isEmpty || model.conflict || model.hasPendingRequest)
+                                    .disabled(!model.canConfirm)
                                 if !model.valid || !scan.unresolvedSlotIDs.isEmpty { Text("All counts must be entered, saved and verified before confirmation.").manualTextLayout() }
                             } else if scan.status == "confirmed" {
                                 Button("Mark refill completed") { completing = true }
@@ -186,6 +199,7 @@ struct ManualCheckView: View {
                                 Text("Recorded by \(scan.completedBy ?? "employee"). Observed counts remain unchanged.").manualTextLayout()
                             }
                         }
+                        if scan.status == "confirmed" || scan.status == "completed" { correctionGuidance }
                     } else if !model.busy, let display {
                         Button("Start manual check") { Task { await model.start(display: display); remember() } }
                         #if os(iOS)
@@ -223,6 +237,75 @@ struct ManualCheckView: View {
         }
         .confirmationDialog("Attest that you completed the refill? This does not record a new stock check.", isPresented: $completing, titleVisibility: .visible) {
             Button("Mark refill completed") { Task { await model.complete(); remember() } }
+        }
+    }
+    /// Photo-wide context for estimates: synthetic source, photo issues and what is left to check.
+    private func estimateSummary(_ scan: ScanDetail) -> some View {
+        ManualSection("Photo estimates") {
+            if scan.analysis?.synthetic == true {
+                Label("Test analysis: these estimates come from a synthetic test provider, not from your photo.", systemImage: "exclamationmark.triangle")
+                    .manualTextLayout()
+            }
+            if let alignment = scan.analysis?.alignment, alignment != "good" {
+                Text("We couldn't match this photo to the layout, so no slot has an estimate. Enter each count.").manualTextLayout()
+            }
+            if let flags = scan.analysis?.imageFlags, !flags.isEmpty {
+                Text("Photo quality issues (\(flags.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: ", "))) mean every slot needs your check.").manualTextLayout()
+            }
+            Text("Estimates are not counts until confirmed. For each slot that needs your check, confirm the estimate is right or enter the number you count.")
+                .manualTextLayout()
+            if scan.editable {
+                let remaining = scan.unresolvedSlotIDs.count
+                Text(remaining == 0 ? "No slots need your check." : "\(remaining) of \(scan.slots.count) slots need your check.")
+                    .font(.headline).manualTextLayout()
+                    .accessibilityIdentifier("review-remaining")
+            }
+        }
+    }
+    /// Original AI evidence beside the saved count, why review is needed, and verification status.
+    @ViewBuilder private func estimateDetails(_ slot: ScanDetail.Slot, scan: ScanDetail) -> some View {
+        Text("AI estimate: \(slot.aiQuantity.map(String.init) ?? "none")").monospacedDigit().manualTextLayout()
+        if scan.editable {
+            Text("Saved count: \(slot.acceptedQuantity.map(String.init) ?? "Unknown")").monospacedDigit().manualTextLayout()
+        }
+        ForEach(ReviewReason.reasons(for: slot, analysis: scan.analysis), id: \.self) { reason in
+            Label(reason.explanation, systemImage: "exclamationmark.triangle").manualTextLayout()
+        }
+        let status: (String, String) = switch model.review(of: slot) {
+        case .unsavedEdit: ("Unsaved correction", "pencil")
+        case .checkedUnsaved: ("Checked. Save to record your check.", "checkmark.square")
+        case .verified: ("Verified by a person", "checkmark.seal")
+        case .needsVerification: ("Needs your check", "exclamationmark.circle")
+        case .estimate: ("Estimate, not verified (optional check)", "circle.dashed")
+        }
+        Label(status.0, systemImage: status.1).font(.subheadline.weight(.semibold)).manualTextLayout()
+            .accessibilityLabel("Status for slot \(slot.slotLabel): \(status.0)")
+    }
+    /// Checkbox semantics without a Toggle, whose label can clip at accessibility sizes.
+    private func checkButton(_ slot: ScanDetail.Slot, estimate: Int) -> some View {
+        let on = model.checked.contains(slot.id)
+        return Button {
+            model.setChecked(slot.id, !on)
+        } label: {
+            Label("I checked: \(estimate) is correct", systemImage: on ? "checkmark.square.fill" : "square")
+        }
+        .disabled(model.hasPendingRequest)
+        .accessibilityLabel("Estimate \(estimate) for slot \(slot.slotLabel) is correct")
+        .accessibilityValue(on ? "Checked" : "Not checked")
+        .accessibilityAddTraits(.isToggle)
+    }
+    /// Confirmed counts are historical evidence; a mistake is corrected by a new check.
+    private var correctionGuidance: some View {
+        ManualSection("Found a mistake?") {
+            Text("Confirmed counts can't be edited. To correct a mistake, start a new check of this display; this check stays as recorded.")
+                .manualTextLayout()
+            if let display {
+                NavigationLink("Start a new check of this display") {
+                    ManualCheckView(api: api, userID: userID, display: display, scanID: nil)
+                }
+            } else {
+                Text("Open the display from your store's display list to start a new check.").manualTextLayout()
+            }
         }
     }
     private func adjust(_ id: String, by delta: Int) {

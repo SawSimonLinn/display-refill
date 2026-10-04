@@ -1,4 +1,4 @@
-import { ErrorEnvelope, HealthEnvelope, VisionResponseV1 } from "@display-refill/domain";
+import { ErrorEnvelope, HealthEnvelope, normalizeVisionOutput, VisionResponseV1 } from "@display-refill/domain";
 import { describe, expect, it } from "vitest";
 import { buildVisionPrompt, createLogger, jsonData, jsonError, MAX_VISION_RESPONSE_BYTES, MockVisionAdapter, redact, resolveRequestId, sanitizeVisionUsage, validateVisionOutput, VisionOutputInvalidError } from "../src";
 
@@ -50,6 +50,15 @@ describe("MockVisionAdapter", () => {
     expect(output.slots.map((s) => s.slot_id)).toEqual(slotIds);
     expect(output.slots[1]).toMatchObject({ quantity: null, confidence: null, flags: ["occluded"] });
     expect(VisionResponseV1.parse(output)).toEqual(output);
+  });
+
+  it("review scenario routes low, missing and flagged confidence to review but not a high-confidence estimate", async () => {
+    const four = [...slots, { ...slots[0]!, slot_id: crypto.randomUUID(), label: "S3" }];
+    const output = validateVisionOutput((await new MockVisionAdapter("review").analyze({ slots: four })).raw);
+    const normalized = normalizeVisionOutput(output, four.map((s) => s.slot_id));
+    if (!normalized.ok) throw new Error(normalized.code);
+    expect(normalized.value.slots.map((s) => [s.quantity, s.confidence, s.flags, s.review_required])).toEqual([
+      [3, 0.62, [], true], [2, 0.91, ["wrong_product"], true], [4, null, [], true], [5, 0.97, [], false]]);
   });
 
   it("honours cancellation", async () => {

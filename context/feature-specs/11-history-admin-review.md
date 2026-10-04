@@ -1,7 +1,7 @@
 # Scan History and Manager Review
 
 ## Status
-Not started.
+Implemented locally (2026-10-03); evidence and open checks (spoken VoiceOver, physical device) in progress-tracker.md.
 
 ## Dependencies
 Feature(s): 10. Read the linked domain contracts through the README before implementation.

@@ -44,14 +44,14 @@ public struct ErrorEnvelope: Decodable, Sendable, Equatable {
 /// to `.unknown` so newer servers do not break older apps.
 public enum APIErrorCode: Equatable, Sendable, Decodable {
     case malformedJSON, unauthenticated, forbidden, notFound, methodNotAllowed
-    case conflict, pogChanged, validationFailed, pogNotAssigned, unresolvedCounts
+    case conflict, pogChanged, imageDeleted, validationFailed, pogNotAssigned, unresolvedCounts
     case rateLimited, internalError, notImplemented, dependencyUnavailable, configurationInvalid
     case unknown(String)
 
     private static let byRawValue: [String: APIErrorCode] = [
         "MALFORMED_JSON": .malformedJSON, "UNAUTHENTICATED": .unauthenticated, "FORBIDDEN": .forbidden,
         "NOT_FOUND": .notFound, "METHOD_NOT_ALLOWED": .methodNotAllowed, "CONFLICT": .conflict,
-        "POG_CHANGED": .pogChanged, "VALIDATION_FAILED": .validationFailed, "POG_NOT_ASSIGNED": .pogNotAssigned,
+        "POG_CHANGED": .pogChanged, "IMAGE_DELETED": .imageDeleted, "VALIDATION_FAILED": .validationFailed, "POG_NOT_ASSIGNED": .pogNotAssigned,
         "UNRESOLVED_COUNTS": .unresolvedCounts, "RATE_LIMITED": .rateLimited, "INTERNAL_ERROR": .internalError,
         "NOT_IMPLEMENTED": .notImplemented, "DEPENDENCY_UNAVAILABLE": .dependencyUnavailable,
         "CONFIGURATION_INVALID": .configurationInvalid,

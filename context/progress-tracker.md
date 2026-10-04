@@ -1,10 +1,10 @@
 # Progress Tracker
 
 ## Current Phase
-Phase 3 — Photo analysis. Features 04–06 are verified locally. Feature 07 runs as an actual iOS app; spoken VoiceOver/focus order and physical-device use remain unverified. Feature 08 (photo capture/storage) was found implemented but unrecorded at the start of the Feature 09 session; its backend tests pass, and its simulator import flow now passes after an import crash was fixed (A05). Physical camera capture is unverified. Feature 09 (durable analysis) is implemented locally with the deterministic mock adapter only; no real vision provider is selected. Nothing has been applied to hosted Supabase.
+Phase 3 — Photo analysis. Features 04–06 are verified locally. Feature 07 runs as an actual iOS app; spoken VoiceOver/focus order and physical-device use remain unverified. Feature 08 (photo capture/storage) was found implemented but unrecorded at the start of the Feature 09 session; its backend tests pass, and its simulator import flow now passes after an import crash was fixed (A05). Physical camera capture is unverified. Feature 09 (durable analysis) is implemented locally with the deterministic mock adapter only; no real vision provider is selected. Feature 10 (estimate review/corrections) is implemented and verified locally against that mock output; spoken VoiceOver and physical-device checks remain open. Feature 11 (history and manager review) is implemented locally on iOS (simulator) and web; spoken VoiceOver and physical-device checks remain open. Nothing has been applied to hosted Supabase.
 
 ## Current Goal
-Close the open device and assistive-technology checks for Features 07–09 (list under Feature 09 below). Then run a small provider benchmark and data-handling review before any real vision provider is configured. Feature 10 (AI estimate review/correction UI) is next.
+Close the open device and assistive-technology checks for Features 07–10 (lists under Features 09 and 10 below). Then run a small provider benchmark and data-handling review before any real vision provider is configured. Feature 12 (operations/retention) is the next implementation unit; it has not been started.
 
 ## Completed
 - Reworked the seven uploaded reference documents for this project.
@@ -18,9 +18,11 @@ Close the open device and assistive-technology checks for Features 07–09 (list
 - Feature 05 POG builder, reference-image validation and publication (details, evidence and limitations below).
 - Feature 06 authoritative backend refill engine, atomic count saving and confirmation (details, evidence and limitations below).
 - Feature 09 durable analysis queue/worker with the deterministic mock adapter, locally (evidence and open device/provider items below).
+- Feature 10 estimate review, append-only corrections and iOS takeover, locally against mock output (evidence and open items below).
+- Feature 11 scan history and manager review on iOS and web, locally (evidence and open items below).
 
 ## In Progress
-Open acceptance items carried forward (not blocking independent work): Feature 07 spoken VoiceOver/focus order; Features 07–09 physical-device use; Feature 08 real camera capture/permission/background recovery on a device; Feature 09 real-provider benchmark and data-handling review.
+Open acceptance items carried forward (not blocking independent work): Feature 07 spoken VoiceOver/focus order; Features 07–10 physical-device use; Feature 10 spoken VoiceOver for the review screen; Feature 11 spoken VoiceOver for History and records; Feature 08 real camera capture/permission/background recovery on a device; Feature 09 real-provider benchmark and data-handling review.
 
 ## Feature Status
 | Feature | Status | Evidence |
@@ -34,8 +36,8 @@ Open acceptance items carried forward (not blocking independent work): Feature 0
 | 07 Manual iOS workflow | Implemented; acceptance incomplete | Actual signed iOS app: both default/largest-size simulator workflows and native accessibility audits pass, including keyboard, retry/conflict, restart/reopen/logout. Spoken VoiceOver remains required and unverified; physical device separately unverified. Fresh results below |
 | 08 Photo capture/storage | Implemented; acceptance incomplete | Migration 13, photo API 6/6, simulator import → crop → upload → finalize passes after crash fix A05. Real camera, permission-denied on device and device background recovery unverified |
 | 09 Vision pipeline | Implemented locally (mock adapter only) | Migration 14; DB 141/141 (21 new), API 89/89 (3 new), units 128/128, Swift 46 reported/41 run, simulator photo-analysis UI test passes; fencing negative control. Real provider not selected; device unverified |
-| 10 Review/corrections | Not started | Feature spec only |
-| 11 History/admin review | Not started | Feature spec only |
+| 10 Review/corrections | Implemented locally (mock vision output); acceptance incomplete for VoiceOver/device | Migration 15; DB 141/141, API 92/92 (3 new), units 129/129, Swift 54 reported (8 new), negative control, Feature 10 simulator workflow passes. Full simulator suite: 60 test cases = Core 56 (51 passed, 5 opt-in skipped) + UI 4 (4 passed); 55 passed, 0 failed (after a harness isolation fix; totals reconciled from the xcresult bundle in the Feature 11 session). Spoken VoiceOver, physical device and real-provider output unverified |
+| 11 History/admin review | Implemented locally; acceptance incomplete for VoiceOver/device | No migration. API 97/97 (5 new), units 132/132 (3 new), Swift host 62 reported (8 new), negative control, browser keyboard pass; full simulator suite 69 cases: 64 passed (Core 59 + UI 5), 0 failed, 5 opt-in skipped. Spoken VoiceOver and physical device unverified; retention job itself is Feature 12 |
 | 12 Operations/retention | Not started | Runbook only |
 | 13 Pilot/release | Not started | No store trial |
 
@@ -292,7 +294,7 @@ These are the Feature 04 handoff notes; the reference/publication gaps are close
 - The agent-browser synthetic click on the row "Edit" button did not register in two attempts while DOM `.click()` and keyboard Enter did; not reproduced as an app defect, cause unknown.
 
 ## Next Up
-Feature 07: iOS manual workflow (Feature 06 backend evidence below). Install Xcode to close the iOS build gap for features 01 and 03.
+Feature 11 (history/manager review), after recording the Feature 10 results below. (Earlier entry, now superseded: Feature 07 and the Xcode install are done; see their sections.)
 
 ## Open Questions
 See decision-log.md for provider, hosting, device minimum, retention, training eligibility and real POG data. No question blocks the next local feature.
@@ -595,5 +597,116 @@ Screenshots exported and inspected: upright crop, "Photo queued for analysis. Th
 5. With the worker stopped: confirm "queued" then, after 30 s, the delay notice with the manual option. Start the worker (`VISION_MOCK_SCENARIO=mixed`): the summary and synthetic warning appear without relaunch. Background the app during processing, return, and confirm polling resumes.
 6. Run worker scenarios `poor_alignment` and `invalid` (twice): confirm the alignment message, and the failed state with **Retry analysis** working once per generation.
 7. VoiceOver on: confirm status changes are announced, the retry button is reachable, and focus order on the photo screen is sensible; repeat the Feature 07 manual flow focus-order check.
+
+No hosted Supabase operations, SIMON.md edits or commits were made.
+
+## Feature 10 — Implementation and Evidence (2026-10-03, local only)
+
+### What exists
+- **Migration 15** `supabase/migrations/20261003001500_review_corrections.sql`: nullable `scan_corrections.verified` (written true/false by every save from now on; null only for earlier rows); `guard_scan_slot` also refuses clearing `review_required` once a scan is in review; `mutate_scan_counts` records the flag (otherwise identical to migration 11; diffed). Types regenerated. Decisions D69–D73.
+- **Server**: mock scenario `review` (low confidence 0.62, wrong_product, null confidence, high confidence 0.97, cycling). No API route or response-shape change.
+- **iOS Core**: slot `confidence`/`flags`; `ManualWorkflow` photo-scan review mode (`orderedSlots`, `review(of:)`, explicit `checked` acceptances, `canSave`/`canConfirm`, items only for corrections and checks with derived reasons); `ReviewReason` explanations; `PhotoWorkflow.takeOver()` with persisted exact body/key and 409 reload. Manual and taken-over scans keep the Feature 07 save unchanged.
+- **iOS UI**: count screen shows AI estimate, saved count, reasons, text+icon status; required slots first; "I checked: N is correct" (switch semantics); confirmed scans show "Found a mistake?" with "Start a new check of this display". Photo screen: "Review estimates and counts" / "Enter counts for this scan" and "Stop analysis and enter counts for this scan".
+- **Defect fixed (A07)**: re-importing the same library photo for a new scan did nothing (stale `PhotosPicker` selection).
+- **Tests**: `tests/api/test/review-corrections.test.ts` (3), server unit (1), Swift `ReviewWorkflowTests.swift` (6) + 2 takeover tests in `PhotoTests.swift`, simulator `testEstimateReviewCorrectionAndTakeover`, harness `REVIEW_TESTS=1`, `start-worker?scenario=`, `stop-worker`, snapshot correction rows. One Feature 06 API fixture now bypasses triggers explicitly (it fakes worker evidence by clearing `review_required` after review began, which the new guard correctly refuses); its assertions are unchanged.
+
+### Acceptance criteria → evidence
+| Criterion | Evidence (local; vision output is the deterministic **mock**, labeled synthetic) |
+| --- | --- |
+| Low/null confidence, quality flags and unknowns require explicit review | API: `review` scenario → A1 0.62, A2 wrong_product, A3 null confidence `review_required`, A4 0.97 not; `unresolved_slot_ids` = A1–A3; confirm → 422 `UNRESOLVED_COUNTS` with those IDs. Unit: normalization of the scenario. Swift: required slots first, confirm blocked. Simulator: "2 of 2 slots need your check", Confirm and Save disabled |
+| Accepting an unchanged estimate records verification | API: correction row previous 3 → 3, original_ai 3, `visibility_check`, `verified=true`; a `verified:false` same-value save records `verified=false` and stays unresolved. Simulator: checkbox → ledger item `{3, verified, visibility_check}` and server correction row `verified=true` |
+| Human correction never overwrites AI evidence | API: AI quantity/confidence/flags/review_required identical before and after saves and confirmation; database owner cannot update `ai_quantity`, clear `review_required`, or update/delete correction rows. Simulator: AI values `[3, 2]` unchanged after correction to `[3, 1]` |
+| Edits recalculate through the backend and increment revision atomically | API: revision +1 per save; slot refills equal the domain calculator `[2,4,2,3]`, provisional total 11; clients sending AI fields or totals → 422 |
+| Two-device edits conflict safely; confirmed scans reject correction | API: owner and manager saving the same revision concurrently → exactly one 200 and one 409, one correction row; stale revision 409; after confirm, counts (owner, manager), takeover → 409, corrections/evidence unchanged, direct slot update `IMMUTABLE`. Swift: conflict keeps checks/corrections and resends only what still differs at the new revision |
+| New scan offered for a confirmed mistake | API: new scan for the same display after confirmation → 201, confirmed scan unchanged. Simulator: "Start a new check of this display" opens the start screen and creates nothing until started |
+| Manual takeover from stalled/failed analysis | API: takeover from failed → manual, all unknown/pending, image kept, idempotent replay, retry then 409. Swift: offered only after the delay notice or failure; exact body/key replayed after a lost response; 409 shows the analysis that finished first. Simulator: no worker → delay notice → takeover → same scan opens with unknown counts, server `source=manual` |
+| Authorization and failure paths | API: peer employee 403, other organization 404, no session 403 (no bearer/same-origin), peer takeover 403 |
+
+### Negative control
+The pre-Feature 10 `guard_scan_slot` and `mutate_scan_counts` were reapplied to the local database: `review-corrections.test.ts` **2 of 3 failed** (verified flag missing; `review_required` clearable). `npm run db:reset` from empty restored migration 15; 3/3 again.
+
+### Commands and observed results (macOS 26.6.2, Node 22.13.1, Xcode 27.0, local Supabase on Colima)
+| Command | Result |
+| --- | --- |
+| `npm run db:reset` (migrations 1–15 + seed), `npm run db:types:check` | exit 0; types match |
+| `npm run test:db` | **141/141** |
+| `npm run test:api` | Run 1: **91/92**, a test failed in `refill.test.ts` (Feature 06 fixture, fixed as above). Run 2: **91/92**, "Feature 07 creates/reopens/completes…" failed; **failure detail was not captured**; that file alone then passed 10/10. Runs 3–4: **92/92**. A06 stays open, cause unknown |
+| `npm test` | **129/129** (admin 3, domain 67, server 46, worker 13) |
+| `npm run typecheck`, `lint`, `build`, `check:client-config`, `check:db-scripts`, `git diff --check` | all exit 0 |
+| `xcrun swift test --package-path apps/ios/DisplayRefillKit` | exit 0: 54 reported, 5 opt-in skipped (host runner; 49 executed). The host log was not kept, so this count was not re-derived |
+| `xcodebuild … build` (iOS simulator) | BUILD SUCCEEDED |
+| `REVIEW_TESTS=1 node scripts/run-ios-simulator-tests.mjs` | Run 1: test compile error (await in autoclosure). Run 2: A07 found. Run 3: checkbox queried as button (it is a switch). Run 4: tap landed while the audit had scrolled the link under the tab bar (test sequencing; frames inspected). **Run 5: TEST SUCCEEDED**, UI test 162.9 s, 56 on-simulator Core test cases (51 passed, 5 opt-in skipped); bundle `/tmp/feature07-ios-1791085145911.xcresult` (57 cases: 52 passed, 5 skipped); no accessibility audit issues at default or largest size |
+| Full suite run 1 `node scripts/run-ios-simulator-tests.mjs` | **exit 65, TEST FAILED**. Bundle `/tmp/feature07-ios-1791085834655.xcresult`: 60 tests, 54 passed, 1 failed, 5 skipped. Core 56 cases: 51 passed, 5 skipped; Feature 10 UI 162.8 s, largest-size manual 458.4 s, default manual 197.6 s passed; `testPhotoImportCropAndRecovery` failed (157.5 s): the worker started by the Feature 10 test (`review` scenario) was still running, so the photo test's "no worker yet" premise was false (analysed immediately, accepted `[3,2]`). Harness defect introduced this session; fixed with `/control/stop-worker`, called by both tests that need an idle queue; assertions unchanged |
+| Full suite run 2 (after the `stop-worker` fix) | **exit 0, TEST SUCCEEDED**. Bundle `/tmp/feature07-ios-1791086875798.xcresult`: 60 tests, **55 passed, 0 failed, 5 skipped** (opt-in live suites). Core 56 cases: 51 passed, 5 skipped; UI 4/4; Feature 10 review/takeover 159.7 s, largest-size manual 423.6 s, default manual 180.1 s, photo import/analysis 131.0 s; no accessibility audit issues logged. Features 07–09 simulator workflows did not regress |
+
+### Test-total reconciliation (Feature 11 session, from existing bundles; no tests rerun)
+`xcrun xcresulttool get test-results tests` on the three Feature 10 bundles, counted per test case:
+
+| Bundle | Core cases | UI cases | Total |
+| --- | --- | --- | --- |
+| `…1791085145911` (REVIEW_TESTS run 5) | 56: 51 passed, 5 skipped | 1: 1 passed | 57: 52 passed, 5 skipped |
+| `…1791085834655` (full run 1) | 56: 51 passed, 5 skipped | 4: 3 passed, 1 failed | 60: 54 passed, 1 failed, 5 skipped |
+| `…1791086875798` (full run 2) | 56: 51 passed, 5 skipped | 4: 4 passed | 60: **55 passed**, 0 failed, 5 skipped |
+
+The earlier "Core 56/56" wording counted the five opt-in skips as passes; corrected above. The bundle's per-device line reports `passedTests: 56` for full run 2 because one parameterized Core test (`rejectsSecretKeysWithoutPrintingThem(key:)`) ran with two arguments and is counted per run there; the top-level summary (55 passed) counts test cases. The skips are the same five opt-in tests listed under Feature 07. The host `swift test` runner reports a different number (54 tests reported) from the simulator's 56 Core cases; that gap is consistent across sessions (Feature 11: 62 reported on the host vs 64 Core cases in the simulator) and is not explained here.
+
+### Not verified / outstanding (kept separate)
+- **Real vision provider:** none selected. All Feature 10 estimate behavior was exercised only with deterministic mock output (`provider: mock`, shown as synthetic). Whether real model confidence/flags route sensibly is unknown until the Feature 09 benchmark.
+- **Spoken VoiceOver:** not performed. Native audits (description, hit region, clipping, Dynamic Type) passed in the simulator; that is not a VoiceOver pass. Check: reasons and status are read per slot, the checkbox announces "Checked/Not checked", required-first order matches focus order, and the takeover result is announced.
+- **Physical device:** no device build/install/run. Repeat the Feature 09 device list plus: take over a stalled scan, accept one estimate, correct another, confirm, then open "Start a new check".
+- **A06:** open; the second full API run failed in the Feature 07 test without captured details. The harness log for future runs should be kept (`node scripts/run-api-tests.mjs > log 2>&1`).
+- **Out of scope here:** correction history views (Feature 11); no training/export is performed.
+
+No hosted Supabase operations, SIMON.md edits or commits were made.
+
+## Feature 11 — Implementation and Evidence (2026-10-03, local only)
+
+### What exists
+- **No migration.** History uses existing RLS and the `scans (store_id, created_at desc, id desc)` index. Decisions D74–D78.
+- **Domain:** `ScanHistoryQuery` (strict filters, limit 1–100, `from < to`); error code `IMAGE_DELETED` (410).
+- **Server** `packages/server/src/scan-history.ts`: `listScanHistory` (newest first, exact-timestamp cursor, 404 for inaccessible store/display/organization filters), `getScanRecord` (same detail presenter as `GET /scans/:id`, pinned context, corrections ordered by time/slot/id, confirmation, completion attestation, image state; names and attempt versions for the store's managers/org admins only), `scanImageAccess` (shared by `GET /scans/:id/image`; 410 for retention-deleted photos).
+- **API:** `GET /api/v1/scans` (history), `GET /api/v1/scans/:id/history` (record); `GET /scans/:id/image` now uses the shared function.
+- **Web:** `/scans` (store/display/status/date filters as a native GET form, store-zone dates, table, Show more / Back to newest, empty/not-found/expired-cursor/retry states) and `/scans/:id` (Scan facts; separate Provisional recommendation / Confirmed refill quantity / Completion attestation panels; slots with original estimate, uncertainty, accepted, final and refill; corrections; photo panel with loading/deleted/session/failed + Try again; analysis attempts for managers/admins). Dashboard banner text updated (scans now exist; analysis is synthetic only).
+- **iOS:** `ScanHistory.swift` (models, `ScanHistoryAPI` on `URLSessionAccountAPI`, `HistoryList` with stale-response discard and load-more retry, `HistoryRecordModel` with photo states), `HistoryView.swift` (History tab, store picker, rows, Load more, record screen, removed-photo message, "Continue this check" for editable scans). Saved checks tab unchanged (D78). Slot `final_quantity` decoded.
+- **Tests:** `tests/api/test/scan-history.test.ts` (5), `apps/admin/test/zoned-date.test.ts` (2), domain query test (1), Swift `HistoryTests.swift` (8), simulator `testHistoryPaginationRecordAndRemovedPhoto`, harness `HISTORY_TESTS=1` and `/control/seed-history` (a second synthetic employee owns seeded history); harness now logs control/proxy failure messages (codes/messages only, no credentials).
+
+### Acceptance criteria → evidence
+| Criterion | Evidence (local, synthetic data) |
+| --- | --- |
+| Stable pagination, no duplicates/missing rows under equal timestamps | API: five scans created in one transaction (identical `created_at`) plus others; paging with limit 2 equals the database's `created_at desc, id desc` order exactly, no repeats; a scan created between page requests does not appear in later pages and is first on a fresh first page. Swift: cursor passing, append, defensive de-duplication, last page. Simulator: 25 rows → "Load more checks" → "All N checks shown." with N from the server count |
+| Filters do not leak other stores or organizations | API: employee/manager filtering by another store, another store's display, another organization or a seed-org store → 404 with no store name in the body; other-org admin filtering by this org/store/display → 404 and its unfiltered list contains none of this org's scans; admin filters by store, display, status and `from`/`to` narrow exactly; malformed cursor, unknown status/param, reversed range, limit 101 → 422; no session → 401. Web: manager `/scans?store_id=<other store>` → "Store not found", no scan IDs; zoned-date units (Toronto DST day, Kolkata offset, invalid dates) |
+| History/detail/image permission consistency | API: for seven identities (two employees and a soon-revoked employee of store 1, its manager, employee of store 2, org admin, other-org admin) × three scans (photo in each store, manual in store 1): listed ⇔ detail 200 ⇔ record 200 ⇔ image 200 (photo) / "no photo" 404 (manual); otherwise all 404; record `scan` equals detail exactly. Store assignment revoked with a live token → list empty, detail/record/image 404, filter 404; org membership revoked → 403. Signed link returns `image/jpeg` |
+| Historical names/targets/version unchanged after configuration edits | API: after product rename + archive, v2 (different target) published and assigned, and display rename, the record's `scan`, corrections, confirmation, completion and `pog` (version 1) are deep-equal to before; history row still shows version 1; display name shows the current label (D74, documented in UI copy) |
+| Deleted photos show explicit retained-metadata state | API: object removed and `image_deleted_at` set → list `image_state: deleted`, record `image.state: deleted` + `deleted_at`, `image_available: false`, corrections/slots unchanged, image route 410 `IMAGE_DELETED` with the retention message (other org still 404). Swift: deleted state shown without requesting a link; 410 after load → removed message. Simulator and browser: "Photo removed under retention policy. Counts and review history remain." |
+| Completion not mislabeled as detected stock/measured refill | Separate fields (`confirmation` vs `completion.attested_*`) and panels; copy: "Completion attestation … does not record a new stock count and was not checked by the camera" (web), "This is an attestation, not a new stock count." (iOS); provisional totals labeled "Provisional recommendation … Not confirmed"; list shows refill only when confirmed. Synthetic mock analysis labeled on rows and records |
+| Employee cannot alter another employee's scan via detail route | API: `PATCH/PUT/DELETE /scans/:id` and `POST /scans/:id/history` → 405; peer count save → 403; revision unchanged |
+| Manager review of assigned stores; admin organization-wide | API/web: manager sees store 1 only (names + analysis versions visible); admin sees both stores; employee sees store-wide history and records without staff names or attempt metadata; employees redirected from the web dashboard to `/no-access?reason=employee` |
+
+### Negative control
+`getScanRecord` temporarily read the scan with the service client instead of the caller's client: the consistency test **failed** (store-1 employee got 200 on store 2's record). Restored (file compared byte-for-byte with the backup); 5/5 again.
+
+### Commands and observed results (macOS 26.6.2, Node 22.13.1, Xcode 27.0, local Supabase on Colima; logs in this session's scratchpad)
+| Command | Result |
+| --- | --- |
+| `node scripts/run-api-tests.mjs test/scan-history.test.ts` | Run 1: 3/5 — the mock-analysis helper claimed an earlier test's queued photo (test isolation), and the web record page threw `Invalid option : option` (`Intl.DateTimeFormat` rejects `dateStyle` with `timeZoneName`; fixed in `formatInZone`). Run 2: **5/5** |
+| `npm run test:api` (full, `API_TEST_SERVER_LOG=1`) | Run 1: 96/97 — new test assumed same-transaction correction order (presenter now orders by time, slot label, id). Run 2: 96/97 — new web test pinned v1 after an earlier test assigned v2 (`POG_CHANGED`; helper now pins the display's current version). Runs 3 and 4 (`--no-build`): **97/97**. No A06 symptom; no database reset this session |
+| `npm test` | **132/132** (admin 5, domain 68, server 46, worker 13) |
+| `npm run typecheck`, `npm run lint`, `npm run db:types:check`, `npm run check:client-config`, `npm run check:db-scripts`, `git diff --check` | all exit 0 / OK |
+| `xcrun swift test --package-path apps/ios/DisplayRefillKit` | exit 0: 62 reported (8 new), 5 opt-in skipped |
+| `HISTORY_TESTS=1 node scripts/run-ios-simulator-tests.mjs` | Run 1: seed endpoint 500 (image path did not match the validated-image constraint; harness now logs control failures). Run 2: summary row not found (lazy rows below the fold). **Run 3: TEST SUCCEEDED**, History UI test 237.6 s; bundle `/tmp/feature07-ios-1791089198445.xcresult`: 65 cases = Core 64 (59 passed, 5 skipped) + UI 1 passed; no accessibility audit issues |
+| Full suite run 1 | **exit 65**: bundle `/tmp/feature07-ios-1791089987896.xcresult`. Feature 10 and photo tests passed; History test could not scroll to the summary with more/taller rows in the store, and it left the app signed in, so both manual workflow tests failed at the sign-in step. Test fixed (flick until the lazy element exists; sign out at the end); app code unchanged |
+| Full suite run 2 | **exit 0, TEST SUCCEEDED**. Bundle `/tmp/feature07-ios-1791090482541.xcresult`: 69 cases = Core 64 (**59 passed, 5 opt-in skipped**) + UI 5 (**5 passed**): Feature 10 review 161.1 s, History 243.7 s, largest-size manual 444.2 s, default manual 219.9 s, photo 145.8 s; 0 accessibility audit issues logged |
+| Browser pass (agent-browser, Chromium, production build on :3200, synthetic org; users disabled afterwards) | Manager: dashboard store list excludes the unassigned store; filters set and submitted with the keyboard (focus + Enter on Apply), times in America/Toronto (EDT); record opened via keyboard; retained photo loads (400 px wide, alt text); deleted photo shows the retention message; other store's URL → "Store not found"; 390 px viewport has no page-level horizontal scroll; cleared cookies → `/sign-in?next=%2Fscans`. Full-page record screenshot reviewed. Note: Chromium's closed native `<select>` ignored synthetic ArrowDown via CDP, so values were set with `select`; native select keyboard operation itself was not re-proven by this tool |
+
+Screenshots reviewed: iOS first page, completed record, largest-size attestation (wraps without clipping), removed-photo record; web completed record.
+
+### Not verified / outstanding
+- **Spoken VoiceOver** for the History tab, rows and record (native audits passed; not a VoiceOver pass). Check: row reads as one element with status and refill, Load more and the count line are reachable, section headers navigate, removed-photo message is read.
+- **Physical device:** not attempted. Repeat the History flow on the iPhone with a LAN-reachable local backend; confirm photo link loading and expiry renewal over Wi-Fi.
+- **Web screen reader:** not tested; only keyboard and accessibility-tree checks.
+- **Retention job:** Feature 12. Deleted-photo behavior was exercised by setting `image_deleted_at` and removing the object directly.
+- **Real provider:** none; analysis metadata and estimates shown in history come from the synthetic mock only.
+- Display/store/POG template names are current labels, not snapshots (D74).
+- **A06:** open, not reproduced (no reset this session).
 
 No hosted Supabase operations, SIMON.md edits or commits were made.

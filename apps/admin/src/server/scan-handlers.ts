@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { manualWorkflow, scanAnalysisAction } from "@display-refill/server";
+import { getScanRecord, listScanHistory, manualWorkflow, scanAnalysisAction } from "@display-refill/server";
 import "server-only";
-import { ConfirmScanRequest, SaveCountsRequest } from "@display-refill/domain";
+import { ConfirmScanRequest, SaveCountsRequest, ScanHistoryQuery } from "@display-refill/domain";
 import { createServiceClient, fieldErrorsOf, jsonData, jsonError, jsonFailure, mutateScan, parseIdempotencyKey, readJsonBody, resolveRequestId } from "@display-refill/server";
 import { authenticateApi } from "./api-auth";
-import { uuidParam } from "./api-handlers";
+import { callerClient, uuidParam } from "./api-handlers";
 /** Idempotency is owned by the scan transaction, including the response snapshot. */
 export async function scanMutation(request: Request, scanId: string, action: "counts" | "confirm") {
   const requestId = resolveRequestId(request.headers);
@@ -78,4 +78,26 @@ export async function analysisAction(request: Request, scanId: string, action: "
   const response = jsonData(result.value.detail, requestId);
   if (result.value.replayed) response.headers.set("idempotent-replayed", "true");
   return response;
+}
+
+/** GET /scans: history filtered within what RLS lets the caller read (Feature 11). */
+export async function scanHistory(request: Request) {
+  const requestId = resolveRequestId(request.headers);
+  const auth = await authenticateApi(request, requestId, { mutation: false });
+  if (!auth.ok) return auth.response;
+  const parsed = ScanHistoryQuery.safeParse(Object.fromEntries(new URL(request.url).searchParams));
+  if (!parsed.success) return jsonError("VALIDATION_FAILED", "The request contains invalid values.", requestId, { fieldErrors: fieldErrorsOf(parsed.error) });
+  const result = await listScanHistory(callerClient(auth.ctx), auth.ctx.me, parsed.data);
+  return result.ok ? jsonData(result.value, requestId) : jsonFailure(result, requestId);
+}
+
+/** GET /scans/:id/history: the review record, authorized by the same caller-scoped read. */
+export async function scanRecord(request: Request, scanId: string) {
+  const requestId = resolveRequestId(request.headers);
+  const auth = await authenticateApi(request, requestId, { mutation: false });
+  if (!auth.ok) return auth.response;
+  const id = uuidParam(scanId, "Scan", requestId);
+  if (!id.ok) return id.response;
+  const result = await getScanRecord(callerClient(auth.ctx), createServiceClient(auth.ctx.config), auth.ctx.me, scanId);
+  return result.ok ? jsonData(result.value, requestId) : jsonFailure(result, requestId);
 }
