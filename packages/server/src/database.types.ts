@@ -228,13 +228,13 @@ isOneToOne: false
                   ]
                 },"production_checks": {
                   Row: {
-                    "business_date": string,"created_at": string,"created_by": string,"finished_at": string | null,"id": string,"organization_id": string,"revision": number,"section": string,"status": string,"store_id": string,"updated_at": string
+                    "business_date": string,"created_at": string,"created_by": string,"finished_at": string | null,"id": string,"kind": string,"organization_id": string,"revision": number,"section": string,"status": string,"store_id": string,"updated_at": string
                   }
                   Insert: {
-                    "business_date": string,"created_at"?: string,"created_by": string,"finished_at"?: string | null,"id"?: string,"organization_id": string,"revision"?: number,"section": string,"status"?: string,"store_id": string,"updated_at"?: string
+                    "business_date": string,"created_at"?: string,"created_by": string,"finished_at"?: string | null,"id"?: string,"kind"?: string,"organization_id": string,"revision"?: number,"section": string,"status"?: string,"store_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "business_date"?: string,"created_at"?: string,"created_by"?: string,"finished_at"?: string | null,"id"?: string,"organization_id"?: string,"revision"?: number,"section"?: string,"status"?: string,"store_id"?: string,"updated_at"?: string
+                    "business_date"?: string,"created_at"?: string,"created_by"?: string,"finished_at"?: string | null,"id"?: string,"kind"?: string,"organization_id"?: string,"revision"?: number,"section"?: string,"status"?: string,"store_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -247,13 +247,13 @@ isOneToOne: false
                   ]
                 },"production_counts": {
                   Row: {
-                    "backup": number | null,"backup_required": boolean,"category": string,"check_id": string,"have": number | null,"id": string,"item_id": string,"make": number | null,"organization_id": string,"par_snapshot": number,"product_id": string,"product_name": string,"product_type": string,"shared_size": number,"sort_order": number
+                    "backup": number | null,"backup_required": boolean,"category": string,"check_id": string,"have": number | null,"id": string,"item_id": string,"make": number | null,"organization_id": string,"par_snapshot": number,"prep_revision": number,"product_id": string,"product_name": string,"product_type": string,"shared_size": number,"sort_order": number,"stock_round": number
                   }
                   Insert: {
-                    "backup"?: number | null,"backup_required"?: boolean,"category": string,"check_id": string,"have"?: number | null,"id"?: string,"item_id": string,"make"?: never,"organization_id": string,"par_snapshot": number,"product_id": string,"product_name": string,"product_type": string,"shared_size"?: number,"sort_order": number
+                    "backup"?: number | null,"backup_required"?: boolean,"category": string,"check_id": string,"have"?: number | null,"id"?: string,"item_id": string,"make"?: never,"organization_id": string,"par_snapshot": number,"prep_revision"?: number,"product_id": string,"product_name": string,"product_type": string,"shared_size"?: number,"sort_order": number,"stock_round"?: number
                   }
                   Update: {
-                    "backup"?: number | null,"backup_required"?: boolean,"category"?: string,"check_id"?: string,"have"?: number | null,"id"?: string,"item_id"?: string,"make"?: never,"organization_id"?: string,"par_snapshot"?: number,"product_id"?: string,"product_name"?: string,"product_type"?: string,"shared_size"?: number,"sort_order"?: number
+                    "backup"?: number | null,"backup_required"?: boolean,"category"?: string,"check_id"?: string,"have"?: number | null,"id"?: string,"item_id"?: string,"make"?: never,"organization_id"?: string,"par_snapshot"?: number,"prep_revision"?: number,"product_id"?: string,"product_name"?: string,"product_type"?: string,"shared_size"?: number,"sort_order"?: number,"stock_round"?: number
                   }
                   Relationships: [
                     {
@@ -330,6 +330,62 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "stores"
       referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"production_prep_events": {
+                  Row: {
+                    "actor_id": string,"created_at": string,"id": string,"organization_id": string,"product_id": string,"quantity": number,"sequence": number,"store_id": string
+                  }
+                  Insert: {
+                    "actor_id": string,"created_at"?: string,"id"?: string,"organization_id": string,"product_id": string,"quantity": number,"sequence"?: never,"store_id": string
+                  }
+                  Update: {
+                    "actor_id"?: string,"created_at"?: string,"id"?: string,"organization_id"?: string,"product_id"?: string,"quantity"?: number,"sequence"?: never,"store_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_prep_events_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_prep_events_organization_id_store_id_fkey"
+      columns: ["organization_id","store_id"]
+isOneToOne: false
+      referencedRelation: "stores"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"production_waste_events": {
+                  Row: {
+                    "actor_id": string,"business_date": string,"category": string,"created_at": string,"id": string,"kind": string,"note": string,"organization_id": string,"product_id": string,"product_name": string,"product_type": string,"quantity": number,"reason": string,"store_id": string,"void_of": string | null
+                  }
+                  Insert: {
+                    "actor_id": string,"business_date": string,"category": string,"created_at"?: string,"id"?: string,"kind": string,"note"?: string,"organization_id": string,"product_id": string,"product_name": string,"product_type": string,"quantity": number,"reason": string,"store_id": string,"void_of"?: string | null
+                  }
+                  Update: {
+                    "actor_id"?: string,"business_date"?: string,"category"?: string,"created_at"?: string,"id"?: string,"kind"?: string,"note"?: string,"organization_id"?: string,"product_id"?: string,"product_name"?: string,"product_type"?: string,"quantity"?: number,"reason"?: string,"store_id"?: string,"void_of"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "production_waste_events_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_waste_events_organization_id_store_id_fkey"
+      columns: ["organization_id","store_id"]
+isOneToOne: false
+      referencedRelation: "stores"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "production_waste_events_void_of_fkey"
+      columns: ["void_of"]
+isOneToOne: true
+      referencedRelation: "production_waste_events"
+      referencedColumns: ["id"]
     }
                   ]
                 },"products": {
@@ -811,8 +867,26 @@ isOneToOne: false
 "production_mutate":
 { Args: { "p_actor": string,"p_body": Json,"p_key": string,"p_request_id"?: string,"p_store": string }; Returns: Json
                            },
+"production_operations_read":
+{ Args: { "p_actor": string,"p_day"?: string,"p_period"?: string,"p_store": string }; Returns: Json
+                           },
+"production_prep_read":
+{ Args: { "p_actor": string,"p_store": string }; Returns: Json
+                           },
+"production_prep_record":
+{ Args: { "p_actor": string,"p_done": boolean,"p_key": string,"p_product": string,"p_quantity": number,"p_revision": string,"p_store": string }; Returns: Json
+                           },
 "production_read":
 { Args: { "p_actor": string,"p_check"?: string,"p_store": string,"p_view"?: string }; Returns: Json
+                           },
+"production_restart":
+{ Args: { "p_actor": string,"p_check": string,"p_key": string,"p_revision": number,"p_store": string }; Returns: Json
+                           },
+"production_stock_record":
+{ Args: { "p_actor": string,"p_counts": Json,"p_key": string,"p_product": string,"p_revision": string,"p_store": string }; Returns: Json
+                           },
+"production_waste_record":
+{ Args: { "p_actor": string,"p_body": Json,"p_key": string,"p_store": string }; Returns: Json
                            },
 "publish_pog_version":
 { Args: { "p_actor": string,"p_expected_revision": number,"p_request_id"?: string,"p_version_id": string }; Returns: {

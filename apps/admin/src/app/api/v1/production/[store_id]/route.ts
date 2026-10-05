@@ -23,6 +23,7 @@ export async function POST(request:Request, context:Context) {
  const parsed=ProductionAction.safeParse(body.value);
  if(!parsed.success)return jsonError("VALIDATION_FAILED","Invalid worksheet input.",requestId,{fieldErrors:fieldErrorsOf(parsed.error)});
  const key=parseIdempotencyKey(request.headers);if(!key.ok)return jsonFailure(key,requestId);
- const result=await createServiceClient(auth.ctx.config).rpc("production_mutate",{p_actor:auth.ctx.user.id,p_store:store_id,p_body:parsed.data,p_key:key.value,p_request_id:requestId});
+ const client=createServiceClient(auth.ctx.config);
+ const result=parsed.data.action === "restart" ? await client.rpc("production_restart",{p_actor:auth.ctx.user.id,p_store:store_id,p_check:parsed.data.check_id,p_revision:parsed.data.expected_revision,p_key:key.value}) : await client.rpc("production_mutate",{p_actor:auth.ctx.user.id,p_store:store_id,p_body:parsed.data,p_key:key.value,p_request_id:requestId});
  return result.error?jsonFailure(fromDbError(result.error),requestId):jsonData(result.data,requestId);
 }

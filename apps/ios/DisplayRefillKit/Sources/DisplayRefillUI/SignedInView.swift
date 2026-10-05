@@ -27,7 +27,18 @@ public struct SignedInView: View {
                 }
                 .toolbar { accountMenu }
             }
-            .tabItem { Label("Today", systemImage: "checklist") }
+            .tabItem { Label("Stock Check", systemImage: "checklist") }
+
+            if let prepAPI = api as? any PrepAPI {
+                NavigationStack {
+                    PrepListView(stores: me.stores, api: prepAPI, userID: me.userID.uuidString)
+                        .toolbar { accountMenu }
+                }.tabItem { Label("Prep List", systemImage: "shippingbox") }
+            }
+
+            NavigationStack {
+                BuildBookView().toolbar { accountMenu }
+            }.tabItem { Label("Build Book", systemImage: "book") }
 
             if let historyAPI = api as? any ScanHistoryAPI {
                 NavigationStack {
@@ -37,11 +48,13 @@ public struct SignedInView: View {
                 .tabItem { Label("History", systemImage: "list.bullet.rectangle") }
             }
 
-            NavigationStack {
-                SavedChecksView(api: api, userID: me.userID.uuidString)
-                    .toolbar { accountMenu }
+            if let operationsAPI = api as? any OperationsAPI {
+                NavigationStack {
+                    WasteLogView(stores: me.stores, api: operationsAPI, userID: me.userID.uuidString)
+                        .toolbar { accountMenu }
+                }.tabItem { Label("Waste Log", systemImage: "trash") }
             }
-            .tabItem { Label("Saved checks", systemImage: "clock") }
+
         }
     }
 

@@ -1,0 +1,49 @@
+import Foundation
+import Testing
+@testable import DisplayRefillCore
+private actor StockStub: StockUpdateAPI {
+    var calls: [(StockMutation, String)] = []
+    var fail = true
+    func recorded() -> [(StockMutation, String)] { calls }
+    func updateStock(storeID: String, mutation: StockMutation, key: String) async throws -> PrepBoard {
+        calls.append((mutation, key))
+        if fail { fail = false; throw APIClientError.transport(.timedOut) }
+        return .init(updated_at: "now", items: [], missing_sections: [])
+    }
+}
+@Suite @MainActor struct StockTests {
+    private var item: PrepItem { .init(product_id: "p", product_name: "Fruit", category: "Fruit", product_type: "Bowl", ready: true, needed: 5, made: 0, remaining: 5, revision: "old", oldest_count: "now", locations: [.init(section: .fruitMobile, have: 5, backup: 0, backup_required: true, display_need: 5, checked_at: "now"), .init(section: .fruitCase, have: 31, backup: nil, backup_required: false, display_need: 5, checked_at: "now")], activity: []) }
+    @Test func reopeningSeedsSavedCountsWithoutReplacingEdits() async {
+        let model = StockUpdateModel(api: StockStub(), storeID: "s")
+        model.loadCounts(item)
+        #expect(model.inputs["fruit_mobile"] == "5")
+        #expect(model.inputs["fruit_case"] == "31")
+        model.inputs["fruit_mobile"] = "0"
+        model.loadCounts(item)
+        #expect(model.inputs["fruit_mobile"] == "0")
+        #expect(!model.pending)
+    }
+    @Test func restoredRetryCountsAreNotReplacedByOlderSavedCounts() async {
+        let model = StockUpdateModel(api: StockStub(), storeID: "s")
+        model.inputs = ["fruit_mobile": "0", "fruit_case": "33"]
+        await model.save(item)
+        #expect(model.pending)
+        model.loadCounts(item)
+        #expect(model.inputs["fruit_mobile"] == "0")
+        #expect(model.inputs["fruit_case"] == "33")
+    }
+    @Test func partialInputCannotReplaceAllLocations() async {
+        let api = StockStub(); let model = StockUpdateModel(api: api, storeID: "s")
+        model.inputs["fruit_mobile"] = "10"; await model.save(item)
+        #expect(await api.recorded().isEmpty); #expect(model.error != nil)
+    }
+    @Test func interruptedStockUpdateRestoresBothLocationsAndTheExactKey() async throws {
+        let key = "stock-test-" + UUID().uuidString; defer { UserDefaults.standard.removeObject(forKey: key) }
+        let api = StockStub(); let model = StockUpdateModel(api: api, storeID: "s", persistenceKey: key)
+        model.inputs = ["fruit_mobile": "10", "fruit_case": "33"]
+        await model.save(item); #expect(model.pending)
+        let restored = StockUpdateModel(api: api, storeID: "s", persistenceKey: key)
+        #expect(restored.inputs["fruit_case"] == "33"); await restored.save(item); #expect(restored.saved)
+        let calls = await api.recorded(); #expect(calls.count == 2); #expect(calls[0].1 == calls[1].1); #expect(calls[1].0.counts[0].backup == 0); #expect(calls[1].0.counts[1].backup == nil)
+    }
+}

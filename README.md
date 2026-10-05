@@ -5,14 +5,9 @@ planogram (POG) and get a refill list. SwiftUI app for employees, Next.js
 admin dashboard and API, Supabase Auth/Postgres/Storage, and a persistent
 TypeScript worker for photo analysis.
 
-**Status: features 01–05 (foundation, database and security, Supabase Auth
-and memberships, store/display/product management, POG builder/publication).** Sign-in, sessions,
-membership management, stores, products, POG identities and displays (with
-published-version assignment), private reference-image validation and the POG
-editor/publication work against the local stack; employee scans and vision are
-not built yet. See
-[context/progress-tracker.md](context/progress-tracker.md) for what is verified.
-Specifications live in [context/](context/README.md).
+**Current workflow:** the SwiftUI app provides Stock Check and a shared Prep List. Employees count four sections or update one product during the day, then record partial preparation or Done. The admin dashboard manages PAR and monitors the grouped prep list. Supabase Auth/Postgres/Storage remain the backend. Photo analysis uses the local deterministic mock; a real provider and hosted pilot are still unverified.
+
+Local implementation and verification evidence, including outstanding physical-device and accessibility checks, is in [context/progress-tracker.md](context/progress-tracker.md). The current workflow spec is [Feature15](context/feature-specs/15-stock-check-shared-prep.md); prior scan/POG/history functionality remains available.
 
 ## Layout
 
@@ -163,6 +158,8 @@ real-provider recovery have not been verified.
 
 
 ### Daily production worksheet
-The employee Today tab now uses four sections (fruit mobile, salad mobile, fruit case, veggie case). Enter HAVE including display and prepared backup stock; the server calculates MAKE. PAR is configured by assigned managers or admins at `/production` → PAR setup using existing catalog products. Each product belongs to one section. Today's list uses only the latest finished check per section; unfinished coverage is marked partial. Existing scans/history are retained and photo work is deferred.
+The employee Today tab now uses four sections (fruit mobile, salad mobile, fruit case, veggie case). Enter HAVE including display and prepared backup stock; the server calculates MAKE. PAR is configured by assigned managers or admins at `/production` → PAR setup using existing catalog products. Shared products can appear in multiple sections: count each display separately and enter shared cooler backup once. Other HAVE counts include backup. Today's list uses only the latest finished check per section; unfinished coverage is marked partial. Existing scans/history are retained and photo work is deferred.
 
 Apply additive local migrations18–20 without resetting retained test accounts. Follow `context/feature-specs/14-production-worksheet.md` and the progress tracker for exact setup, API semantics and test limits. A rebuilt app must be installed to see this change on a physical phone; source/simulator verification does not update the installed phone app.
+
+FM-615 University Place has the owner-provided108-row morning list loaded locally (7 fruit mobile,9 salad,51 fruit case,41 veggie). See `context/pilot/morning-item-list/README.md`; no prior sheet HAVE values were imported.

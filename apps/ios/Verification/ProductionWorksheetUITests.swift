@@ -17,7 +17,7 @@ import XCTest
         app.textFields["Email"].tap(); app.textFields["Email"].typeText(fixture.email)
         app.secureTextFields["Password"].tap(); app.secureTextFields["Password"].typeText(fixture.password)
         app.buttons["Sign in"].tap()
-        let fruit = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "1. Fruit mobile bunker")).firstMatch
+        let fruit = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "1. M1 BUNKER (FRUIT)")).firstMatch
         XCTAssertTrue(fruit.waitForExistence(timeout: 20), app.debugDescription)
         fruit.tap()
         let fields = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "production-have-"))
@@ -42,7 +42,7 @@ import XCTest
         let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.lifetime = .keepAlways; add(attachment)
         try app.performAccessibilityAudit(for: [.textClipped, .sufficientElementDescription])
         finish.tap()
-        XCTAssertTrue(app.staticTexts["Salad mobile"].waitForExistence(timeout: 15), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["SALAD DESTINATION"].waitForExistence(timeout: 15), app.debugDescription)
         app.terminate()
     }
 }

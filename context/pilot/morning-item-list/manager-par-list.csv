@@ -1,109 +1,109 @@
-row_key,section,source_section,product_name,par,sort_order,source_line
-fruit_mobile-001,fruit_mobile,M1 BUNKER (FRUIT),$5 PINEAPPLE KIWI STRAWBERRY,10,0,7
-fruit_mobile-002,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED BERRYS,10,1,8
-fruit_mobile-003,fruit_mobile,M1 BUNKER (FRUIT),$5 CLEMATINE,5,2,9
-fruit_mobile-004,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED GRAPES,5,3,10
-fruit_mobile-005,fruit_mobile,M1 BUNKER (FRUIT),$5 PINEAPPLE,10,4,11
-fruit_mobile-006,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED MELONS,10,5,12
-fruit_mobile-007,fruit_mobile,M1 BUNKER (FRUIT),$5 WATERMELON,10,6,13
-salad_mobile-001,salad_mobile,SALAD DESTINATION,FAMLY SIZED COBB,2,0,15
-salad_mobile-002,salad_mobile,SALAD DESTINATION,FAMILY SIZED GARDEN,2,1,16
-salad_mobile-003,salad_mobile,SALAD DESTINATION,FAMILY BLT,2,2,17
-salad_mobile-004,salad_mobile,SALAD DESTINATION,COBB,5,3,18
-salad_mobile-005,salad_mobile,SALAD DESTINATION,GARDEN,5,4,19
-salad_mobile-006,salad_mobile,SALAD DESTINATION,BERRY,2,5,20
-salad_mobile-007,salad_mobile,SALAD DESTINATION,CEASER,3,6,21
-salad_mobile-008,salad_mobile,SALAD DESTINATION,BLT,2,7,22
-salad_mobile-009,salad_mobile,SALAD DESTINATION,SOUTHWEST,3,8,23
-fruit_case-001,fruit_case,6FT FRUIT,STRAWBERRY & WHIPPED TOPPING,5,0,74
-fruit_case-002,fruit_case,6FT FRUIT,"PINEAPPLE, STRAWBERRY & KIWI",5,1,75
-fruit_case-003,fruit_case,6FT FRUIT,"MANDARIN, STRAWBERRY & KIWI",5,2,76
-fruit_case-004,fruit_case,6FT FRUIT,"STRAWBERRY, GRAPE & MANDARIN",5,3,77
-fruit_case-005,fruit_case,6FT FRUIT,"GRAPES, CHEESE & PRETZELS",6,4,78
-fruit_case-006,fruit_case,6FT FRUIT,"STRAWBERRY, CHEESE & GRAPE",6,5,79
-fruit_case-007,fruit_case,6FT FRUIT,"TURKEY BITES, CHEESE & GRAPES",6,6,80
-fruit_case-008,fruit_case,6FT FRUIT,MANGO & PAPAYA,5,7,81
-fruit_case-009,fruit_case,6FT FRUIT,PARFAIT STRAWBERRY,4,8,82
-fruit_case-010,fruit_case,6FT FRUIT,PARFAIT BLUEBERRY,4,9,83
-fruit_case-011,fruit_case,6FT FRUIT,PARFAIT MIXED BERRY,4,10,84
-fruit_case-012,fruit_case,6FT FRUIT,WHIP TOPPING,4,11,85
-fruit_case-013,fruit_case,6FT FRUIT,WATERMELON CUP,12,12,86
-fruit_case-014,fruit_case,6FT FRUIT,MIXED MELON CUP,8,13,87
-fruit_case-015,fruit_case,6FT FRUIT,CANTALOUPE CUP,8,14,88
-fruit_case-016,fruit_case,6FT FRUIT,PINEAPPLE CUP,8,15,89
-fruit_case-017,fruit_case,6FT FRUIT,MIXED BERRIES CUP,6,16,90
-fruit_case-018,fruit_case,6FT FRUIT,BERRY/KIWI CUP,6,17,91
-fruit_case-019,fruit_case,6FT FRUIT,DRAGON FRUIT/KIWI CUP,6,18,92
-fruit_case-020,fruit_case,6FT FRUIT,STRAWBERRY CUP,6,19,93
-fruit_case-021,fruit_case,6FT FRUIT,"PINEAPPLE, KIWI & PAPAYA",6,20,94
-fruit_case-022,fruit_case,6FT FRUIT,WATERMELON SPEARS,10,21,95
-fruit_case-023,fruit_case,6FT FRUIT,PINEAPPLE SPEARS,6,22,96
-fruit_case-024,fruit_case,6FT FRUIT,$5 WATERMELON,36,23,97
-fruit_case-025,fruit_case,6FT FRUIT,$5 MIXED MELONS,18,24,98
-fruit_case-026,fruit_case,6FT FRUIT,$5 MIXED GRAPE BOWL,6,25,99
-fruit_case-027,fruit_case,6FT FRUIT,$5 PINEAPPLE,18,26,100
-fruit_case-028,fruit_case,6FT FRUIT,$5 HONEYDEW BOWL,9,27,101
-fruit_case-029,fruit_case,6FT FRUIT,$5 MANDARIN BOWL,6,28,102
-fruit_case-030,fruit_case,6FT FRUIT,$5 RAINBOW MIX BOWL,6,29,103
-fruit_case-031,fruit_case,6FT FRUIT,$5 MIXED BERRYS,6,30,104
-fruit_case-032,fruit_case,6FT FRUIT,$5 CANTALOUPE BOWL,18,31,105
-fruit_case-033,fruit_case,6FT FRUIT,$5 MIXED MELON W/ GRAPES,6,32,106
-fruit_case-034,fruit_case,6FT FRUIT,$5 PINEAPPLE KIWI STRAWBERRY,6,33,107
-fruit_case-035,fruit_case,6FT FRUIT,$5 MANGOS,4,34,108
-fruit_case-036,fruit_case,6FT FRUIT,$5 TROPICAL FRUIT MIX BOWL,4,35,109
-fruit_case-037,fruit_case,6FT FRUIT,$5 MIXED FRUIT W/ BERRY BOWL,3,36,110
-fruit_case-038,fruit_case,6FT FRUIT,$10 WATERMELON,4,37,111
-fruit_case-039,fruit_case,6FT FRUIT,$10 MIXED MELON,4,38,112
-fruit_case-040,fruit_case,6FT FRUIT,$10 CANTALOUPE,4,39,113
-fruit_case-041,fruit_case,6FT FRUIT,$10 PINEAPPLE,4,40,114
-fruit_case-042,fruit_case,6FT FRUIT,$10 STRAWBERRY/PINEAPPLE/BLUEBERRY,2,41,115
-fruit_case-043,fruit_case,6FT FRUIT,$10 MIXED FRUIT W/ BERRIES,3,42,116
-fruit_case-044,fruit_case,6FT FRUIT,$10 MIXED BERRIES,3,43,117
-fruit_case-045,fruit_case,6FT FRUIT,WATERMELON SLICES,3,44,118
-fruit_case-046,fruit_case,6FT FRUIT,WATERMELON QUARTERS,3,45,119
-fruit_case-047,fruit_case,6FT FRUIT,WATERMELON 60oz,3,46,120
-fruit_case-048,fruit_case,6FT FRUIT,MIXED FRUIT 60oz,3,47,121
-fruit_case-049,fruit_case,6FT FRUIT,SMALL PARTY TRAY,3,48,122
-fruit_case-050,fruit_case,6FT FRUIT,LARGE TRAY,4,49,123
-fruit_case-051,fruit_case,6FT FRUIT,LARGE TRAY W/ DIP,4,50,124
-veggie_case-001,veggie_case,4FT VEG,CHOPPED WHITE ONIONS,18,0,32
-veggie_case-002,veggie_case,4FT VEG,CHOPPED RED ONIONS,9,1,33
-veggie_case-003,veggie_case,4FT VEG,CHOPPED CELERY,4,2,34
-veggie_case-004,veggie_case,4FT VEG,MIREPOIX,3,3,35
-veggie_case-005,veggie_case,4FT VEG,DICED CELERY & WHITE ONIONS,4,4,36
-veggie_case-006,veggie_case,4FT VEG,TRI-PEPPERS,9,5,37
-veggie_case-007,veggie_case,4FT VEG,DICED PEPPERS W/ ONIONS,6,6,38
-veggie_case-008,veggie_case,4FT VEG,CHOPPED CILANTRO W/ ONIONS,9,7,39
-veggie_case-009,veggie_case,4FT VEG,PERSONAL GUAC,8,8,40
-veggie_case-010,veggie_case,4FT VEG,AVACADO SMASH,9,9,41
-veggie_case-011,veggie_case,4FT VEG,GUAC MILD,9,10,42
-veggie_case-012,veggie_case,4FT VEG,GUAC MEDIUM,9,11,43
-veggie_case-013,veggie_case,4FT VEG,PICO & GUAC,6,12,44
-veggie_case-014,veggie_case,4FT VEG,MILD PICO,8,13,45
-veggie_case-015,veggie_case,4FT VEG,MEDIUM PICO,8,14,46
-veggie_case-016,veggie_case,4FT VEG,HOT PICO,6,15,47
-veggie_case-017,veggie_case,4FT VEG,MANGO PICO,6,16,48
-veggie_case-018,veggie_case,4FT VEG,SALSA (MILD),4,17,49
-veggie_case-019,veggie_case,4FT VEG,SALSA (MEDIUM),4,18,50
-veggie_case-020,veggie_case,4FT VEG,CARROTS & CUCUMBERS W/RNCH,3,19,51
-veggie_case-021,veggie_case,4FT VEG,BBY CARROTS & SNAP PEAS W/RNCH,3,20,52
-veggie_case-022,veggie_case,4FT VEG,BABY CARROTS - SNAP PEAS - CELERY,3,21,53
-veggie_case-023,veggie_case,4FT VEG,BABY CARROTS - GRP TOMS - BROCCOLI,3,22,54
-veggie_case-024,veggie_case,4FT VEG,BROC/CAL/RNCH,3,23,55
-veggie_case-025,veggie_case,4FT VEG,BRUSSLE SPROUTS,3,24,56
-veggie_case-026,veggie_case,4FT VEG,BUTTERNUT SQUASH,4,25,57
-veggie_case-027,veggie_case,4FT VEG,CELERY & CARROTS,4,26,58
-veggie_case-028,veggie_case,4FT VEG,SNACKING PEPPERS,5,27,59
-veggie_case-029,veggie_case,4FT VEG,FAJITA MIX,5,28,60
-veggie_case-030,veggie_case,4FT VEG,JUILLENE WHITE ONIONS,4,29,61
-veggie_case-031,veggie_case,4FT VEG,HAMBURGER FIXINGS,3,30,62
-veggie_case-032,veggie_case,4FT VEG,SOUP BASE,3,31,63
-veggie_case-033,veggie_case,4FT VEG,CUT SQUASH,3,32,64
-veggie_case-034,veggie_case,4FT VEG,STEAK TOPPERS,3,33,65
-veggie_case-035,veggie_case,4FT VEG,VEGGIE BOWL,3,34,66
-veggie_case-036,veggie_case,4FT VEG,CUCUMBER BOWL,3,35,67
-veggie_case-037,veggie_case,4FT VEG,LRG VEG BOWL,3,36,68
-veggie_case-038,veggie_case,4FT VEG,SML VEG TRAY,4,37,69
-veggie_case-039,veggie_case,4FT VEG,FRUIT/VEG TRAY,4,38,70
-veggie_case-040,veggie_case,4FT VEG,LRG VEGGIE BOWL W/O RANCH,4,39,71
-veggie_case-041,veggie_case,4FT VEG,LRG VEGGIE BOWL W/ RANCH,4,40,72
+row_key,section,source_section,product_name,par,sort_order,source_line,category
+fruit_mobile-001,fruit_mobile,M1 BUNKER (FRUIT),$5 PINEAPPLE KIWI STRAWBERRY,5,0,7,
+fruit_mobile-002,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED BERRYS,5,1,8,
+fruit_mobile-003,fruit_mobile,M1 BUNKER (FRUIT),$5 CLEMATINE,5,2,9,
+fruit_mobile-004,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED GRAPES,5,3,10,
+fruit_mobile-005,fruit_mobile,M1 BUNKER (FRUIT),$5 PINEAPPLE,5,4,11,
+fruit_mobile-006,fruit_mobile,M1 BUNKER (FRUIT),$5 MIXED MELONS,5,5,12,
+fruit_mobile-007,fruit_mobile,M1 BUNKER (FRUIT),$5 WATERMELON,5,6,13,
+salad_mobile-001,salad_mobile,SALAD DESTINATION,FAMLY SIZED COBB,2,0,15,
+salad_mobile-002,salad_mobile,SALAD DESTINATION,FAMILY SIZED GARDEN,2,1,16,
+salad_mobile-003,salad_mobile,SALAD DESTINATION,FAMILY BLT,2,2,17,
+salad_mobile-004,salad_mobile,SALAD DESTINATION,COBB,5,3,18,
+salad_mobile-005,salad_mobile,SALAD DESTINATION,GARDEN,5,4,19,
+salad_mobile-006,salad_mobile,SALAD DESTINATION,BERRY,2,5,20,
+salad_mobile-007,salad_mobile,SALAD DESTINATION,CEASER,3,6,21,
+salad_mobile-009,salad_mobile,SALAD DESTINATION,SOUTHWEST,3,7,23,
+salad_mobile-008,salad_mobile,SALAD DESTINATION,BLT,2,8,22,
+fruit_case-001,fruit_case,6FT FRUIT,STRAWBERRY & WHIPPED TOPPING,5,0,74,Top row
+fruit_case-002,fruit_case,6FT FRUIT,"PINEAPPLE, STRAWBERRY & KIWI",5,1,75,Top row
+fruit_case-003,fruit_case,6FT FRUIT,"MANDARIN, STRAWBERRY & KIWI",5,2,76,Top row
+fruit_case-004,fruit_case,6FT FRUIT,"STRAWBERRY, GRAPE & MANDARIN",5,3,77,Top row
+fruit_case-005,fruit_case,6FT FRUIT,"GRAPES, CHEESE & PRETZELS",6,4,78,Top row
+fruit_case-006,fruit_case,6FT FRUIT,"STRAWBERRY, CHEESE & GRAPE",6,5,79,Top row
+fruit_case-007,fruit_case,6FT FRUIT,"TURKEY BITES, CHEESE & GRAPES",6,6,80,Top row
+fruit_case-008,fruit_case,6FT FRUIT,MANGO & PAPAYA,5,7,81,Top row
+fruit_case-009,fruit_case,6FT FRUIT,PARFAIT STRAWBERRY,4,8,82,Top row
+fruit_case-010,fruit_case,6FT FRUIT,PARFAIT BLUEBERRY,4,9,83,Top row
+fruit_case-011,fruit_case,6FT FRUIT,PARFAIT MIXED BERRY,4,10,84,Top row
+fruit_case-012,fruit_case,6FT FRUIT,WHIP TOPPING,4,11,85,Top row
+fruit_case-013,fruit_case,6FT FRUIT,WATERMELON CUP,12,12,86,2 for 6
+fruit_case-014,fruit_case,6FT FRUIT,MIXED MELON CUP,8,13,87,2 for 6
+fruit_case-015,fruit_case,6FT FRUIT,CANTALOUPE CUP,8,14,88,2 for 6
+fruit_case-016,fruit_case,6FT FRUIT,PINEAPPLE CUP,8,15,89,2 for 6
+fruit_case-017,fruit_case,6FT FRUIT,MIXED BERRIES CUP,6,16,90,2 for 6
+fruit_case-018,fruit_case,6FT FRUIT,BERRY/KIWI CUP,6,17,91,2 for 6
+fruit_case-019,fruit_case,6FT FRUIT,DRAGON FRUIT/KIWI CUP,6,18,92,2 for 6
+fruit_case-020,fruit_case,6FT FRUIT,STRAWBERRY CUP,6,19,93,2 for 6
+fruit_case-021,fruit_case,6FT FRUIT,"PINEAPPLE, KIWI & PAPAYA",6,20,94,2 for 6
+fruit_case-022,fruit_case,6FT FRUIT,WATERMELON SPEARS,10,21,95,2 for 6
+fruit_case-023,fruit_case,6FT FRUIT,PINEAPPLE SPEARS,6,22,96,2 for 6
+fruit_case-024,fruit_case,6FT FRUIT,$5 WATERMELON,36,23,97,$5 bowls
+fruit_case-025,fruit_case,6FT FRUIT,$5 MIXED MELONS,18,24,98,$5 bowls
+fruit_case-026,fruit_case,6FT FRUIT,$5 MIXED GRAPE BOWL,6,25,99,$5 bowls
+fruit_case-027,fruit_case,6FT FRUIT,$5 PINEAPPLE,18,26,100,$5 bowls
+fruit_case-028,fruit_case,6FT FRUIT,$5 HONEYDEW BOWL,9,27,101,$5 bowls
+fruit_case-029,fruit_case,6FT FRUIT,$5 MANDARIN BOWL,6,28,102,$5 bowls
+fruit_case-030,fruit_case,6FT FRUIT,$5 RAINBOW MIX BOWL,6,29,103,$5 bowls
+fruit_case-031,fruit_case,6FT FRUIT,$5 MIXED BERRYS,6,30,104,$5 bowls
+fruit_case-032,fruit_case,6FT FRUIT,$5 CANTALOUPE BOWL,18,31,105,$5 bowls
+fruit_case-033,fruit_case,6FT FRUIT,$5 MIXED MELON W/ GRAPES,6,32,106,$5 bowls
+fruit_case-034,fruit_case,6FT FRUIT,$5 PINEAPPLE KIWI STRAWBERRY,6,33,107,$5 bowls
+fruit_case-035,fruit_case,6FT FRUIT,$5 MANGOS,4,34,108,$5 bowls
+fruit_case-036,fruit_case,6FT FRUIT,$5 TROPICAL FRUIT MIX BOWL,4,35,109,$5 bowls
+fruit_case-037,fruit_case,6FT FRUIT,$5 MIXED FRUIT W/ BERRY BOWL,3,36,110,$5 bowls
+fruit_case-038,fruit_case,6FT FRUIT,$10 WATERMELON,4,37,111,$10 bowls
+fruit_case-039,fruit_case,6FT FRUIT,$10 MIXED MELON,4,38,112,$10 bowls
+fruit_case-040,fruit_case,6FT FRUIT,$10 CANTALOUPE,4,39,113,$10 bowls
+fruit_case-041,fruit_case,6FT FRUIT,$10 PINEAPPLE,4,40,114,$10 bowls
+fruit_case-042,fruit_case,6FT FRUIT,$10 STRAWBERRY/PINEAPPLE/BLUEBERRY,2,41,115,$10 bowls
+fruit_case-043,fruit_case,6FT FRUIT,$10 MIXED FRUIT W/ BERRIES,3,42,116,$10 bowls
+fruit_case-044,fruit_case,6FT FRUIT,$10 MIXED BERRIES,3,43,117,$10 bowls
+fruit_case-045,fruit_case,6FT FRUIT,WATERMELON SLICES,3,44,118,Party tray
+fruit_case-046,fruit_case,6FT FRUIT,WATERMELON QUARTERS,3,45,119,Party tray
+fruit_case-047,fruit_case,6FT FRUIT,WATERMELON 60oz,3,46,120,Party tray
+fruit_case-048,fruit_case,6FT FRUIT,MIXED FRUIT 60oz,3,47,121,Party tray
+fruit_case-049,fruit_case,6FT FRUIT,SMALL PARTY TRAY,3,48,122,Party tray
+fruit_case-050,fruit_case,6FT FRUIT,LARGE TRAY,4,49,123,Party tray
+fruit_case-051,fruit_case,6FT FRUIT,LARGE TRAY W/ DIP,4,50,124,Party tray
+veggie_case-001,veggie_case,4FT VEG,CHOPPED WHITE ONIONS,18,0,32,
+veggie_case-002,veggie_case,4FT VEG,CHOPPED RED ONIONS,9,1,33,
+veggie_case-003,veggie_case,4FT VEG,CHOPPED CELERY,4,2,34,
+veggie_case-004,veggie_case,4FT VEG,MIREPOIX,3,3,35,
+veggie_case-005,veggie_case,4FT VEG,DICED CELERY & WHITE ONIONS,4,4,36,
+veggie_case-006,veggie_case,4FT VEG,TRI-PEPPERS,9,5,37,
+veggie_case-007,veggie_case,4FT VEG,DICED PEPPERS W/ ONIONS,6,6,38,
+veggie_case-008,veggie_case,4FT VEG,CHOPPED CILANTRO W/ ONIONS,9,7,39,
+veggie_case-009,veggie_case,4FT VEG,PERSONAL GUAC,8,8,40,
+veggie_case-010,veggie_case,4FT VEG,AVACADO SMASH,9,9,41,
+veggie_case-011,veggie_case,4FT VEG,GUAC MILD,9,10,42,
+veggie_case-012,veggie_case,4FT VEG,GUAC MEDIUM,9,11,43,
+veggie_case-013,veggie_case,4FT VEG,PICO & GUAC,6,12,44,
+veggie_case-014,veggie_case,4FT VEG,MILD PICO,8,13,45,
+veggie_case-015,veggie_case,4FT VEG,MEDIUM PICO,8,14,46,
+veggie_case-016,veggie_case,4FT VEG,HOT PICO,6,15,47,
+veggie_case-017,veggie_case,4FT VEG,MANGO PICO,6,16,48,
+veggie_case-018,veggie_case,4FT VEG,SALSA (MILD),4,17,49,
+veggie_case-019,veggie_case,4FT VEG,SALSA (MEDIUM),4,18,50,
+veggie_case-020,veggie_case,4FT VEG,CARROTS & CUCUMBERS W/RNCH,3,19,51,
+veggie_case-021,veggie_case,4FT VEG,BBY CARROTS & SNAP PEAS W/RNCH,3,20,52,
+veggie_case-022,veggie_case,4FT VEG,BABY CARROTS - SNAP PEAS - CELERY,3,21,53,
+veggie_case-023,veggie_case,4FT VEG,BABY CARROTS - GRP TOMS - BROCCOLI,3,22,54,
+veggie_case-024,veggie_case,4FT VEG,BROC/CAL/RNCH,3,23,55,
+veggie_case-025,veggie_case,4FT VEG,BRUSSLE SPROUTS,3,24,56,
+veggie_case-026,veggie_case,4FT VEG,BUTTERNUT SQUASH,4,25,57,
+veggie_case-027,veggie_case,4FT VEG,CELERY & CARROTS,4,26,58,
+veggie_case-028,veggie_case,4FT VEG,SNACKING PEPPERS,5,27,59,
+veggie_case-029,veggie_case,4FT VEG,FAJITA MIX,5,28,60,
+veggie_case-030,veggie_case,4FT VEG,JUILLENE WHITE ONIONS,4,29,61,
+veggie_case-031,veggie_case,4FT VEG,HAMBURGER FIXINGS,3,30,62,
+veggie_case-032,veggie_case,4FT VEG,SOUP BASE,3,31,63,
+veggie_case-033,veggie_case,4FT VEG,CUT SQUASH,3,32,64,
+veggie_case-034,veggie_case,4FT VEG,STEAK TOPPERS,3,33,65,
+veggie_case-035,veggie_case,4FT VEG,VEGGIE BOWL,3,34,66,
+veggie_case-036,veggie_case,4FT VEG,CUCUMBER BOWL,3,35,67,
+veggie_case-037,veggie_case,4FT VEG,LRG VEG BOWL,3,36,68,
+veggie_case-038,veggie_case,4FT VEG,SML VEG TRAY,4,37,69,
+veggie_case-039,veggie_case,4FT VEG,FRUIT/VEG TRAY,4,38,70,
+veggie_case-040,veggie_case,4FT VEG,LRG VEGGIE BOWL W/O RANCH,4,39,71,
+veggie_case-041,veggie_case,4FT VEG,LRG VEGGIE BOWL W/ RANCH,4,40,72,

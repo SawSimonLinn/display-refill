@@ -34,7 +34,8 @@
     "test:db": "npm run test:db -w @display-refill/db-tests",
     "test:api": "node scripts/run-api-tests.mjs",
     "check:db-scripts": "node scripts/check-db-scripts.mjs",
-    "check:db": "npm run db:reset && npm run db:types:check && npm run test:db && npm run test:api"
+    "check:db": "npm run db:reset && npm run db:types:check && npm run test:db && npm run test:api",
+    "test:ios:production": "node scripts/run-production-simulator-tests.mjs"
   },
   "devDependencies": {
     "@supabase/supabase-js": "2.117.2",

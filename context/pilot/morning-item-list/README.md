@@ -17,3 +17,9 @@ Owner selected FM-615 University Place and separate display counts with shared b
 | $5 PINEAPPLE | 10 | 18 |
 | $5 MIXED MELONS | 10 | 18 |
 | $5 WATERMELON | 10 | 36 |
+
+## Owner M1 update — 2026-10-05
+M1 BUNKER (FRUIT) keeps the seven exact names and order, now PAR5 each. See m1-update-receipt.json for audited local changes. Original import receipt is historical. The example HAVE values were not imported. Current employee entry has one HAVE field and read-only TO MAKE, with no separate cooler field. Existing drafts retain their old snapshots; start a fresh count for updated PAR.
+
+## Salad/fruit groups — 2026-10-05
+Current SALAD DESTINATION order has SOUTHWEST then BLT at the end. Fruit headings are Top row,2 for6,$5 bowls,$10 bowls,Party tray; owner confirmed slices/quarters/60oz in Party tray. See fruit-salad-update-receipt.json. New counts use these categories; saved snapshots remain unchanged.

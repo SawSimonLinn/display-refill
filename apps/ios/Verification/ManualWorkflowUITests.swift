@@ -512,17 +512,17 @@ final class ManualWorkflowUITests: XCTestCase {
         app.terminate(); app.launch()
         XCTAssertTrue(store.waitForExistence(timeout: 20))
         XCTAssertFalse(app.textFields["Email"].exists)
-        app.tabBars.buttons["Saved checks"].tap()
-        let saved = app.buttons["Check " + completed.scan_id.prefix(8)]
+        app.tabBars.buttons["History"].tap()
+        let saved = app.buttons["history-row-" + completed.scan_id]
         XCTAssertTrue(saved.waitForExistence(timeout: 15)); saved.tap()
-        reach(app.staticTexts["Employee attested refill completion"])
-        XCTAssertTrue(app.staticTexts["Employee attested refill completion"].waitForExistence(timeout: 15))
-        reach(app.staticTexts["Confirmed count: 0"]); XCTAssertTrue(app.staticTexts["Confirmed count: 0"].exists)
-        reach(app.staticTexts["Confirmed count: 2"]); XCTAssertTrue(app.staticTexts["Confirmed count: 2"].exists)
+        reach(app.staticTexts["Refill marked done"])
+        XCTAssertTrue(app.staticTexts["Refill marked done"].waitForExistence(timeout: 15))
+        reach(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Confirmed count: 0")).firstMatch); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Confirmed count: 0")).firstMatch.exists)
+        reach(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Confirmed count: 2")).firstMatch); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Confirmed count: 2")).firstMatch.exists)
         _ = try await control("normal-type")
         audit([.sufficientElementDescription, .hitRegion, .textClipped])
         capture("reopened-persisted-check")
-        let attestation = app.staticTexts["Employee attested refill completion"]
+        let attestation = app.staticTexts["Refill marked done"]
         let normalAttestationHeight = attestation.frame.height
         _ = try await control("large-type")
         reach(attestation, fully: true)

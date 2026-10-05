@@ -61,3 +61,12 @@ Final native UI rerun succeeds with zero failures (tracker: Dynamic Type Layout 
 
 ## Feature 13 carry-forward (2026-10-03)
 A06 remains open (cause unconfirmed); physical camera/device, spoken VoiceOver and web screen reader, real-provider benchmark, operator-approved stocking configuration, retention/metadata enforcement, hosted Auth and staging recovery gates remain unresolved. Fresh `npm run check` passes but emits an Edge Runtime warning for `process.exit` in instrumentation.ts:8. Choose/verify Node hosting or resolve Edge compatibility before deployment; no runtime fix attempted in this documentation preparation. Pilot forms contain no actual detections or measured store results.
+
+
+## Shared preparation verification (2026-10-05)
+- A08 (open intermittent): existing host Swift photo-recovery test lost restored JPEG/crop state and failed four assertions in /tmp/prep-swift-final.log. Isolated unchanged rerun passed (/tmp/prep-photo-diagnostic.log); subsequent full suites pass. Cause not established; no photo implementation changes made in this unit.
+- A09 (fixed, locally verified): Prep List used the same busy flag for automatic reads and writes, temporarily disabling prep actions. Separate loading/generation now keeps actions available and discards a read older than a new save. Slow-read regression passes. Final production simulator harness exited0 with5/5 UI workflows passing; see the tracker and production-prep-ui-UTFNUy bundle.
+
+- A10 (open warning): final largest worksheet simulator test logged Invalid frame dimension (negative or non-finite). All five focused UI tests passed; no failing assertion or demonstrated clipping accompanied it. Root cause not investigated.
+
+- A11 (unverified runner interruption): full API attempt for stock-screen simplification stopped reporting after RUN; later no process/server was present, and no final totals were captured. Cause unknown; targeted stock/prep13/13 subsequently passed with server logs. Do not report that full attempt as passing. /tmp/simple-stock-api.log.

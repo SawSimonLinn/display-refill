@@ -3,18 +3,18 @@
   "source_sha256": "5251c5187f558049b2afc2600c691d7adc0a98575ed679ae3ae365a8a16b1ee7",
   "schedule": "First thing in the morning; check again by 2 PM",
   "store_id": "3d7f56a4-c0cd-4bcc-ae70-eb1deb0223e0",
-  "stock_allocation": "separate_display_counts_shared_backup_once",
+  "stock_allocation": "single_have_per_display",
   "sections": [
     {
       "id": "fruit_mobile",
-      "name": "Fruit mobile bunker",
+      "name": "M1 BUNKER (FRUIT)",
       "items": [
         {
           "row_key": "fruit_mobile-001",
           "section": "fruit_mobile",
           "source_section": "M1 BUNKER (FRUIT)",
           "product_name": "$5 PINEAPPLE KIWI STRAWBERRY",
-          "par": 10,
+          "par": 5,
           "sort_order": 0,
           "source_line": 7,
           "have": null
@@ -24,7 +24,7 @@
           "section": "fruit_mobile",
           "source_section": "M1 BUNKER (FRUIT)",
           "product_name": "$5 MIXED BERRYS",
-          "par": 10,
+          "par": 5,
           "sort_order": 1,
           "source_line": 8,
           "have": null
@@ -54,7 +54,7 @@
           "section": "fruit_mobile",
           "source_section": "M1 BUNKER (FRUIT)",
           "product_name": "$5 PINEAPPLE",
-          "par": 10,
+          "par": 5,
           "sort_order": 4,
           "source_line": 11,
           "have": null
@@ -64,7 +64,7 @@
           "section": "fruit_mobile",
           "source_section": "M1 BUNKER (FRUIT)",
           "product_name": "$5 MIXED MELONS",
-          "par": 10,
+          "par": 5,
           "sort_order": 5,
           "source_line": 12,
           "have": null
@@ -74,7 +74,7 @@
           "section": "fruit_mobile",
           "source_section": "M1 BUNKER (FRUIT)",
           "product_name": "$5 WATERMELON",
-          "par": 10,
+          "par": 5,
           "sort_order": 6,
           "source_line": 13,
           "have": null
@@ -83,7 +83,7 @@
     },
     {
       "id": "salad_mobile",
-      "name": "Salad mobile \u2014 Salad Destination",
+      "name": "SALAD DESTINATION",
       "items": [
         {
           "row_key": "salad_mobile-001",
@@ -156,30 +156,30 @@
           "have": null
         },
         {
-          "row_key": "salad_mobile-008",
-          "section": "salad_mobile",
-          "source_section": "SALAD DESTINATION",
-          "product_name": "BLT",
-          "par": 2,
-          "sort_order": 7,
-          "source_line": 22,
-          "have": null
-        },
-        {
           "row_key": "salad_mobile-009",
           "section": "salad_mobile",
           "source_section": "SALAD DESTINATION",
           "product_name": "SOUTHWEST",
           "par": 3,
-          "sort_order": 8,
+          "sort_order": 7,
           "source_line": 23,
+          "have": null
+        },
+        {
+          "row_key": "salad_mobile-008",
+          "section": "salad_mobile",
+          "source_section": "SALAD DESTINATION",
+          "product_name": "BLT",
+          "par": 2,
+          "sort_order": 8,
+          "source_line": 22,
           "have": null
         }
       ]
     },
     {
       "id": "fruit_case",
-      "name": "Fruit display case \u2014 6ft",
+      "name": "6FT FRUIT",
       "items": [
         {
           "row_key": "fruit_case-001",
@@ -189,7 +189,8 @@
           "par": 5,
           "sort_order": 0,
           "source_line": 74,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-002",
@@ -199,7 +200,8 @@
           "par": 5,
           "sort_order": 1,
           "source_line": 75,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-003",
@@ -209,7 +211,8 @@
           "par": 5,
           "sort_order": 2,
           "source_line": 76,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-004",
@@ -219,7 +222,8 @@
           "par": 5,
           "sort_order": 3,
           "source_line": 77,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-005",
@@ -229,7 +233,8 @@
           "par": 6,
           "sort_order": 4,
           "source_line": 78,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-006",
@@ -239,7 +244,8 @@
           "par": 6,
           "sort_order": 5,
           "source_line": 79,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-007",
@@ -249,7 +255,8 @@
           "par": 6,
           "sort_order": 6,
           "source_line": 80,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-008",
@@ -259,7 +266,8 @@
           "par": 5,
           "sort_order": 7,
           "source_line": 81,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-009",
@@ -269,7 +277,8 @@
           "par": 4,
           "sort_order": 8,
           "source_line": 82,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-010",
@@ -279,7 +288,8 @@
           "par": 4,
           "sort_order": 9,
           "source_line": 83,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-011",
@@ -289,7 +299,8 @@
           "par": 4,
           "sort_order": 10,
           "source_line": 84,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-012",
@@ -299,7 +310,8 @@
           "par": 4,
           "sort_order": 11,
           "source_line": 85,
-          "have": null
+          "have": null,
+          "category": "Top row"
         },
         {
           "row_key": "fruit_case-013",
@@ -309,7 +321,8 @@
           "par": 12,
           "sort_order": 12,
           "source_line": 86,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-014",
@@ -319,7 +332,8 @@
           "par": 8,
           "sort_order": 13,
           "source_line": 87,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-015",
@@ -329,7 +343,8 @@
           "par": 8,
           "sort_order": 14,
           "source_line": 88,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-016",
@@ -339,7 +354,8 @@
           "par": 8,
           "sort_order": 15,
           "source_line": 89,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-017",
@@ -349,7 +365,8 @@
           "par": 6,
           "sort_order": 16,
           "source_line": 90,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-018",
@@ -359,7 +376,8 @@
           "par": 6,
           "sort_order": 17,
           "source_line": 91,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-019",
@@ -369,7 +387,8 @@
           "par": 6,
           "sort_order": 18,
           "source_line": 92,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-020",
@@ -379,7 +398,8 @@
           "par": 6,
           "sort_order": 19,
           "source_line": 93,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-021",
@@ -389,7 +409,8 @@
           "par": 6,
           "sort_order": 20,
           "source_line": 94,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-022",
@@ -399,7 +420,8 @@
           "par": 10,
           "sort_order": 21,
           "source_line": 95,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-023",
@@ -409,7 +431,8 @@
           "par": 6,
           "sort_order": 22,
           "source_line": 96,
-          "have": null
+          "have": null,
+          "category": "2 for 6"
         },
         {
           "row_key": "fruit_case-024",
@@ -419,7 +442,8 @@
           "par": 36,
           "sort_order": 23,
           "source_line": 97,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-025",
@@ -429,7 +453,8 @@
           "par": 18,
           "sort_order": 24,
           "source_line": 98,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-026",
@@ -439,7 +464,8 @@
           "par": 6,
           "sort_order": 25,
           "source_line": 99,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-027",
@@ -449,7 +475,8 @@
           "par": 18,
           "sort_order": 26,
           "source_line": 100,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-028",
@@ -459,7 +486,8 @@
           "par": 9,
           "sort_order": 27,
           "source_line": 101,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-029",
@@ -469,7 +497,8 @@
           "par": 6,
           "sort_order": 28,
           "source_line": 102,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-030",
@@ -479,7 +508,8 @@
           "par": 6,
           "sort_order": 29,
           "source_line": 103,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-031",
@@ -489,7 +519,8 @@
           "par": 6,
           "sort_order": 30,
           "source_line": 104,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-032",
@@ -499,7 +530,8 @@
           "par": 18,
           "sort_order": 31,
           "source_line": 105,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-033",
@@ -509,7 +541,8 @@
           "par": 6,
           "sort_order": 32,
           "source_line": 106,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-034",
@@ -519,7 +552,8 @@
           "par": 6,
           "sort_order": 33,
           "source_line": 107,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-035",
@@ -529,7 +563,8 @@
           "par": 4,
           "sort_order": 34,
           "source_line": 108,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-036",
@@ -539,7 +574,8 @@
           "par": 4,
           "sort_order": 35,
           "source_line": 109,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-037",
@@ -549,7 +585,8 @@
           "par": 3,
           "sort_order": 36,
           "source_line": 110,
-          "have": null
+          "have": null,
+          "category": "$5 bowls"
         },
         {
           "row_key": "fruit_case-038",
@@ -559,7 +596,8 @@
           "par": 4,
           "sort_order": 37,
           "source_line": 111,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-039",
@@ -569,7 +607,8 @@
           "par": 4,
           "sort_order": 38,
           "source_line": 112,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-040",
@@ -579,7 +618,8 @@
           "par": 4,
           "sort_order": 39,
           "source_line": 113,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-041",
@@ -589,7 +629,8 @@
           "par": 4,
           "sort_order": 40,
           "source_line": 114,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-042",
@@ -599,7 +640,8 @@
           "par": 2,
           "sort_order": 41,
           "source_line": 115,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-043",
@@ -609,7 +651,8 @@
           "par": 3,
           "sort_order": 42,
           "source_line": 116,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-044",
@@ -619,7 +662,8 @@
           "par": 3,
           "sort_order": 43,
           "source_line": 117,
-          "have": null
+          "have": null,
+          "category": "$10 bowls"
         },
         {
           "row_key": "fruit_case-045",
@@ -629,7 +673,8 @@
           "par": 3,
           "sort_order": 44,
           "source_line": 118,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-046",
@@ -639,7 +684,8 @@
           "par": 3,
           "sort_order": 45,
           "source_line": 119,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-047",
@@ -649,7 +695,8 @@
           "par": 3,
           "sort_order": 46,
           "source_line": 120,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-048",
@@ -659,7 +706,8 @@
           "par": 3,
           "sort_order": 47,
           "source_line": 121,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-049",
@@ -669,7 +717,8 @@
           "par": 3,
           "sort_order": 48,
           "source_line": 122,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-050",
@@ -679,7 +728,8 @@
           "par": 4,
           "sort_order": 49,
           "source_line": 123,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         },
         {
           "row_key": "fruit_case-051",
@@ -689,13 +739,14 @@
           "par": 4,
           "sort_order": 50,
           "source_line": 124,
-          "have": null
+          "have": null,
+          "category": "Party tray"
         }
       ]
     },
     {
       "id": "veggie_case",
-      "name": "Veggie display case \u2014 4ft",
+      "name": "Veggie display case — 4ft",
       "items": [
         {
           "row_key": "veggie_case-001",
@@ -1162,5 +1213,6 @@
       }
     ]
   },
-  "store_name": "FM-615 University Place"
+  "store_name": "FM-615 University Place",
+  "owner_update": "2026-10-05: M1 seven items approved in supplied order, PAR5 each; HAVE examples not imported."
 }

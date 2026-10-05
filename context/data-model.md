@@ -95,3 +95,15 @@ Migration 9 (feature 04, `…0900_catalog_management.sql`) adds the service-role
 
 ## Implementation Notes (Feature 11)
 No migration. History uses the existing `scans (store_id, created_at desc, id desc)` index and RLS. Display, store and POG template names in history are current labels; product names, slot labels, targets, thresholds, the pinned version number and confirmed results come from scan snapshots / the immutable version (D74).
+
+
+## Shared prep ledger and quick stock counts (migrations23–27)
+production_prep_events: scoped org/store/product foreign keys; quantity1…9999, actor_id, created_at and ordered identity sequence; RLS enabled, service-only insert/read and append-only mutation guard.
+production_counts adds immutable prep_revision and stock_round. A count captures which earlier prep is already included and which shared stock round it belongs to.
+production_checks adds abandoned status and kind=section|product. Product counts are atomic per-product snapshots across all locations; section drafts keep their existing actor/day uniqueness. Finished/abandoned counts remain immutable.
+production_events adds check.abandoned; quick product publications record actor/time and physical HAVE/backup. The existing manager event view includes these records.
+Current prep reads latest counts per product and section across dates. Archived items/products are excluded; incomplete/mismatched groups are explicitly not ready. Old section-day reads exclude product-kind checks for compatibility. No existing scan/POG tables were changed.
+
+### Waste ledger and reports
+
+`production_waste_events` (migration 29) stores immutable `waste` and `void` events scoped to organization/store/product, with positive quantity, selected business date, reason/note, product-name/category/type snapshots, actor and actual timestamp. Unique `void_of` permits one reversal; a trigger requires reversal identity/quantity/date/snapshot fields to match the original. Browser roles have no direct access. Server-only `production_operations_read` and `production_waste_record` recheck memberships. Made reporting uses the existing prep ledger; waste is net of reversals. No sales quantities or inferred stock changes are introduced.

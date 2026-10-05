@@ -1,0 +1,87 @@
+{
+  "store": "3d7f56a4-c0cd-4bcc-ae70-eb1deb0223e0",
+  "at": "2026-10-05T12:45:57.291Z",
+  "before": [
+    {
+      "name": "$5 PINEAPPLE KIWI STRAWBERRY",
+      "par": 10,
+      "revision": 1
+    },
+    {
+      "name": "$5 MIXED BERRYS",
+      "par": 10,
+      "revision": 1
+    },
+    {
+      "name": "$5 CLEMATINE",
+      "par": 5,
+      "revision": 1
+    },
+    {
+      "name": "$5 MIXED GRAPES",
+      "par": 5,
+      "revision": 1
+    },
+    {
+      "name": "$5 PINEAPPLE",
+      "par": 10,
+      "revision": 1
+    },
+    {
+      "name": "$5 MIXED MELONS",
+      "par": 10,
+      "revision": 1
+    },
+    {
+      "name": "$5 WATERMELON",
+      "par": 10,
+      "revision": 1
+    }
+  ],
+  "after": [
+    {
+      "name": "$5 PINEAPPLE KIWI STRAWBERRY",
+      "par": 5,
+      "sort_order": 0,
+      "revision": 2
+    },
+    {
+      "name": "$5 MIXED BERRYS",
+      "par": 5,
+      "sort_order": 1,
+      "revision": 2
+    },
+    {
+      "name": "$5 CLEMATINE",
+      "par": 5,
+      "sort_order": 2,
+      "revision": 1
+    },
+    {
+      "name": "$5 MIXED GRAPES",
+      "par": 5,
+      "sort_order": 3,
+      "revision": 1
+    },
+    {
+      "name": "$5 PINEAPPLE",
+      "par": 5,
+      "sort_order": 4,
+      "revision": 2
+    },
+    {
+      "name": "$5 MIXED MELONS",
+      "par": 5,
+      "sort_order": 5,
+      "revision": 2
+    },
+    {
+      "name": "$5 WATERMELON",
+      "par": 5,
+      "sort_order": 6,
+      "revision": 2
+    }
+  ],
+  "actor": "661299c4-49e2-416c-aa51-85579739097e",
+  "counts_unchanged": true
+}

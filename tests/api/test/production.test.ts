@@ -60,6 +60,7 @@ it('shared product HTTP flow counts displays separately and cooler backup once',
  const bi=b.items[0];expect(ai.backup_required).toBe(true);expect(bi.backup_required).toBe(false);
  expect((await post(employee,{action:'counts',check_id:b.id,expected_revision:b.revision,items:[{id:bi.id,have:28,backup:5}]})).status).toBe(422);
  a=(await post(employee,{action:'counts',check_id:a.id,expected_revision:a.revision,items:a.items.map((i:{id:string})=>i.id===ai.id?{id:i.id,have:7,backup:5}:{id:i.id,have:100})})).json.data;
+ expect(a.items.find((i:{id:string})=>i.id===ai.id).make).toBe(3); // This section has an immediate shortage before the other section is counted.
  expect((await post(employee,{action:'finish',check_id:a.id,expected_revision:a.revision})).status).toBe(200);
  b=(await post(employee,{action:'counts',check_id:b.id,expected_revision:b.revision,items:[{id:bi.id,have:28}]})).json.data;
  expect((await post(employee,{action:'finish',check_id:b.id,expected_revision:b.revision})).status).toBe(200);

@@ -46,3 +46,7 @@ Focused checks: `npm run test:db -w @display-refill/db-tests -- test/production.
 See `../pilot/morning-item-list/README.md`. FM-615 University Place now has108 local display rows representing103 exact-name products. Multiple sections may reference the same product. Those HAVE fields are display-only; shared cooler backup is entered once in the first section and subtracted once from the combined production need. Nonshared HAVE remains display plus backup. New counts are blank; old sheet counts were not imported. Section ordering remains fruit mobile, salad mobile, fruit case, veggie case. Staff identity/time is recorded by authenticated saves.
 
 Count requests optionally include backup (integer0–9999 or null), only for backup_required rows. Check/day items add shared_size, backup_required and backup. Shared check MAKE is null until daily reconciliation; day responses exclude unresolved shared groups from the partial total. Shared membership is snapshotted and cannot change mid-day after a group starts. Existing final checks are untouched. Names/price/size labels preserved; package types were not guessed from images.
+
+
+## Ongoing shared-prep amendment (2026-10-05)
+[Feature15](15-stock-check-shared-prep.md) supersedes the daily employee MAKE summary with rolling grouped prep, partial production records and atomic per-product stock updates. Full section entry/PAR configuration and snapshot history remain. The old day endpoint is compatibility/status information; current remaining work comes from the prep endpoint.

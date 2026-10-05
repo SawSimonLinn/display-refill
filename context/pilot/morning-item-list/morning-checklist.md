@@ -1,10 +1,10 @@
-# Morning count — section by section
+# FM-615 University Place — morning count
 
-First thing in the morning; check again by 2 PM. Enter HAVE for each item. New checks start blank. PAR is maintained separately by managers; MAKE is calculated by the backend.
+Count first thing in the morning; check again by 2 PM. New checks start blank. Employee identity and save time are recorded by the app. PAR is manager-only; MAKE is calculated by the backend.
 
-Names are preserved exactly as supplied, including spelling and package/price labels. Assigned locally to FM-615 University Place. For repeated products, HAVE is display-only and shared cooler backup is entered once in the fruit mobile section. For other products, HAVE includes display plus backup.
+Enter one HAVE count per product in each display. TO MAKE is a read-only amount calculated by the server. Names and source order are preserved.
 
-## 1. Fruit mobile bunker — 7 items
+## 1. M1 BUNKER (FRUIT) — 7 items
 
 - [ ] $5 PINEAPPLE KIWI STRAWBERRY — HAVE: _____
 - [ ] $5 MIXED BERRYS — HAVE: _____
@@ -14,7 +14,7 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] $5 MIXED MELONS — HAVE: _____
 - [ ] $5 WATERMELON — HAVE: _____
 
-## 2. Salad mobile — Salad Destination — 9 items
+## 2. SALAD DESTINATION — 9 items
 
 - [ ] FAMLY SIZED COBB — HAVE: _____
 - [ ] FAMILY SIZED GARDEN — HAVE: _____
@@ -23,10 +23,12 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] GARDEN — HAVE: _____
 - [ ] BERRY — HAVE: _____
 - [ ] CEASER — HAVE: _____
-- [ ] BLT — HAVE: _____
 - [ ] SOUTHWEST — HAVE: _____
+- [ ] BLT — HAVE: _____
 
-## 3. Fruit display case — 6ft — 51 items
+## 3. 6FT FRUIT — 51 items
+
+### Top row
 
 - [ ] STRAWBERRY & WHIPPED TOPPING — HAVE: _____
 - [ ] PINEAPPLE, STRAWBERRY & KIWI — HAVE: _____
@@ -40,6 +42,8 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] PARFAIT BLUEBERRY — HAVE: _____
 - [ ] PARFAIT MIXED BERRY — HAVE: _____
 - [ ] WHIP TOPPING — HAVE: _____
+### 2 for 6
+
 - [ ] WATERMELON CUP — HAVE: _____
 - [ ] MIXED MELON CUP — HAVE: _____
 - [ ] CANTALOUPE CUP — HAVE: _____
@@ -51,6 +55,8 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] PINEAPPLE, KIWI & PAPAYA — HAVE: _____
 - [ ] WATERMELON SPEARS — HAVE: _____
 - [ ] PINEAPPLE SPEARS — HAVE: _____
+### $5 bowls
+
 - [ ] $5 WATERMELON — HAVE: _____
 - [ ] $5 MIXED MELONS — HAVE: _____
 - [ ] $5 MIXED GRAPE BOWL — HAVE: _____
@@ -65,6 +71,8 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] $5 MANGOS — HAVE: _____
 - [ ] $5 TROPICAL FRUIT MIX BOWL — HAVE: _____
 - [ ] $5 MIXED FRUIT W/ BERRY BOWL — HAVE: _____
+### $10 bowls
+
 - [ ] $10 WATERMELON — HAVE: _____
 - [ ] $10 MIXED MELON — HAVE: _____
 - [ ] $10 CANTALOUPE — HAVE: _____
@@ -72,6 +80,8 @@ Names are preserved exactly as supplied, including spelling and package/price la
 - [ ] $10 STRAWBERRY/PINEAPPLE/BLUEBERRY — HAVE: _____
 - [ ] $10 MIXED FRUIT W/ BERRIES — HAVE: _____
 - [ ] $10 MIXED BERRIES — HAVE: _____
+### Party tray
+
 - [ ] WATERMELON SLICES — HAVE: _____
 - [ ] WATERMELON QUARTERS — HAVE: _____
 - [ ] WATERMELON 60oz — HAVE: _____

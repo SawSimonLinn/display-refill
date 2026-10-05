@@ -9,6 +9,7 @@ export const ProductionAction = z.discriminatedUnion("action", [
  z.strictObject({action:z.literal("counts"),check_id:z.uuid(),expected_revision:z.int().positive(),
  items:z.array(z.strictObject({id:z.uuid(),have:z.int().min(0).max(9999).nullable(),backup:z.int().min(0).max(9999).nullable().optional()})).min(1).max(200)})
  .refine(x=>new Set(x.items.map(i=>i.id)).size===x.items.length,{message:"Duplicate rows",path:["items"]}),
+ z.strictObject({action:z.literal("restart"),check_id:z.uuid(),expected_revision:z.int().positive()}),
  z.strictObject({action:z.literal("finish"),check_id:z.uuid(),expected_revision:z.int().positive()})
 ]);
 export const ProductionQuery = z.strictObject({view:z.enum(["config","day","check","events"]).default("day"),check_id:z.uuid().optional()})

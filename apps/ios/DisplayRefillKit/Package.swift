@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "DisplayRefillUI", targets: ["DisplayRefillUI"]),
     ],
     targets: [
-        .target(name: "DisplayRefillCore"),
+        .target(name: "DisplayRefillCore", resources: [.copy("Resources/BuildBook.pdf"), .process("Resources/BuildBookIndex.json")]),
         .target(name: "DisplayRefillUI", dependencies: ["DisplayRefillCore"]),
         .testTarget(name: "DisplayRefillCoreTests", dependencies: ["DisplayRefillCore"]),
     ]

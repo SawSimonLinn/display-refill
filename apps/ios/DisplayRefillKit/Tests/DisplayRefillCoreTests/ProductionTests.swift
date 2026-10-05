@@ -27,21 +27,20 @@ private actor ProductionStub: ProductionAPI {
     }
 }
 @Suite @MainActor struct ProductionTests {
-    @Test func sharedBackupIsRequiredOnceAndSurvivesRetry() async throws {
+    @Test func sharedItemNeedsOnlyHaveAndReturnsSectionShortageAfterRetry() async throws {
         let api = ProductionStub(); await api.share()
         let model = ProductionWorksheet(api: api, storeID: "s")
         await model.start(.fruitMobile)
-        model.edit("i", text: "7"); await model.save()
         #expect(!model.canFinish)
-        model.edit("i:backup", text: "5")
+        model.edit("i", text: "7")
         await api.fail(); await model.save(); await model.retry()
         #expect(model.canFinish)
-        #expect(model.input["i:backup"] == "5")
+        #expect(model.check?.items.first?.make == 3)
         let calls = await api.record()
-        #expect(calls[2].1 == calls[3].1)
-        #expect(calls[3].0.items?.first?.backup == 5)
-        #expect(calls[3].0.items?.first?.includesBackup == true)
-        model.edit("i:backup", text: ""); await model.save()
+        #expect(calls[1].1 == calls[2].1)
+        #expect(calls[2].0.items?.first?.backup == 0)
+        #expect(calls[2].0.items?.first?.includesBackup == true)
+        model.edit("i", text: ""); await model.save()
         #expect(!model.canFinish)
     }
     @Test func blankAndZeroEncodeDifferently() throws {

@@ -177,3 +177,29 @@ POST actions:
 - finish: check_id, expected_revision; refuses unknown counts and freezes the result. Returns check.
 
 Sections: fruit_mobile, salad_mobile, fruit_case, veggie_case. Every check includes id/store_id/section/business_date/revision/status/updated_at/finished_at/created_by, items and total_make. Items include id/product_id/product_name/category/product_type/sort_order/have/make. PAR never appears in check/day responses, including manager responses. Null is uncounted, not zero. Finished checks remain immutable. A manager may save a draft started by another user; another employee may read it but cannot write it. Actor identity and store scope never come from the request body.
+
+
+### Shared-display amendment (migrations21–22)
+`configure` permits one product in multiple sections (unique store/product/section). Each check item adds `shared_size`, `backup_required`, `backup`. For shared products HAVE means that display only; only the first configured section accepts/requires `backup`. Count bodies may include `backup: integer|null`; the server rejects it on other rows. Nonshared HAVE includes cooler stock as before. Finish refuses a missing required backup. Shared check-level MAKE stays null: daily reconciliation uses the latest finished snapshots from all required sections, then calculates max(0,sum(PAR)-sum(display HAVE)-shared backup). Unfinished groups remain unknown/excluded, never assumed zero. Day-level MAKE allocates shared stock/display surplus against section shortages in fixed section order; section filters show that allocation. Current-day changes to group membership/activation after any group row starts are rejected. PAR updates apply to new checks only.
+
+
+## Shared prep and product stock updates (Feature15)
+- GET /api/v1/prep/:store_id: items grouped by product_id; product_name/category/type, ready, needed/made/remaining, revision, dated location counts and last five prep events with actor display name/time. No PAR is returned. Missing sections and non-ready products make the total partial.
+- POST /api/v1/prep/:store_id: {product_id,expected_revision,quantity} records partial prep, or {product_id,expected_revision,done:true} records the remaining amount. Idempotency-Key required. Quantity is an integer1…9999, capped at current remaining.409 if counts/prep changed.
+- POST /api/v1/stock/:store_id: {product_id,expected_revision,counts:[{section,have,backup?}]}. Every active location of the product is required; backup is mandatory only in the first shared section and refused elsewhere. For a single-section product HAVE includes prepared backup. Idempotency-Key required. Response is the updated prep board.
+- POST /api/v1/production/:store_id adds {action:"restart",check_id,expected_revision}. Abandons only the caller’s draft, preserves it and returns a new blank count with current baselines. Exact retries return that same draft.
+- All routes authenticate with Supabase Auth and fresh store membership; cookie writes retain same-origin guards. Unauthorized store IDs return404. Client role/actor/PAR/remaining injection is rejected.
+- Prep is authoritative from rolling latest product/location observations and append-only production_prep_events. Existing production day reads represent full-section checks for the local day and must not be used as current remaining production after prep or individual stock updates.
+
+## Waste and made/waste reporting
+
+See [Feature 14](feature-specs/14-waste-and-made-reporting.md).
+
+`GET /api/v1/operations/:store_id?period=day|week|month&day=YYYY-MM-DD` returns `{business_date,period,start_date,end_date,timezone,made,wasted,products,catalog,entries}`. Product rows contain identity/name/category/type/family and made/wasted totals; catalog is the deduplicated active stocking catalog. Entries include original snapshot names, quantities/reasons/notes, business date, actual created timestamp, actor name, `voided` and `can_void`. Up to 200 originals are returned; totals are untruncated. Employee responses omit PAR. Default period is day; omitted date is today in the store timezone. Weeks start Sunday; months are calendar months. Future dates/unknown query fields fail.
+
+`POST /api/v1/waste/:store_id` requires the existing authenticated identity, origin checks for cookie clients and `Idempotency-Key`. Strict bodies:
+
+- `{action:"record", product_id, quantity:1..9999, reason:"expired"|"quality"|"damaged"|"other", note?:string<=300, business_date?:YYYY-MM-DD}`
+- `{action:"void", entry_id}`
+
+Returns the affected business day’s operations report. Undo is owner-or-manager and appends an immutable reversal; it does not delete history. Unknown/cross-store resources are 404, prohibited undo 403, reused key with changed body or repeat undo 409, invalid input 422. Revoked access is rechecked before any idempotency replay. Waste does not modify stock counts or prep events. Sales are not reported or inferred.

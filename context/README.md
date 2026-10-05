@@ -6,7 +6,7 @@ This folder contains specifications. Features 01 (repository foundation), 02 (da
 
 ## Current owner-requested workflow
 
-[Feature 14 — Production worksheet](feature-specs/14-production-worksheet.md) supersedes the employee entry flow: HAVE includes display plus prepared backup, PAR is manager-only, and MAKE uses the latest finished check for each of four sections today. Photos are deferred. Existing scan/POG/history contracts remain intact. See the progress tracker for verification and open device checks.
+[Feature15 — Stock Check and Shared Prep List](feature-specs/15-stock-check-shared-prep.md) extends [Feature14](feature-specs/14-production-worksheet.md). Employees count sections or update one product during the day, and a shared grouped prep list tracks partial preparation, Done, actor/time and amounts still needed. PAR remains manager-only. Photos are deferred. Counts and preparation carry forward until replaced; see the tracker for verification and open device checks.
 
 ## Read First
 1. [Project overview](project-overview.md) — purpose, scope, workflow and success targets.
@@ -65,3 +65,7 @@ Examples are fixtures for implementing tests, not evidence that tests have run. 
 - Confirmed counts are historical evidence; completion is an employee attestation.
 
 Resolve conflicting requirements by updating the relevant contract and decision log before changing code. Keep progress evidence truthful. Open verification: device/VoiceOver checks for Features 07–10 and a provider benchmark before live vision. Next work: Feature 12 hosted/policy acceptance after owner decisions; Feature 13 pilot preparation is in progress; no real-store or real-provider acceptance is demonstrated.
+
+- [Offline Build Book and compact Prep presentation](pilot/build-book.md)
+- [Waste Log and made/waste reporting](feature-specs/14-waste-and-made-reporting.md)
+- [Hosted staging and TestFlight pilot](pilot/staging-testflight.md)

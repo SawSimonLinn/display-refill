@@ -6,9 +6,9 @@ public enum ProductionSection: String, Codable, Sendable, CaseIterable, Identifi
     public var id: String { rawValue }
     public var label: String {
         switch self {
-        case .fruitMobile: "Fruit mobile bunker"
-        case .saladMobile: "Salad mobile"
-        case .fruitCase: "Fruit display case"
+        case .fruitMobile: "M1 BUNKER (FRUIT)"
+        case .saladMobile: "SALAD DESTINATION"
+        case .fruitCase: "6FT FRUIT"
         case .veggieCase: "Veggie display case"
         }
     }
@@ -113,7 +113,7 @@ extension URLSessionAccountAPI: ProductionAPI {
     private var operation: Operation?
     public init(api: any ProductionAPI, storeID: String) { self.api = api; self.storeID = storeID }
     public static func valid(_ text: String) -> Bool { text.isEmpty || (text.allSatisfy { $0.isASCII && $0.isNumber } && Int(text).map { (0...9999).contains($0) } == true) }
-    public var canFinish: Bool { check?.status == "draft" && check?.items.allSatisfy { !(input[$0.id] ?? "").isEmpty && Self.valid(input[$0.id] ?? "") && ($0.backup_required != true || (!(input[$0.id + ":backup"] ?? "").isEmpty && Self.valid(input[$0.id + ":backup"] ?? ""))) } == true && !busy && !conflict }
+    public var canFinish: Bool { check?.status == "draft" && check?.items.allSatisfy { !(input[$0.id] ?? "").isEmpty && Self.valid(input[$0.id] ?? "") } == true && !busy && !conflict }
     public var saved: Bool { !pending && !busy && error == nil }
     public func load() async {
         do { day = try await api.productionDay(storeID: storeID) }
@@ -131,7 +131,7 @@ extension URLSessionAccountAPI: ProductionAPI {
         input[id] = text; dirty.insert(id); pending = true
         debounce?.cancel()
         debounce = Task { [weak self] in
-            do { try await Task.sleep(for: .milliseconds(650)) } catch { return }
+            do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
             guard let self else { return }
             // Do not tie the network request to a debounce that a later keystroke cancels.
             Task { await self.save() }
@@ -143,7 +143,7 @@ extension URLSessionAccountAPI: ProductionAPI {
         guard let check, check.status == "draft", !dirty.isEmpty else { return }
         guard dirty.allSatisfy({ Self.valid(input[$0] ?? "") }) else { error = "Enter a whole number from 0 to 9999, or leave blank."; return }
         let values = Dictionary(uniqueKeysWithValues: dirty.map { ($0, input[$0] ?? "") })
-        operation = Operation(mutation: .init(action: "counts", section: nil, check_id: check.id, expected_revision: check.revision, items: check.items.filter { values[$0.id] != nil || values[$0.id + ":backup"] != nil }.map { .init(id: $0.id, have: Int(input[$0.id] ?? ""), backup: Int(input[$0.id + ":backup"] ?? ""), includesBackup: $0.backup_required == true) }), key: UUID().uuidString, values: values)
+        operation = Operation(mutation: .init(action: "counts", section: nil, check_id: check.id, expected_revision: check.revision, items: check.items.filter { values[$0.id] != nil || values[$0.id + ":backup"] != nil }.map { .init(id: $0.id, have: Int(input[$0.id] ?? ""), backup: $0.backup_required == true ? 0 : nil, includesBackup: $0.backup_required == true) }), key: UUID().uuidString, values: values)
         await send()
     }
     public func finish() async {
@@ -152,6 +152,12 @@ extension URLSessionAccountAPI: ProductionAPI {
         operation = Operation(mutation: .init(action: "finish", section: nil, check_id: check.id, expected_revision: check.revision, items: nil), key: UUID().uuidString, values: [:])
         await send()
         if self.check?.status == "finished" { await load() }
+    }
+    public func restartCount() async {
+        guard !busy, (operation == nil || conflict), let check, check.status == "draft" else { return }
+        debounce?.cancel(); conflict = false; pending = true
+        operation = Operation(mutation: .init(action: "restart", section: nil, check_id: check.id, expected_revision: check.revision, items: nil), key: UUID().uuidString, values: [:])
+        await send()
     }
     public func retry() async { if operation != nil { await send() } else { await save() }; if check?.status != "draft" { await load() } }
     /// Explicit conflict acknowledgement fetches the new revision, retaining unsaved fields.
@@ -188,6 +194,7 @@ extension URLSessionAccountAPI: ProductionAPI {
         busy = true; error = nil
         do {
             let result = try await api.productionMutate(storeID: storeID, mutation: op.mutation, key: op.key)
+            if op.mutation.action == "restart" { dirty = []; input = [:] }
             check = result
             for (id, sent) in op.values where input[id] == sent { dirty.remove(id) }
             syncInputs(result.items)

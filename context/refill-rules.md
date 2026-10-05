@@ -38,3 +38,7 @@ Only show after all counts are resolved: `round(100 * sum(min(c,t)) / sum(t))`. 
 
 ## Completion
 Confirmed lists may be marked completed once. Completion records actor/time and does not change detected counts, target, fill score, or imply a new observation. Partial task tracking is deferred. Historical text says “7 items recommended; completion recorded,” not “7 items detected refilled.”
+
+
+## Production workflow amendment
+The scan rules above remain unchanged. Feature15’s Stock Check/Prep List is a separate inventory/preparation workflow: stock includes ready backup, combined shortage uses approved PAR snapshots without triggers, and prepared events reduce the current shortage until a new physical count includes them. See [Feature15](feature-specs/15-stock-check-shared-prep.md). Scan completion remains an attestation; prep records are actual reported production quantities.

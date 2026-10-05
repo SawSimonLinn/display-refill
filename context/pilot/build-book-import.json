@@ -1,0 +1,19 @@
+{
+  "source": "/Users/simon/Downloads/Supreme Product Cut Produce Build Book - 5.21.2026.pdf",
+  "sha256": "d87cb60d5b6464cfd3325acb607d9c8666d1a9be301ded6f7b83d6a462f22360",
+  "page_count": 326,
+  "entries": 195,
+  "textless_pages": [
+    1,
+    3,
+    5,
+    29,
+    61,
+    181,
+    297,
+    312,
+    313,
+    325
+  ],
+  "mapping": "Physical PDF page numbers, not printed page numbers; paired only when consecutive headings match. Original PDF unchanged."
+}
