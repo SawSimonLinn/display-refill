@@ -34,7 +34,7 @@ private actor ProductionStub: ProductionAPI {
         let api = ProductionStub(); await api.share()
         let model = ProductionWorksheet(api: api, storeID: "s")
         await model.start(.fruitMobile)
-        #expect(!model.canFinish)
+        #expect(model.canFinish)
         model.edit("i", text: "7")
         await api.fail(); await model.save(); await model.retry()
         #expect(model.canFinish)
@@ -44,7 +44,7 @@ private actor ProductionStub: ProductionAPI {
         #expect(calls[2].0.items?.first?.backup == 0)
         #expect(calls[2].0.items?.first?.includesBackup == true)
         model.edit("i", text: ""); await model.save()
-        #expect(!model.canFinish)
+        #expect(model.canFinish)
     }
     @Test func blankAndZeroEncodeDifferently() throws {
         let blank = try JSONEncoder().encode(ProductionMutation.Count(id: "i", have: nil))
@@ -96,14 +96,21 @@ private actor ProductionStub: ProductionAPI {
         model.clearError()
         #expect(model.error == nil)
     }
-    @Test func cannotFinishUncountedSection() async {
+    @Test func blankCountsAsZeroOnFinish() async {
         let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")
         await model.start(.fruitMobile)
-        #expect(!model.canFinish)
-        model.edit("i", text: "0"); await model.save()
         #expect(model.canFinish)
-        model.edit("i", text: ""); await model.save()
-        #expect(!model.canFinish)
         #expect(model.check?.items.first?.have == nil)
+        await model.finish()
+        let calls = await api.record()
+        #expect(calls.map(\.0.action) == ["start", "counts", "finish"])
+        #expect(calls[1].0.items?.first?.have == 0)
+        #expect(model.input["i"] == "0")
+    }
+    @Test func cannotFinishInvalidCount() async {
+        let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")
+        await model.start(.fruitMobile)
+        model.edit("i", text: "abc")
+        #expect(!model.canFinish)
     }
 }

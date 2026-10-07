@@ -222,10 +222,11 @@ struct ManualCheckView: View {
         }
         #if os(iOS)
         .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedCountID = nil }
-            }
+            let slots = model.orderedSlots.map(\.id)
+            NumberEntryBar(isLast: focusedCountID != nil && focusedCountID == slots.last) {
+                if let focusedCountID { model.inputs[focusedCountID] = "" }
+                focusedCountID = fieldAfter(after: focusedCountID, in: slots)
+            } next: { focusedCountID = fieldAfter(after: focusedCountID, in: slots) }
         }
         #endif
         .buttonStyle(ManualActionStyle())

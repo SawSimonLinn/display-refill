@@ -121,11 +121,10 @@ private struct ProductionStoreView: View {
                 }
             }
             #if os(iOS)
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Next item") { nextField() }
-                Spacer()
-                Button("Done") { focused = nil; Task { await model.save() } }
-            }
+            NumberEntryBar(isLast: focused != nil && focused == model.check?.items.last?.id) {
+                if let focused { model.edit(focused, text: "") }
+                nextField()
+            } next: { nextField() }
             #endif
         }
     }
@@ -215,7 +214,7 @@ private struct ProductionStoreView: View {
                 Button("Start fresh count", role: .destructive) { restart = true }
                     .disabled(model.busy || model.pending && !model.conflict)
             }.font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
-            Text("Enter 0 if empty. Leave uncounted items blank.")
+            Text("Blank items count as 0 when you finish.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -230,7 +229,7 @@ private struct ProductionStoreView: View {
                 #endif
                 .focused($focused, equals: item.id)
                 .accessibilityLabel("Have, \(item.product_name)")
-                .accessibilityHint("Count containers in this display. Leave blank if not counted.")
+                .accessibilityHint("Count containers in this display. Blank counts as 0.")
                 .accessibilityIdentifier("production-have-\(item.id)")
         }.frame(minWidth: 100, maxWidth: .infinity)
     }
@@ -244,9 +243,7 @@ private struct ProductionStoreView: View {
     }
     private func nextField() {
         guard let items = model.check?.items else { return }
-        let fields = items.map(\.id)
-        if let focused, let index = fields.firstIndex(of: focused), index + 1 < fields.count { self.focused = fields[index + 1] }
-        else { focused = nil }
+        focused = fieldAfter(after: focused, in: items.map(\.id))
         Task { await model.save() }
     }
     private func timeLabel(_ raw: String) -> String {

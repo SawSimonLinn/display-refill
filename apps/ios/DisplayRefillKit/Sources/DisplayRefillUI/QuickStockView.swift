@@ -81,13 +81,11 @@ private struct StockEditor: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.disabled(model.pending || model.busy) }
             #if os(iOS)
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Next item") {
-                    let keys = item.locations.map { $0.section.rawValue }
-                    if let index = keys.firstIndex(where: { $0 == focused }), index + 1 < keys.count { focused = keys[index + 1] } else { focused = nil }
-                }
-                Spacer(); Button("Done") { focused = nil }
-            }
+            let keys = item.locations.map { $0.section.rawValue }
+            NumberEntryBar(isLast: focused != nil && focused == keys.last) {
+                if let focused { model.inputs[focused] = nil }
+                focused = fieldAfter(after: focused, in: keys)
+            } next: { focused = fieldAfter(after: focused, in: keys) }
             #endif
         }
     }

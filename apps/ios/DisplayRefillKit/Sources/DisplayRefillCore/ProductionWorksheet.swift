@@ -113,7 +113,8 @@ extension URLSessionAccountAPI: ProductionAPI {
     private var operation: Operation?
     public init(api: any ProductionAPI, storeID: String) { self.api = api; self.storeID = storeID }
     public static func valid(_ text: String) -> Bool { text.isEmpty || (text.allSatisfy { $0.isASCII && $0.isNumber } && Int(text).map { (0...9999).contains($0) } == true) }
-    public var canFinish: Bool { check?.status == "draft" && check?.items.allSatisfy { !(input[$0.id] ?? "").isEmpty && Self.valid(input[$0.id] ?? "") } == true && !busy && !conflict }
+    /// Blank counts are allowed; finish() records them as 0.
+    public var canFinish: Bool { check?.status == "draft" && check?.items.allSatisfy { Self.valid(input[$0.id] ?? "") } == true && !busy && !conflict }
     public var saved: Bool { !pending && !busy && error == nil }
     public func load() async {
         do { day = try await api.productionDay(storeID: storeID) }
@@ -147,6 +148,9 @@ extension URLSessionAccountAPI: ProductionAPI {
         await send()
     }
     public func finish() async {
+        guard canFinish, let items = check?.items else { return }
+        for item in items where (input[item.id] ?? "").isEmpty { input[item.id] = "0"; dirty.insert(item.id); pending = true }
+        debounce?.cancel()
         await save()
         guard saved, canFinish, let check else { return }
         operation = Operation(mutation: .init(action: "finish", section: nil, check_id: check.id, expected_revision: check.revision, items: nil), key: UUID().uuidString, values: [:])

@@ -156,14 +156,11 @@ private struct PrepStoreView: View {
                 Button { infoOpen = true } label: { Label("Prep details", systemImage: "info.circle") }
             }
             #if os(iOS)
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Next item") {
-                    let editable = rows.filter { $0.ready && ($0.remaining ?? 0) > 0 }
-                    if let index = editable.firstIndex(where: { $0.id == focused }), index + 1 < editable.count { focused = editable[index + 1].id } else { focused = nil }
-                }
-                Spacer()
-                Button("Close keyboard") { focused = nil }
-            }
+            let editable = rows.filter { $0.ready && ($0.remaining ?? 0) > 0 }.map(\.id)
+            NumberEntryBar(isLast: focused != nil && focused == editable.last) {
+                if let focused { model.inputs[focused] = nil }
+                focused = fieldAfter(after: focused, in: editable)
+            } next: { focused = fieldAfter(after: focused, in: editable) }
             #endif
         }
     }
