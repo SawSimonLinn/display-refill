@@ -9,12 +9,16 @@ private actor WasteStub: OperationsAPI {
     var seen: Set<String> = []
     func loseResponse() { lost = true }
     func delayRead() { delay = true }
+    var periods: [String] = []
     func calls() -> [String] { keys }
+    func reads() -> [String] { periods }
     private func snapshot() -> OperationsReport {
         .init(business_date: "2026-10-05", period: "day", start_date: "2026-10-05", end_date: "2026-10-05", timezone: "America/Los_Angeles", made: 20, wasted: quantity, products: [], catalog: [], entries: [])
     }
     func operations(storeID: String, day: String?, period: String) async throws -> OperationsReport {
-        let result = snapshot()
+        periods.append(period)
+        var result = snapshot()
+        if period == "week" { result.days = [.init(date: "2026-10-05", made: 20, wasted: quantity)] }
         if delay { delay = false; try await Task.sleep(for: .milliseconds(80)) }
         return result
     }
@@ -51,5 +55,20 @@ private actor WasteStub: OperationsAPI {
         let date = try #require(ISO8601DateFormatter().date(from: "2026-09-14T06:59:59Z"))
         #expect(StoreDay.string(date, timezone: "America/Los_Angeles") == "2026-09-13")
         #expect(StoreDay.string(date, timezone: "UTC") == "2026-09-14")
+    }
+    @Test func editEncodesOnlyCorrectionFieldsAndRefreshesTheWeek() async throws {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let json = String(decoding: try encoder.encode(WasteMutation.edit("e", quantity: 2, reason: .damaged, note: "")), as: UTF8.self)
+        #expect(json == #"{"action":"edit","entry_id":"e","note":"","quantity":2,"reason":"damaged"}"#)
+        let api = WasteStub(); let model = WasteLogModel(api: api, storeID: "s")
+        await model.save(.edit("e", quantity: 0, reason: .expired, note: "")); #expect(await api.calls().isEmpty)
+        await model.save(.record(product: "p", quantity: 4, reason: .expired, note: "", day: "2026-10-05"))
+        #expect(model.week?.days?.first?.wasted == 4); #expect(await api.reads() == ["week"])
+    }
+    @Test func weeksRunSundayToSaturdayInStoreTime() {
+        #expect(StoreDay.week(containing: "2026-10-07", timezone: "America/Los_Angeles") == ["2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10"])
+        #expect(StoreDay.week(containing: "2026-11-01", timezone: "America/Los_Angeles").first == "2026-11-01")
+        #expect(StoreDay.shift("2026-11-01", by: -1, timezone: "America/Los_Angeles") == "2026-10-31")
+        #expect(StoreDay.shift("2026-03-08", by: 1, timezone: "America/Los_Angeles") == "2026-03-09")
     }
 }

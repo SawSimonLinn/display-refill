@@ -38,6 +38,7 @@ private struct PrepStoreView: View {
     @State private var type = ""
     @State private var sortOrder: PrepSortOrder = .sections
     @State private var family = ""
+    @State private var produce = ""
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var showCompleted = false
     @State private var doneItem: PrepItem?
@@ -52,6 +53,7 @@ private struct PrepStoreView: View {
     private var rows: [PrepItem] {
         PrepPresentation.sorted((model.board?.items ?? []).filter { item in
             (family.isEmpty || PrepPresentation.family(item) == family) &&
+            (produce.isEmpty || (PrepPresentation.family(item) == "Fruit" && PrepPresentation.produce(item) == produce)) &&
             (category.isEmpty || item.category == category) && (type.isEmpty || item.product_type == type) && (showCompleted || item.remaining != 0 || !(model.inputs[item.id] ?? "").isEmpty)
         }, by: sortOrder)
     }
@@ -72,14 +74,19 @@ private struct PrepStoreView: View {
                             .font(.footnote).foregroundStyle(Theme.verify)
                     }
                     if board.items.contains(where: { !$0.ready }) {
-                        Label("Partial total · Products needing a recount are excluded.", systemImage: "exclamationmark.circle")
+                        Label("Partial total · Products not counted yet are excluded.", systemImage: "exclamationmark.circle")
                             .font(.footnote).foregroundStyle(Theme.verify)
                     }
                     if rows.isEmpty {
                         Text("No items to make in this selection. Uncounted sections are excluded.")
                             .font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.vertical, 40)
                     }
-                    ForEach(rows) { item in row(item) }
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, item in
+                        if let heading = produceHeading(at: index) {
+                            Text(heading).font(.title3.weight(.semibold)).padding(.top, index == 0 ? 0 : 8)
+                        }
+                        row(item)
+                    }
                 } else if model.loading { ProgressView("Loading prep list") }
             }.padding()
         }
@@ -110,6 +117,10 @@ private struct PrepStoreView: View {
                         Text("All groups").tag("")
                         ForEach(["Fruit", "Vegetables", "Salads"], id: \.self) { Text($0).tag($0) }
                     }
+                    Picker("Produce", selection: $produce) {
+                        Text("All produce").tag("")
+                        ForEach(PrepPresentation.produceOptions(board.items), id: \.self) { Text($0).tag($0) }
+                    }
                     Picker("Category", selection: $category) {
                         Text("All categories").tag("")
                         ForEach(Array(Set(board.items.map(\.category).filter { !$0.isEmpty })).sorted(), id: \.self) { Text($0).tag($0) }
@@ -126,7 +137,7 @@ private struct PrepStoreView: View {
                     }
 
                     }
-                    Button("Reset filters") { category = ""; type = ""; sortOrder = .sections; family = ""; showCompleted = false }
+                    Button("Reset filters") { category = ""; type = ""; sortOrder = .sections; family = ""; produce = ""; showCompleted = false }
                 }
                 .pageBackground()
                 .navigationTitle("Filters")
@@ -149,7 +160,7 @@ private struct PrepStoreView: View {
                     .font(.headline).accessibilityIdentifier("prep-total")
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { filtersOpen = true } label: { Image(systemName: category.isEmpty && type.isEmpty && !showCompleted && family.isEmpty && sortOrder == .sections ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill") }
+                Button { filtersOpen = true } label: { Image(systemName: category.isEmpty && type.isEmpty && !showCompleted && family.isEmpty && produce.isEmpty && sortOrder == .sections ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill") }
                     .accessibilityLabel("Filters")
             }
             ToolbarItem(placement: .secondaryAction) {
@@ -188,7 +199,7 @@ private struct PrepStoreView: View {
                     }
                 }
             } else {
-                Label("Recount this product in all its sections before recording preparation.", systemImage: "exclamationmark.circle")
+                Label("Count this product in Stock Check to see how many to make.", systemImage: "exclamationmark.circle")
                     .font(.footnote).foregroundStyle(Theme.verify)
             }
             DisclosureGroup {
@@ -209,6 +220,13 @@ private struct PrepStoreView: View {
                 Text("Locations & recent preparation").font(.subheadline).foregroundStyle(.secondary)
             }
         }.card()
+    }
+    /// In the default order, fruit gets a heading each time the produce changes.
+    private func produceHeading(at index: Int) -> String? {
+        let item = rows[index]
+        guard sortOrder == .sections, PrepPresentation.family(item) == "Fruit" else { return nil }
+        let produce = PrepPresentation.produce(item)
+        return index == 0 || PrepPresentation.produce(rows[index - 1]) != produce ? produce : nil
     }
     private func locationName(_ section: ProductionSection) -> String {
         PrepPresentation.locationLabel(section)

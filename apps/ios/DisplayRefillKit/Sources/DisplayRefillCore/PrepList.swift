@@ -5,6 +5,11 @@ public struct PrepBoard: Decodable, Sendable {
     public let updated_at: String
     public let items: [PrepItem]
     public let missing_sections: [ProductionSection]
+    /// Containers on hand now: each product's last count plus preparation since.
+    /// Products never counted are left out rather than guessed.
+    public var onHand: Int { items.reduce(0) { $0 + StockUpdateModel.expectedCounts($1).values.reduce(0, +) } }
+    /// Products with no count yet, so `onHand` can say it is incomplete.
+    public var uncounted: Int { items.filter { !$0.locations.contains { $0.have != nil } }.count }
 }
 public struct PrepItem: Decodable, Sendable, Identifiable {
     public var id: String { product_id }

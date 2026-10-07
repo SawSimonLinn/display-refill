@@ -83,6 +83,9 @@ it('finished records refuse all later edits and over-PAR produces zero',async()=
  expect((await mutate(owner.id,{action:'counts',check_id:c.id,expected_revision:c.revision,items:[{id:c.items[0]!.id,have:0}]})).error?.message).toBe('CONFLICT');
  await expect(w.db.query('update public.production_counts set have=0 where check_id=$1',[c.id])).rejects.toThrow('IMMUTABLE');
 });
+it('a new check starts from the latest finished count instead of blank',async()=>{
+ const c=await start();expect(c.items[0]).toMatchObject({have:20,make:0});
+});
 it('manager sees append-only count and PAR history with timestamps; employee denied',async()=>{
  expect((await read(owner.id,'events')).error?.message).toBe('FORBIDDEN');
  const data=(await read(manager.id,'events')).data as {events:Array<{kind:string;actor_id:string;created_at:string;after:Record<string,Json>}>};

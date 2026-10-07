@@ -93,7 +93,7 @@ private struct ProductionStoreView: View {
                         }.card()
                     }
                     if let operations = api as? any OperationsAPI {
-                        OperationsSummaryView(store: store, api: operations)
+                        OperationsSummaryView(store: store, api: operations, stock: api as? any PrepAPI)
                     }
                     sections
                 }
@@ -186,9 +186,12 @@ private struct ProductionStoreView: View {
                 if check.section == .fruitCase,
                    let index = check.items.firstIndex(where: { $0.id == item.id }),
                    index == 0 || check.items[index - 1].category != item.category {
-                    Eyebrow(item.category.isEmpty ? "Fruit" : item.category)
+                    Text(item.category.isEmpty ? "Fruit" : item.category)
+                        .font(.title2.bold())
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 8)
+                        .padding(.leading, 10)
+                        .overlay(alignment: .leading) { Capsule().fill(Theme.action).frame(width: 4) }
+                        .padding(.top, 16)
                         .accessibilityAddTraits(.isHeader)
                 }
                 VStack(alignment: .leading, spacing: 12) {

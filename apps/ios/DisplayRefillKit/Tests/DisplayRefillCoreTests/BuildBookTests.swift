@@ -31,4 +31,15 @@ import Testing
         #expect(PrepPresentation.sorted(items, by: .quantity).first?.id == "salad")
         #expect(PrepPresentation.locationLabel(.fruitCase) == "D. 6ft Fruit")
     }
+    @Test func fruitIsPreppedOneProduceAtATimeInTheKitchenOrder() {
+        func item(_ id: String, _ name: String, _ section: ProductionSection = .fruitCase) -> PrepItem {
+            PrepItem(product_id: id, product_name: name, category: "", product_type: "", ready: true, needed: 1, made: 0, remaining: 1, revision: "1", oldest_count: "", locations: [.init(section: section, have: 0, backup: nil, backup_required: nil, display_need: 1, checked_at: "")], activity: [])
+        }
+        let items = [item("kiwi", "$5 Kiwi"), item("pine10", "$10 PINEAPPLE"), item("honey", "$5 HONEYDEW"), item("ten", "$10 WATERMELON"), item("cant", "$5 CANTALOUPE"),
+                     item("pine5", "$5 PINEAPPLE", .fruitMobile), item("spear", "WATERMELON SPEARS"), item("melons", "$5 MIXED MELONS", .fruitMobile), item("cup", "$5 Watermelon Cup", .fruitMobile), item("veg", "Carrots", .veggieCase)]
+        #expect(PrepPresentation.sorted(items, by: .sections).map(\.id) == ["cup", "ten", "spear", "melons", "cant", "honey", "pine5", "pine10", "kiwi", "veg"])
+        #expect(PrepPresentation.produce(items[6]) == "Watermelon")
+        #expect(PrepPresentation.produce(items[7]) == "Mixed melon")
+        #expect(PrepPresentation.produceOptions(items) == ["Watermelon", "Mixed melon", "Cantaloupe", "Honeydew", "Pineapple", "Kiwi"])
+    }
 }

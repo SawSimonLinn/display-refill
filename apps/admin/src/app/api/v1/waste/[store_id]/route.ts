@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ store_id: string }> };
 const Input = z.discriminatedUnion("action", [
  z.strictObject({ action: z.literal("record"), product_id: z.uuid(), quantity: z.int().min(1).max(9999), reason: z.enum(["expired", "quality", "damaged", "other"]), note: z.string().max(300).default(""), business_date: z.iso.date().optional() }),
- z.strictObject({ action: z.literal("void"), entry_id: z.uuid() })
+ z.strictObject({ action: z.literal("void"), entry_id: z.uuid() }),
+ z.strictObject({ action: z.literal("edit"), entry_id: z.uuid(), quantity: z.int().min(1).max(9999), reason: z.enum(["expired", "quality", "damaged", "other"]), note: z.string().max(300).default("") })
 ]);
 export async function POST(request: Request, context: Context) {
  const requestId = resolveRequestId(request.headers);

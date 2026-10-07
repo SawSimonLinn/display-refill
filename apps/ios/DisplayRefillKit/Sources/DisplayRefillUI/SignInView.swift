@@ -5,7 +5,6 @@ import SwiftUI
 /// sign-up. Password reset emails link to the web page that sets a new password.
 public struct SignInView: View {
     @Bindable private var session: AppSession
-    @State private var health: HealthCheckModel
     @State private var email = ""
     @State private var password = ""
     @State private var showingReset = false
@@ -14,7 +13,6 @@ public struct SignInView: View {
     public init(session: AppSession, client: any APIClient) {
         self.session = session
         self.client = client
-        _health = State(initialValue: HealthCheckModel(client: client))
     }
 
     private var busy: Bool { session.phase == .signingIn }
@@ -61,7 +59,6 @@ public struct SignInView: View {
                             .frame(minHeight: 44)
                             .disabled(busy)
                     }
-                    serverStatus
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 32)
@@ -70,7 +67,6 @@ public struct SignInView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.page.ignoresSafeArea())
-            .task { await health.check() }
             .sheet(isPresented: $showingReset) {
                 ForgotPasswordView(client: client, initialEmail: email)
             }
@@ -100,21 +96,6 @@ public struct SignInView: View {
         .padding(.top, 40)
     }
 
-    private var serverStatus: some View {
-        HStack(spacing: 12) {
-            ServerStatusRow(state: health.state)
-                .font(.footnote)
-            Spacer(minLength: 8)
-            Button("Check again") { Task { await health.check() } }
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Theme.action)
-                .frame(minHeight: 44)
-                .disabled(health.state == .loading)
-        }
-        .padding(.horizontal, 16)
-        .background(Theme.surface, in: Capsule())
-    }
-
     @ViewBuilder private var emailField: some View {
         #if os(iOS)
         TextField("Email", text: $email)
@@ -134,27 +115,6 @@ public struct SignInView: View {
         let (email, password) = (email, password)
         self.password = ""
         Task { await session.signIn(email: email, password: password) }
-    }
-}
-
-struct ServerStatusRow: View {
-    let state: HealthCheckModel.State
-
-    var body: some View {
-        switch state {
-        case .idle, .loading:
-            HStack {
-                ProgressView()
-                Text("Checking server…")
-            }
-            .accessibilityElement(children: .combine)
-        case .reachable(let health):
-            Label("Reachable · API \(health.apiVersion)", systemImage: "checkmark.circle")
-                .foregroundStyle(Theme.confirmed)
-        case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(Theme.verify)
-        }
     }
 }
 

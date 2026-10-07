@@ -59,3 +59,25 @@ it('revoking live membership immediately blocks reads and writes',async()=>{
  await w.db.query('update public.store_memberships set active=false where user_id=$1 and store_id=$2',[other.id,store]);
  expect((await read(other)).error?.message).toBe('NOT_FOUND');expect((await record(body(await product()),other)).error?.message).toBe('NOT_FOUND');
 });
+it('edit voids and re-records atomically, keeps the day, and reports daily and reason totals',async()=>{
+ const id=await product();const saved=await record(body(id,'2026-09-15'));const entry=(saved.data as any).entries.find((e:any)=>e.product_id===id);
+ const edit={action:'edit',entry_id:entry.id,quantity:3,reason:'quality',note:'Bruised'};
+ const peer=await w.user('waste-peer',{org:{id:org,role:'member'},stores:[{id:store,role:'employee'}]});
+ expect((await record(edit,peer)).error?.message).toBe('FORBIDDEN');
+ for(const invalid of [{quantity:0},{quantity:1.5},{reason:'invalid'},{product_id:id},{business_date:'2026-09-16'}])expect((await record({...edit,...invalid})).error).not.toBeNull();
+ const key=randomUUID();const edited=await record(edit,manager,key);expect(edited.error).toBeNull();
+ const data=edited.data as any;expect(data.business_date).toBe('2026-09-15');expect(data.products.find((p:any)=>p.product_id===id).wasted).toBe(3);
+ expect(data.entries.find((e:any)=>e.id===entry.id)).toMatchObject({voided:true,edited:true,can_void:false});
+ expect(data.entries.find((e:any)=>e.product_id===id&&!e.voided)).toMatchObject({quantity:3,reason:'quality',note:'Bruised',edited:false});
+ expect((await record(edit,manager,key)).data).toEqual(edited.data);
+ expect((await record(edit,manager)).error?.message).toBe('CONFLICT');
+ const current=data.entries.find((e:any)=>e.product_id===id&&!e.voided);
+ const unchanged=await record({action:'edit',entry_id:current.id,quantity:3,reason:'quality',note:'Bruised'},manager);
+ expect((unchanged.data as any).entries.find((e:any)=>e.id===current.id).voided).toBe(false);
+ const week=(await read(employee,'2026-09-15','week')).data as any;
+ expect(week.days).toHaveLength(7);expect(week.days.map((d:any)=>d.date)[0]).toBe('2026-09-13');
+ expect(week.days.find((d:any)=>d.date==='2026-09-15').wasted).toBe(3);
+ expect(week.days.reduce((n:number,d:any)=>n+Number(d.wasted),0)).toBe(Number(week.wasted));
+ expect(week.reasons.find((r:any)=>r.reason==='quality').wasted).toBeGreaterThanOrEqual(3);
+ expect(week.reasons.every((r:any)=>Number(r.wasted)!==0)).toBe(true);
+});

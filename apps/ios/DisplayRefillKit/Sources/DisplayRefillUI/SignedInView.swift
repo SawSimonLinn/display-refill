@@ -59,7 +59,7 @@ public struct SignedInView: View {
 
             if let operationsAPI = api as? any OperationsAPI {
                 NavigationStack {
-                    WasteLogView(stores: me.stores, api: operationsAPI, userID: me.userID.uuidString)
+                    WasteLogView(stores: me.stores, api: operationsAPI, stock: api as? any PrepAPI, userID: me.userID.uuidString)
                         .toolbar { accountMenu }
                 }
                 .tabItem { Label("Waste Log", systemImage: "trash") }
@@ -84,10 +84,10 @@ public struct SignedInView: View {
     private var accountMenu: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Menu {
+                // Menus ignore lineLimit, so long names and emails are shortened here to stay on one line.
                 Section {
-                    Text(me.displayName.isEmpty ? (me.email ?? "Signed in") : me.displayName)
-                        .lineLimit(1).truncationMode(.middle)
-                    if let email = me.email, !me.displayName.isEmpty { Text(email).lineLimit(1).truncationMode(.middle) }
+                    Text(Self.oneLine(me.displayName.isEmpty ? (me.email ?? "Signed in") : me.displayName))
+                    if let email = me.email, !me.displayName.isEmpty { Text(Self.oneLine(email)) }
                 }
                 Button { tab = .profile } label: { Label("Profile & settings", systemImage: "gearshape") }
                 Button("Sign out", role: .destructive) { Task { await onSignOut() } }
@@ -95,6 +95,17 @@ public struct SignedInView: View {
                 Label("Account", systemImage: "person.circle")
             }
         }
+    }
+
+    /// "averylongname@example.com" → "averylo…@example.com"; keeps the domain when it fits.
+    static func oneLine(_ text: String, limit: Int = 22) -> String {
+        guard text.count > limit else { return text }
+        if let at = text.lastIndex(of: "@") {
+            let domain = text[at...]
+            let keep = limit - domain.count - 1
+            if keep >= 3 { return text.prefix(keep) + "…" + domain }
+        }
+        return text.prefix(limit - 1) + "…"
     }
 
     private func applyKeepAwake() {

@@ -1,12 +1,21 @@
-# DisplayRefill (iOS)
+# PrepFlow (iOS)
 
-SwiftUI employee app. Minimum deployment target **iOS 17.0** (provisional:
-not yet checked against actual store devices).
+SwiftUI employee app, shown on the home screen as **PrepFlow** (Xcode target
+and scheme `DisplayRefill`, bundle ID `com.displayrefill.app`, iPhone only).
+Minimum deployment target **iOS 17.0**.
+
+Tabs: **Stock Check** (count four sections or update one product), **Prep
+List** (shared list of what to make, fruit grouped by produce), **Build Book**
+(bundled PDF with search, works offline), **Waste Log** (log, edit or undo
+waste per day; week card with totals, waste per day and most wasted) and
+**Profile** (settings and Help). The earlier display-scan screens (manual
+check, photo check, history; Features 07–11 below) are still compiled but no
+tab opens them: `StoreListView` in `SignedInView.swift` is never shown.
 
 ```text
 project.yml                     XcodeGen spec for the app target (project file is generated, git-ignored)
 DisplayRefill/App/              @main entry point only
-DisplayRefill/Resources/        Info.plist (camera purpose string, public config keys)
+DisplayRefill/Resources/        Info.plist (public config keys, camera purpose string), PrivacyInfo.xcprivacy, app icon
 DisplayRefill/Config/           Shared.xcconfig + Local.example.xcconfig
 DisplayRefillKit/               Swift package: DisplayRefillCore (config, API client, wire models)
                                 and DisplayRefillUI (SwiftUI shell); tests in Tests/
@@ -17,10 +26,20 @@ scripts/swiftc-check.sh         Legacy fallback compile + test from before full 
 ## Configuration
 
 Only public values ship in the app: `API_BASE_URL`, `SUPABASE_URL`,
-`SUPABASE_PUBLISHABLE_KEY`. Copy `DisplayRefill/Config/Local.example.xcconfig`
-to `Local.xcconfig` (git-ignored). In xcconfig, write URLs as
-`http:/$()/host` because `//` starts a comment. On a physical device use the
-Mac's LAN address, not `localhost`.
+`SUPABASE_PUBLISHABLE_KEY`.
+
+**Every build currently points at the hosted backend.**
+`DisplayRefill/Resources/Info.plist` holds literal values
+(`https://display-refill-admin.vercel.app`,
+`https://immmuxzarcwjwlrfspwj.supabase.co` and its publishable key), so
+`Shared.xcconfig` and `Local.xcconfig` do not change what the app talks to.
+To run the app against a local stack, temporarily change those three
+Info.plist values back to `$(API_BASE_URL)`, `$(SUPABASE_URL)` and
+`$(SUPABASE_PUBLISHABLE_KEY)`, then copy
+`DisplayRefill/Config/Local.example.xcconfig` to `Local.xcconfig`
+(git-ignored). In xcconfig, write URLs as `http:/$()/host` because `//`
+starts a comment. On a physical device use the Mac's LAN address, not
+`localhost`. Restore the hosted values before archiving.
 
 At launch `AppConfiguration` validates these keys and shows a
 "not configured" screen naming missing keys. It refuses a secret or
@@ -48,6 +67,51 @@ the compiled test binary with `DISPLAY_REFILL_LIVE=1 LIVE_API_BASE_URL=…
 LIVE_SUPABASE_URL=… LIVE_PUBLISHABLE_KEY=… LIVE_EMAIL=… LIVE_PASSWORD=…
 LIVE_EXPECTED_STORE_IDS=…`. `DISPLAY_REFILL_KEYCHAIN_TEST=1` enables a real
 Keychain round trip (writes to the login keychain and deletes the item).
+
+## App Store release
+
+Version and build live in `project.yml` (`MARKETING_VERSION`,
+`CURRENT_PROJECT_VERSION`). Raise `CURRENT_PROJECT_VERSION` for every
+upload; App Store Connect rejects a build number it has already seen.
+
+Before archiving:
+
+1. **Backend first.** The app talks to the hosted backend, so deploy it before
+   the build goes to review. Check `npx supabase migration list --linked`
+   shows no local-only migrations, push them with `npx supabase db push`, then
+   deploy the admin app to Vercel. Waste Log edits fail on a server without
+   the `edit` action.
+2. Run `npm run check`, `npm run check:db` (local) and
+   `swift test` in `DisplayRefillKit`.
+3. Make sure Info.plist still holds the hosted values (see Configuration).
+4. Build the release configuration for devices:
+
+   ```bash
+   cd apps/ios
+   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+   xcodegen generate
+   xcodebuild -scheme DisplayRefill -configuration Release \
+     -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+   ```
+
+5. Archive and upload from Xcode (Product → Archive → Distribute App), with
+   your team selected under Signing & Capabilities. `xcodegen generate`
+   resets signing settings that were only set in Xcode.
+
+App Store Connect needs:
+
+- **Review sign-in.** There is no sign-up, so App Review needs a working
+  employee account with at least one store and some counted products. Put the
+  email and password in App Review Information.
+- **Privacy policy URL** and the App Privacy answers (email, name and
+  usage data linked to the user for app functionality; no tracking).
+- **Distribution.** This is an internal staff app. Consider an Unlisted app,
+  or Apple Business Manager custom app, instead of a public listing.
+- Export compliance is already answered in Info.plist
+  (`ITSAppUsesNonExemptEncryption` = `false`).
+- `DisplayRefill/Resources/PrivacyInfo.xcprivacy` declares the app's
+  `UserDefaults` use (reason `CA92.1`) and no tracking. Update it if you add
+  another required-reason API or an SDK.
 
 ## Build and test (with Xcode)
 

@@ -460,7 +460,9 @@ struct HelpView: View {
             "The build book is stored in the app and works without a connection.",
         ]),
         Topic(id: "Waste Log", systemImage: "trash", tips: [
-            "Log containers when you throw them away, with a reason.",
+            "Search a product, enter the containers and tap Log. Products wasted often this week show as shortcuts.",
+            "Tap a day in the strip to see or fix that day. Tap an entry to change its amount or reason, or undo it.",
+            "The week card shows totals, waste per day and what was thrown away most.",
             "After discarding stock, update HAVE in Stock Check.",
         ]),
     ]

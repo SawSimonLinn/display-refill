@@ -22,7 +22,7 @@ beforeAll(async()=>{
  for(const [section,par] of [['fruit_mobile',10],['fruit_case',36]])expect((await post(manager,{action:'configure',product_id:product,section,par,category:'Fruit',product_type:'Bowl',sort_order:0,active:true})).status).toBe(200);
 });
 afterAll(()=>h?.close());
-it('requires authentication/store membership, hides PAR, and waits for both shared locations',async()=>{
+it('requires authentication/store membership, hides PAR, and waits until every location has been counted once',async()=>{
  expect((await h.api(`/api/v1/prep/${store}`)).status).toBe(401);
  expect((await board(outsider)).status).toBe(404);
  await count('fruit_mobile',5,0);expect((await current()).ready).toBe(false);
@@ -47,13 +47,13 @@ it('strict validation rejects unknown fields, fractions, negatives, over-remaini
  const fresh=await current();if(fresh.remaining>0)expect((await record({product_id:product,expected_revision:fresh.revision,done:true})).status).toBe(200);
  expect((await current()).remaining).toBe(0);
 });
-it('recount includes prepared stock once; mixed baselines block prep until both locations counted',async()=>{
- await count('fruit_mobile',10,0);let row=await current();expect(row.ready).toBe(false);expect(row.remaining).toBeNull();
- expect((await record({product_id:product,expected_revision:row.revision,quantity:1})).status).toBe(409);
+it('recount includes prepared stock once; a single-section recount updates the amount straight away',async()=>{
+ // The newest count wins: earlier prep is assumed on the shelves, and the 6ft case keeps its last count (16).
+ await count('fruit_mobile',10,0);let row=await current();expect(row).toMatchObject({ready:true,needed:20,made:0,remaining:20});
  // 25 made, moved to the displays. Physical total 46 => no further production.
  await count('fruit_case',36);row=await current();expect(row).toMatchObject({ready:true,needed:0,made:0,remaining:0});
  // Five sales reflected by a later count, not by subtracting past production again.
- await count('fruit_mobile',5,0);expect((await current()).ready).toBe(false);await count('fruit_case',36);expect(await current()).toMatchObject({needed:5,made:0,remaining:5});
+ await count('fruit_mobile',5,0);expect(await current()).toMatchObject({ready:true,needed:5,remaining:5});await count('fruit_case',36);expect(await current()).toMatchObject({needed:5,made:0,remaining:5});
 });
 it('prep during a draft prevents stale publication; restart is atomic, blank and replay-safe',async()=>{
  let draft=await start('fruit_mobile');

@@ -45,7 +45,7 @@ extension URLSessionAccountAPI: StockUpdateAPI {
     }
     /// Last counted `have` per location plus `made`, split by each location's display need
     /// (evenly when no location needs any). Largest remainders get the leftover containers.
-    public static func expectedCounts(_ item: PrepItem) -> [ProductionSection: Int] {
+    nonisolated public static func expectedCounts(_ item: PrepItem) -> [ProductionSection: Int] {
         let counted = item.locations.filter { $0.have != nil }
         guard !counted.isEmpty else { return [:] }
         let needs = counted.map { max(0, $0.display_need) }

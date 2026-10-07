@@ -42,3 +42,11 @@ it('live-token revocation blocks reporting and recording on the next request',as
  await h.db.query('update public.store_memberships set active=false where store_id=$1 and user_id=$2',[store,employee.id]);
  expect((await get(employee)).status).toBe(404);expect((await post(employee,payload())).status).toBe(404);
 });
+it('edit validates strictly and corrects an entry in place of void plus record',async()=>{
+ const saved=(await post(manager,{...payload(),business_date:'2026-09-14'})).json.data;const entry=saved.entries.find((e:any)=>!e.voided);
+ for(const extra of [{quantity:0},{product_id:product},{business_date:'2026-09-13'},{reason:'unknown'}])expect((await post(manager,{action:'edit',entry_id:entry.id,quantity:2,reason:'damaged',...extra})).status).toBe(422);
+ expect((await post(other,{action:'edit',entry_id:entry.id,quantity:2,reason:'damaged'})).status).toBe(403);
+ const edited=await post(manager,{action:'edit',entry_id:entry.id,quantity:2,reason:'damaged'});expect(edited.status).toBe(200);
+ expect(edited.json.data.wasted).toBe(2);expect(edited.json.data.days).toEqual([{date:'2026-09-14',made:0,wasted:2}]);
+ expect(edited.json.data.reasons).toEqual([{reason:'damaged',wasted:2}]);
+});

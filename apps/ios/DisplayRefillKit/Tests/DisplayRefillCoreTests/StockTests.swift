@@ -70,4 +70,12 @@ private actor StockStub: StockUpdateAPI {
         #expect(restored.inputs["fruit_case"] == "33"); await restored.save(item); #expect(restored.saved)
         let calls = await api.recorded(); #expect(calls.count == 2); #expect(calls[0].1 == calls[1].1); #expect(calls[1].0.counts[0].backup == 0); #expect(calls[1].0.counts[1].backup == nil)
     }
+    @Test func onHandAddsPrepSinceCountAndSkipsUncountedProducts() {
+        func item(_ id: String, made: Int, have: [Int?]) -> PrepItem {
+            .init(product_id: id, product_name: id, category: "Fruit", product_type: "Bowl", ready: true, needed: nil, made: made, remaining: nil, revision: "1", oldest_count: "now",
+                  locations: have.enumerated().map { .init(section: [ProductionSection.fruitMobile, .fruitCase][$0.offset], have: $0.element, backup: nil, backup_required: nil, display_need: 2, checked_at: "now") }, activity: [])
+        }
+        let board = PrepBoard(updated_at: "now", items: [item("a", made: 3, have: [4, 1]), item("b", made: 0, have: [0]), item("c", made: 5, have: [nil])], missing_sections: [])
+        #expect(board.onHand == 8); #expect(board.uncounted == 1)
+    }
 }

@@ -12,23 +12,25 @@ import XCTest
         let password = app.secureTextFields["Password"]; password.tap(); password.typeText(fixture.password); app.buttons["Sign in"].tap()
         let tab = app.tabBars.buttons["Waste Log"]; XCTAssertTrue(tab.waitForExistence(timeout: 20)); tab.tap()
         XCTAssertFalse(app.tabBars.buttons["Saved checks"].exists)
-        let logButton = app.buttons["Log waste"]; XCTAssertTrue(logButton.waitForExistence(timeout: 15)); expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: logButton); waitForExpectations(timeout: 15); logButton.tap()
-        let product = app.buttons["Choose product"]; XCTAssertTrue(product.waitForExistence(timeout: 10)); product.tap()
-        let bowl = app.buttons["Synthetic Watermelon Bowl"]; XCTAssertTrue(bowl.waitForExistence(timeout: 10)); bowl.tap()
+        let search = app.textFields["waste-search"]; XCTAssertTrue(search.waitForExistence(timeout: 15)); expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: search); waitForExpectations(timeout: 15)
+        search.tap(); search.typeText("Synthetic Watermelon")
+        let bowl = app.buttons["Synthetic Watermelon Bowl"].firstMatch; XCTAssertTrue(bowl.waitForExistence(timeout: 10)); bowl.tap()
         let quantity = app.textFields["waste-quantity"]; XCTAssertTrue(quantity.waitForExistence(timeout: 10)); quantity.tap(); quantity.typeText("3")
-        app.buttons["Close keyboard"].tap(); app.navigationBars["Log Waste"].buttons["Save"].tap()
+        app.buttons["Close keyboard"].tap()
+        let log = app.buttons["waste-log"]; for _ in 0..<8 { if log.isHittable { break }; app.swipeUp() }; log.tap()
         let totals = app.descendants(matching: .any).matching(identifier: "waste-totals").firstMatch; XCTAssertTrue(totals.waitForExistence(timeout: 15))
-        let undo = app.buttons["Undo entry"].firstMatch
-        for _ in 0..<12 { if undo.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(undo.waitForExistence(timeout: 10)); XCTAssertTrue(undo.isHittable)
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Logged 3 ·")).firstMatch.waitForExistence(timeout: 15))
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "waste-entry-")).firstMatch
         app.terminate(); app.launch(); app.tabBars.buttons["Stock Check"].tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "3 wasted")).firstMatch.waitForExistence(timeout: 15))
         app.tabBars.buttons["Waste Log"].tap()
-        for _ in 0..<12 { if undo.isHittable { break }; app.swipeUp() }
-        undo.tap()
+        XCTAssertTrue(entry.waitForExistence(timeout: 15))
+        for _ in 0..<12 { if entry.isHittable { break }; app.swipeUp() }
+        entry.tap()
+        let undo = app.buttons["Undo entry"]; XCTAssertTrue(undo.waitForExistence(timeout: 10)); undo.tap()
         let confirm = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Undo 3 ·")).firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
-        XCTAssertTrue(app.staticTexts["Undone"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Undone")).firstMatch.waitForExistence(timeout: 15))
         for _ in 0..<10 { if totals.isHittable { break }; app.swipeDown() }
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "0 wasted")).firstMatch.waitForExistence(timeout: 15))
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = largest ? "Waste largest text" : "Waste default"; shot.lifetime = .keepAlways; add(shot)
