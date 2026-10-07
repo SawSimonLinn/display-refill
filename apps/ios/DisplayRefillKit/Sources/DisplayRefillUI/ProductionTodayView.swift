@@ -53,7 +53,12 @@ private struct ProductionStoreView: View {
                 Pill(text: "\(store.storeNumber) · \(store.name)", systemImage: "storefront")
                 if let error = model.error {
                     Notice(text: error) {
-                        if model.conflict {
+                        if model.freshCountRequired {
+                            Text("Your numbers are kept in the fresh count. Check any product that was made or recounted, then finish again.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            Button("Start fresh count, keep my numbers") { focused = nil; Task { await model.restartCount(keepEntries: true) } }
+                                .buttonStyle(OutlineButtonStyle()).disabled(model.busy)
+                        } else if model.conflict {
                             Text("If preparation changed during counting, start a fresh count including the new containers.")
                                 .font(.footnote).foregroundStyle(.secondary)
                             Button("Load latest, keep my edits") { Task { await model.reloadConflict() } }

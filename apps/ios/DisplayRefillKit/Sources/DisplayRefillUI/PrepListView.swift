@@ -52,7 +52,7 @@ private struct PrepStoreView: View {
     private var rows: [PrepItem] {
         PrepPresentation.sorted((model.board?.items ?? []).filter { item in
             (family.isEmpty || PrepPresentation.family(item) == family) &&
-            (category.isEmpty || item.category == category) && (type.isEmpty || item.product_type == type) && (showCompleted || item.remaining != 0)
+            (category.isEmpty || item.category == category) && (type.isEmpty || item.product_type == type) && (showCompleted || item.remaining != 0 || !(model.inputs[item.id] ?? "").isEmpty)
         }, by: sortOrder)
     }
     var body: some View {
@@ -156,7 +156,7 @@ private struct PrepStoreView: View {
                 Button { infoOpen = true } label: { Label("Prep details", systemImage: "info.circle") }
             }
             #if os(iOS)
-            let editable = rows.filter { $0.ready && ($0.remaining ?? 0) > 0 }.map(\.id)
+            let editable = rows.filter(\.ready).map(\.id)
             NumberEntryBar(isLast: focused != nil && focused == editable.last) {
                 if let focused { model.inputs[focused] = nil }
                 focused = fieldAfter(after: focused, in: editable)
@@ -177,16 +177,14 @@ private struct PrepStoreView: View {
                 }
             }
             if item.ready {
-                if (item.remaining ?? 0) > 0 {
-                    if textSize.isAccessibilitySize {
-                        amountInput(item)
-                        VStack(alignment: .leading) { recordButton(item); doneButton(item) }
-                    } else {
-                        HStack(spacing: 8) {
-                            amountInput(item).frame(maxWidth: .infinity)
-                            recordButton(item).fixedSize(horizontal: true, vertical: false)
-                            doneButton(item).fixedSize(horizontal: true, vertical: false)
-                        }
+                if textSize.isAccessibilitySize {
+                    amountInput(item)
+                    VStack(alignment: .leading) { recordButton(item); doneButton(item) }
+                } else {
+                    HStack(spacing: 8) {
+                        amountInput(item).frame(maxWidth: .infinity)
+                        recordButton(item).fixedSize(horizontal: true, vertical: false)
+                        doneButton(item).fixedSize(horizontal: true, vertical: false)
                     }
                 }
             } else {
@@ -227,12 +225,12 @@ private struct PrepStoreView: View {
     }
     private func recordButton(_ item: PrepItem) -> some View {
         Button { focused = nil; Task { await model.record(item) } } label: { Text("Record").fixedSize(horizontal: false, vertical: true) }
-            .buttonStyle(InkCapsuleStyle()).disabled(model.busy || model.pending)
+            .buttonStyle(InkCapsuleStyle()).disabled(model.busy || model.pending || (item.remaining ?? 0) == 0)
             .accessibilityLabel("Record made").accessibilityIdentifier("prep-record-\(item.id)")
     }
     private func doneButton(_ item: PrepItem) -> some View {
         Button { focused = nil; doneItem = item } label: { Label("Done", systemImage: "checkmark").fixedSize(horizontal: false, vertical: true) }
-            .buttonStyle(OutlineButtonStyle()).disabled(model.busy || model.pending)
+            .buttonStyle(OutlineButtonStyle()).disabled(model.busy || model.pending || (item.remaining ?? 0) == 0)
             .accessibilityLabel("Done · made all remaining")
     }
     private func timeLabel(_ raw: String) -> String {

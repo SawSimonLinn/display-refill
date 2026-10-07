@@ -41,6 +41,12 @@ describe("fromDbError field hints", () => {
     }
   });
 
+  it("passes through known user-facing conflict details", () => {
+    expect(fromDbError({ message: "CONFLICT", details: "This check belongs to an earlier day. Start a new check." })).toEqual({
+      ok: false, code: "CONFLICT", message: "This check belongs to an earlier day. Start a new check.",
+    });
+  });
+
   it("does not expose details for non-validation errors", () => {
     expect(fromDbError({ message: "CONFLICT", details: "expected revision 1, current 2", hint: "x" })).toEqual({
       ok: false, code: "CONFLICT", message: "This record changed or already exists. Reload and try again.",

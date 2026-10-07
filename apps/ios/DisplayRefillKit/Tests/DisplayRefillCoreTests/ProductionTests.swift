@@ -6,6 +6,8 @@ private actor ProductionStub: ProductionAPI {
     var calls: [(ProductionMutation, String)] = []
     var failNext = false
     var validationFailNext = false
+    var staleFinishNext = false
+    func staleFinish() { staleFinishNext = true }
     var delayed = false
     var shared = false
     var backup: Int?
@@ -25,6 +27,8 @@ private actor ProductionStub: ProductionAPI {
         if failNext { failNext = false; throw APIClientError.transport(.timedOut) }
         if validationFailNext { validationFailNext = false; throw APIClientError.server(status: 422, code: .validationFailed, message: "Invalid worksheet input.", requestID: nil) }
         if delayed { delayed = false; try await Task.sleep(for: .milliseconds(50)) }
+        if staleFinishNext, mutation.action == "finish" { staleFinishNext = false; throw APIClientError.server(status: 409, code: .conflict, message: "Stock or preparation changed during this count. Start a fresh count including all ready containers.", requestID: nil) }
+        if mutation.action == "restart" { quantity = nil }
         if mutation.action == "counts" { quantity = mutation.items?.first?.have; backup = mutation.items?.first?.backup }
         return result()
     }
@@ -106,6 +110,19 @@ private actor ProductionStub: ProductionAPI {
         #expect(calls.map(\.0.action) == ["start", "counts", "finish"])
         #expect(calls[1].0.items?.first?.have == 0)
         #expect(model.input["i"] == "0")
+    }
+    @Test func staleCountRestartsKeepingTypedNumbers() async {
+        let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")
+        await model.start(.fruitMobile)
+        model.edit("i", text: "4"); await model.save()
+        await api.staleFinish(); await model.finish()
+        #expect(model.conflict && model.freshCountRequired)
+        #expect(model.error == "Stock or preparation changed during this count. Start a fresh count including all ready containers.")
+        await model.restartCount(keepEntries: true); await model.save()
+        #expect(!model.conflict && !model.freshCountRequired)
+        #expect(model.input["i"] == "4")
+        #expect(model.check?.items.first?.have == 4)
+        #expect(await api.record().map(\.0.action).suffix(2) == ["restart", "counts"])
     }
     @Test func cannotFinishInvalidCount() async {
         let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")

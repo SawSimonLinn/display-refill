@@ -26,6 +26,18 @@ private actor StockStub: StockUpdateAPI {
         #expect(model.inputs["fruit_mobile"] == "0")
         #expect(!model.pending)
     }
+    @Test func seedAddsMadeSplitByDisplayNeed() {
+        func item(made: Int, needs: [Int], haves: [Int?] = [5, 31]) -> PrepItem {
+            .init(product_id: "p", product_name: "Fruit", category: "Fruit", product_type: "Bowl", ready: true, needed: 10, made: made, remaining: 0, revision: "r", oldest_count: "now", locations: [.init(section: .fruitMobile, have: haves[0], backup: nil, backup_required: false, display_need: needs[0], checked_at: "now"), .init(section: .fruitCase, have: haves[1], backup: nil, backup_required: false, display_need: needs[1], checked_at: "now")], activity: [])
+        }
+        #expect(StockUpdateModel.expectedCounts(item(made: 10, needs: [6, 4])) == [.fruitMobile: 11, .fruitCase: 35])
+        #expect(StockUpdateModel.expectedCounts(item(made: 5, needs: [1, 1])) == [.fruitMobile: 8, .fruitCase: 33])
+        #expect(StockUpdateModel.expectedCounts(item(made: 3, needs: [0, 0])) == [.fruitMobile: 7, .fruitCase: 32])
+        #expect(StockUpdateModel.expectedCounts(item(made: 4, needs: [3, 3], haves: [nil, 31])) == [.fruitCase: 35])
+        let model = StockUpdateModel(api: StockStub(), storeID: "s")
+        model.loadCounts(item(made: 10, needs: [6, 4]))
+        #expect(model.inputs["fruit_mobile"] == "11"); #expect(model.inputs["fruit_case"] == "35")
+    }
     @Test func restoredRetryCountsAreNotReplacedByOlderSavedCounts() async {
         let model = StockUpdateModel(api: StockStub(), storeID: "s")
         model.inputs = ["fruit_mobile": "0", "fruit_case": "33"]

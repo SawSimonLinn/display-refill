@@ -106,7 +106,8 @@ extension URLSessionAccountAPI: PrepAPI {
         if !done && (text.isEmpty || !ProductionWorksheet.valid(text) || (quantity ?? 0) < 1 || (quantity ?? 0) > (item.remaining ?? 0)) {
             error = "Enter a whole number from 1 to \(item.remaining ?? 0)."; return
         }
-        operation = Operation(mutation: .init(productID: item.id, revision: item.revision, quantity: done ? nil : quantity, done: done), key: UUID().uuidString, input: inputs[item.id])
+        // Done keeps the amount it covered so the box can keep showing it.
+        operation = Operation(mutation: .init(productID: item.id, revision: item.revision, quantity: done ? nil : quantity, done: done), key: UUID().uuidString, input: done ? String(item.remaining ?? 0) : inputs[item.id])
         pending = true; persist()
         await send()
     }
@@ -118,7 +119,8 @@ extension URLSessionAccountAPI: PrepAPI {
         do {
             board = try await api.recordPrep(storeID: storeID, mutation: op.mutation, key: op.key)
             lastLoaded = Date()
-            if inputs[op.mutation.product_id] == op.input { inputs[op.mutation.product_id] = "" }
+            // Keep the recorded amount visible; Done shows the amount it covered.
+            if op.mutation.done { inputs[op.mutation.product_id] = op.input }
             operation = nil; pending = false; persist()
             message = "Preparation saved for the team."
         } catch {

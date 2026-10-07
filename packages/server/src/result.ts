@@ -32,6 +32,15 @@ const DB_CODES: Record<string, { code: ApiErrorCode; message: string }> = {
   POG_CHANGED: { code: "POG_CHANGED", message: "The layout changed. Refresh and try again." },
 };
 
+/** Fixed, user-facing CONFLICT details raised by our functions; any other detail stays private. */
+const PUBLIC_CONFLICT_DETAILS = new Set([
+  "This check belongs to an earlier day. Start a new check.",
+  "A newer stock check was published. Start a fresh count.",
+  "Stock or preparation changed during this count. Start a fresh count including all ready containers.",
+  "Someone recorded preparation during this count. Start a fresh count including all ready containers.",
+  "Configure additional sections before starting today’s checks.",
+]);
+
 /** Request field names our functions put in HINT (snake_case identifiers only). */
 const FIELD_HINT = /^[a-z][a-z0-9_]{0,63}$/;
 
@@ -47,6 +56,7 @@ export function fromDbError(error: { message?: string; code?: string; details?: 
     // Validation details from our own functions are safe, fixed strings.
     const field = error.hint && FIELD_HINT.test(error.hint) ? error.hint : "request";
     const detail = error.message === "VALIDATION_FAILED" && error.details ? { fieldErrors: { [field]: [error.details] } } : undefined;
+    if (error.message === "CONFLICT" && error.details && PUBLIC_CONFLICT_DETAILS.has(error.details)) return fail(known.code, error.details);
     return fail(known.code, known.message, detail);
   }
   if (!error.code || error.code.startsWith("PGRST0") || error.message?.includes("fetch failed")) {

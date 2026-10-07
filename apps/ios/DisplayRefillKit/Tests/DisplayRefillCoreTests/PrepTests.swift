@@ -39,9 +39,10 @@ private actor PrepStub: PrepAPI {
         await model.refresh(); model.inputs["p"] = "20"
         await model.record(try #require(model.board?.items.first))
         #expect(model.board?.items.first?.remaining == 5)
-        #expect(model.inputs["p"] == "")
+        #expect(model.inputs["p"] == "20")
         await model.record(try #require(model.board?.items.first), done: true)
         #expect(model.board?.items.first?.remaining == 0)
+        #expect(model.inputs["p"] == "5")
         let calls = await api.recorded(); #expect(calls.last?.0.done == true); #expect(calls.last?.0.quantity == nil)
     }
     @Test func uncertainSaveSurvivesRelaunchWithExactKeyAndPayload() async throws {

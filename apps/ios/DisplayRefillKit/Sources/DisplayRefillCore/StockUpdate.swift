@@ -35,12 +35,29 @@ extension URLSessionAccountAPI: StockUpdateAPI {
             error = "Retry the interrupted stock save before entering a different count."
         }
     }
-    /// Seed last observed counts without replacing edits or an interrupted operation.
+    /// Seed last observed counts plus preparation made since, without replacing edits or an interrupted operation.
     public func loadCounts(_ item: PrepItem) {
         guard !pending, operation == nil else { return }
+        let expected = Self.expectedCounts(item)
         for location in item.locations where inputs[location.section.rawValue] == nil {
-            if let have = location.have { inputs[location.section.rawValue] = String(have) }
+            if let have = expected[location.section] { inputs[location.section.rawValue] = String(have) }
         }
+    }
+    /// Last counted `have` per location plus `made`, split by each location's display need
+    /// (evenly when no location needs any). Largest remainders get the leftover containers.
+    public static func expectedCounts(_ item: PrepItem) -> [ProductionSection: Int] {
+        let counted = item.locations.filter { $0.have != nil }
+        guard !counted.isEmpty else { return [:] }
+        let needs = counted.map { max(0, $0.display_need) }
+        let total = needs.reduce(0, +)
+        let weights = total > 0 ? needs : Array(repeating: 1, count: counted.count)
+        let weightSum = weights.reduce(0, +)
+        let made = max(0, item.made)
+        var shares = weights.map { made * $0 / weightSum }
+        let leftover = made - shares.reduce(0, +)
+        let order = weights.indices.sorted { ((made * weights[$1]) % weightSum, $0) < ((made * weights[$0]) % weightSum, $1) }
+        for index in order.prefix(leftover) { shares[index] += 1 }
+        return Dictionary(uniqueKeysWithValues: counted.enumerated().map { ($1.section, ($1.have ?? 0) + shares[$0]) })
     }
     public func save(_ item: PrepItem) async {
         guard !busy, !conflict else { return }

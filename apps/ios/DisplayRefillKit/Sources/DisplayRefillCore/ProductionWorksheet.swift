@@ -100,6 +100,8 @@ extension URLSessionAccountAPI: ProductionAPI {
     public private(set) var busy = false
     public private(set) var error: String?
     public private(set) var conflict = false
+    /// The server rejected this count as stale (an earlier day, or stock/preparation changed); only a fresh count resolves it.
+    public private(set) var freshCountRequired = false
     public private(set) var pending = false
     private let api: any ProductionAPI
     public let storeID: String
@@ -157,11 +159,15 @@ extension URLSessionAccountAPI: ProductionAPI {
         await send()
         if self.check?.status == "finished" { await load() }
     }
-    public func restartCount() async {
+    /// `keepEntries` re-enters the typed numbers into the fresh count (matched by product) so they only need checking.
+    public func restartCount(keepEntries: Bool = false) async {
         guard !busy, (operation == nil || conflict), let check, check.status == "draft" else { return }
-        debounce?.cancel(); conflict = false; pending = true
+        let kept = keepEntries ? Dictionary(check.items.compactMap { item in input[item.id].flatMap { $0.isEmpty ? nil : (item.product_id, $0) } }, uniquingKeysWith: { a, _ in a }) : [:]
+        debounce?.cancel(); conflict = false; freshCountRequired = false; pending = true
         operation = Operation(mutation: .init(action: "restart", section: nil, check_id: check.id, expected_revision: check.revision, items: nil), key: UUID().uuidString, values: [:])
         await send()
+        guard error == nil, let fresh = self.check, fresh.status == "draft" else { return }
+        for item in fresh.items { if let value = kept[item.product_id] { edit(item.id, text: value) } }
     }
     public func retry() async { if operation != nil { await send() } else { await save() }; if check?.status != "draft" { await load() } }
     public func clearError() { error = nil }
@@ -173,14 +179,14 @@ extension URLSessionAccountAPI: ProductionAPI {
             let fresh = try await api.productionCheck(storeID: storeID, checkID: check.id)
             self.check = fresh
             syncInputs(fresh.items)
-            operation = nil; conflict = false
+            operation = nil; conflict = false; freshCountRequired = false
             error = fresh.status == "finished" ? "This section was finished elsewhere. Your unsaved entries are retained here; start a new check to change counts." : "Latest saved counts loaded. Your edits are kept. Review them, then tap Save my edits."
         } catch { self.error = Self.message(error) }
         busy = false
     }
     public func discardLocalEdits() {
         guard !busy else { return }
-        debounce?.cancel(); operation = nil; dirty = []; pending = false; conflict = false; error = nil
+        debounce?.cancel(); operation = nil; dirty = []; pending = false; conflict = false; freshCountRequired = false; error = nil
         syncInputs(check?.items ?? [])
     }
     public func discardFinishedEdits() {
@@ -206,7 +212,10 @@ extension URLSessionAccountAPI: ProductionAPI {
             operation = nil; pending = !dirty.isEmpty
         } catch {
             self.error = Self.message(error)
-            if case .server(409, _, _, _) = error as? APIClientError { conflict = true }
+            if case .server(409, _, let message, _) = error as? APIClientError {
+                conflict = true
+                freshCountRequired = message.contains("Start a fresh count") || message.contains("Start a new check")
+            }
             else if case .server(422, .validationFailed, _, _) = error as? APIClientError {
                 // Keep the open count; the message says what to fix.
                 operation = nil; dirty = []; pending = false
@@ -225,8 +234,9 @@ extension URLSessionAccountAPI: ProductionAPI {
             return ["The request contains invalid values.", "Invalid worksheet input."].contains(message)
                 ? "That count could not be saved. Check the numbers and try again."
                 : message
-        case .server(409, .conflict, _, _):
-            return "This section changed on another device. Reload the latest counts, then save again."
+        case .server(409, .conflict, let message, _):
+            // Specific reasons from the server (stale day, stock or prep changed) are shown as sent.
+            return message.contains("Start a") ? message : "This section changed on another device. Reload the latest counts, then save again."
         case .server(_, _, let message, _):
             return message
         case .transport:
