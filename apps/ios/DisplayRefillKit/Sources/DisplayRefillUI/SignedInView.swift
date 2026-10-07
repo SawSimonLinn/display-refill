@@ -1,7 +1,7 @@
 import DisplayRefillCore
 import SwiftUI
 
-/// Assigned stores, server history of those stores (Feature 11) and device-saved scan links.
+/// First production version: manual stock checks, prep, build book and waste only.
 public struct SignedInView: View {
     let me: Me
     let api: any ManualScanAPI
@@ -22,7 +22,7 @@ public struct SignedInView: View {
                     if let productionAPI = api as? any ProductionAPI {
                         ProductionTodayView(stores: me.stores, api: productionAPI, userID: me.userID.uuidString)
                     } else {
-                        StoreListView(stores: me.stores, api: api, userID: me.userID.uuidString)
+                        ContentUnavailableView("Manual stock check unavailable", systemImage: "checklist", description: Text("Update the app and try again."))
                     }
                 }
                 .toolbar { accountMenu }
@@ -40,14 +40,6 @@ public struct SignedInView: View {
                 BuildBookView().toolbar { accountMenu }
             }.tabItem { Label("Build Book", systemImage: "book") }
 
-            if let historyAPI = api as? any ScanHistoryAPI {
-                NavigationStack {
-                    HistoryView(stores: me.stores, api: historyAPI, userID: me.userID.uuidString)
-                        .toolbar { accountMenu }
-                }
-                .tabItem { Label("History", systemImage: "list.bullet.rectangle") }
-            }
-
             if let operationsAPI = api as? any OperationsAPI {
                 NavigationStack {
                     WasteLogView(stores: me.stores, api: operationsAPI, userID: me.userID.uuidString)
@@ -64,7 +56,7 @@ public struct SignedInView: View {
                 if let email = me.email { Text(email) }
                 Button("Sign out", role: .destructive) { Task { await onSignOut() } }
             } label: {
-                Label("Account", systemImage: "person.crop.circle")
+                Label("Account", systemImage: "person.circle")
             }
         }
     }

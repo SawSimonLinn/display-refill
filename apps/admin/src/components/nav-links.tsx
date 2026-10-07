@@ -1,16 +1,13 @@
 "use client";
 
-import { LayoutGrid, LayoutPanelTop, Package, ScanLine, Store, Users } from "lucide-react";
+import { Package, Store, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export const NAV_ITEMS = [
   { href: "/production", label: "Production", icon: Package },
   { href: "/stores", label: "Stores", icon: Store },
-  { href: "/displays", label: "Displays", icon: LayoutPanelTop },
   { href: "/products", label: "Products", icon: Package },
-  { href: "/pogs", label: "POGs", icon: LayoutGrid },
-  { href: "/scans", label: "Scans", icon: ScanLine },
   { href: "/members", label: "Members", icon: Users },
 ] as const;
 

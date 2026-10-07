@@ -160,6 +160,7 @@ extension URLSessionAccountAPI: ProductionAPI {
         await send()
     }
     public func retry() async { if operation != nil { await send() } else { await save() }; if check?.status != "draft" { await load() } }
+    public func clearError() { error = nil }
     /// Explicit conflict acknowledgement fetches the new revision, retaining unsaved fields.
     public func reloadConflict() async {
         guard !busy, let check else { return }
@@ -202,13 +203,32 @@ extension URLSessionAccountAPI: ProductionAPI {
         } catch {
             self.error = Self.message(error)
             if case .server(409, _, _, _) = error as? APIClientError { conflict = true }
-            else if case .server(let status, _, _, _) = error as? APIClientError, (400..<500).contains(status), status != 429 { operation = nil }
+            else if case .server(422, .validationFailed, _, _) = error as? APIClientError {
+                operation = nil; dirty = []; pending = false
+                syncInputs(check?.items ?? [])
+                check = nil
+            } else if case .server(let status, _, _, _) = error as? APIClientError, (400..<500).contains(status), status != 429 {
+                operation = nil; pending = false
+            }
         }
         busy = false
         if error == nil, !dirty.isEmpty { await save() }
     }
     private static func message(_ error: any Error) -> String {
-        if case .server(_, _, let message, _) = error as? APIClientError { return message }
-        return HistoryFailure.message(error)
+        guard let apiError = error as? APIClientError else { return HistoryFailure.message(error) }
+        switch apiError {
+        case .server(422, .validationFailed, let message, _):
+            return message == "Count every item before finishing."
+                ? message
+                : "That count was out of date, so it was cleared. Start the section again when you are ready."
+        case .server(409, .conflict, _, _):
+            return "This section changed on another device. Reload the latest counts, then save again."
+        case .server(_, _, let message, _):
+            return message
+        case .transport:
+            return "Can't reach the server. Check your connection and try again."
+        default:
+            return HistoryFailure.message(apiError)
+        }
     }
 }

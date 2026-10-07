@@ -18,7 +18,9 @@ struct BuildBookView: View {
                 Button("Try again") { load() }
             } else {
                 if query.isEmpty {
-                    NavigationLink("Open full build book") { BookPages(page: 1).navigationTitle("Build Book") }
+                    NavigationLink { BookPages(page: 1).navigationTitle("Build Book") } label: {
+                        Label("Open full build book", systemImage: "book.pages").font(.headline)
+                    }
                 }
                 ForEach(results) { entry in
                     NavigationLink {
@@ -27,12 +29,13 @@ struct BuildBookView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.title).font(.headline)
                             Text("\(entry.category) · \(entry.pageLabel)").font(.caption).foregroundStyle(.secondary)
-                        }
+                        }.padding(.vertical, 4)
                     }
                 }
-                if results.isEmpty { Text("No matching products or ingredients.") }
+                if results.isEmpty { Text("No matching products or ingredients.").foregroundStyle(.secondary) }
             }
         }
+        .pageBackground()
         .navigationTitle("Build Book")
         .searchable(text: $query, prompt: "Product or ingredient")
         .toolbar {

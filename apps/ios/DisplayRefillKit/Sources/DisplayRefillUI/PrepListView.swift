@@ -59,26 +59,35 @@ private struct PrepStoreView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if let error = model.error {
-                    Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
-                    Button(model.pending ? "Retry saving preparation" : "Refresh") { Task { await model.retry() } }.disabled(model.busy)
-                    if model.pending { Text("Keep this screen open until the save is resolved. Do not record the same containers again on another phone.").font(.footnote) }
+                    Notice(text: error, tint: Theme.destructive) {
+                        Button(model.pending ? "Retry saving preparation" : "Refresh") { Task { await model.retry() } }
+                            .buttonStyle(OutlineButtonStyle()).disabled(model.busy)
+                        if model.pending { Text("Keep this screen open until the save is resolved. Do not record the same containers again on another phone.").font(.footnote).foregroundStyle(.secondary) }
+                    }
                 }
-                if let message = model.message { Text(message).font(.subheadline).accessibilityIdentifier("prep-save-status") }
+                if let message = model.message { Text(message).font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("prep-save-status") }
                 if let board = model.board {
                     if !board.missing_sections.isEmpty {
-                        Text("Partial list · No saved count for: \(board.missing_sections.map(\.label).joined(separator: ", ")).").foregroundStyle(.orange)
+                        Label("Partial list · No saved count for: \(board.missing_sections.map(\.label).joined(separator: ", ")).", systemImage: "exclamationmark.circle")
+                            .font(.footnote).foregroundStyle(Theme.verify)
                     }
-                    if board.items.contains(where: { !$0.ready }) { Text("Partial total · Products needing a recount are excluded.").foregroundStyle(.orange) }
-                    if rows.isEmpty { Text("No items to make in this selection. Uncounted sections are excluded.") }
+                    if board.items.contains(where: { !$0.ready }) {
+                        Label("Partial total · Products needing a recount are excluded.", systemImage: "exclamationmark.circle")
+                            .font(.footnote).foregroundStyle(Theme.verify)
+                    }
+                    if rows.isEmpty {
+                        Text("No items to make in this selection. Uncounted sections are excluded.")
+                            .font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.vertical, 40)
+                    }
                     ForEach(rows) { item in row(item) }
                 } else if model.loading { ProgressView("Loading prep list") }
             }.padding()
         }
+        .background(Theme.page.ignoresSafeArea())
         .navigationTitle("Prep List")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .tint(.green)
         .refreshable { await model.refresh() }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
@@ -119,6 +128,7 @@ private struct PrepStoreView: View {
                     }
                     Button("Reset filters") { category = ""; type = ""; sortOrder = .sections; family = ""; showCompleted = false }
                 }
+                .pageBackground()
                 .navigationTitle("Filters")
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { filtersOpen = false } } }
             }
@@ -129,7 +139,7 @@ private struct PrepStoreView: View {
                     Text("\(store.storeNumber) · \(store.name)")
                     if let date = model.lastLoaded { Text("Updated \(date.formatted(date: .omitted, time: .shortened))") }
                     Text("Record ready-to-sell containers, including those in the prep room. After stock moves or sells, recount every location of that product in Stock Check. Include earlier preparation in your new count.")
-                }.navigationTitle("Prep details")
+                }.pageBackground().navigationTitle("Prep details")
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { infoOpen = false } } }
             }
         }
@@ -158,12 +168,13 @@ private struct PrepStoreView: View {
         }
     }
     private func row(_ item: PrepItem) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(item.product_name).font(.headline).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 if item.ready {
-                    Text("\(item.remaining ?? 0)").font(.title2.bold()).foregroundStyle(.green)
+                    Text("\(item.remaining ?? 0)").font(.system(.largeTitle, weight: .semibold)).monospacedDigit()
+                        .foregroundStyle((item.remaining ?? 0) == 0 ? Color.secondary : Theme.action)
                         .accessibilityLabel("\(item.remaining ?? 0) remaining")
                         .accessibilityIdentifier("prep-remaining-\(item.id)")
                 }
@@ -181,8 +192,11 @@ private struct PrepStoreView: View {
                         }
                     }
                 }
-            } else { Text("Recount this product in all its sections before recording preparation.").foregroundStyle(.orange) }
-            DisclosureGroup("Locations & recent preparation") {
+            } else {
+                Label("Recount this product in all its sections before recording preparation.", systemImage: "exclamationmark.circle")
+                    .font(.footnote).foregroundStyle(Theme.verify)
+            }
+            DisclosureGroup {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(item.made) made since this count · Counted \(timeLabel(item.oldest_count))").font(.footnote)
                     HStack(alignment: .top, spacing: 12) {
@@ -195,17 +209,18 @@ private struct PrepStoreView: View {
                     ForEach(Array(item.activity.enumerated()), id: \.offset) { _, entry in
                         Text("\(entry.name) made \(entry.quantity) · \(timeLabel(entry.at))").font(.subheadline)
                     }
-                }.frame(maxWidth: .infinity, alignment: .leading)
+                }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.secondary).padding(.top, 8)
+            } label: {
+                Text("Locations & recent preparation").font(.subheadline).foregroundStyle(.secondary)
             }
-        }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+        }.card()
     }
     private func locationName(_ section: ProductionSection) -> String {
         PrepPresentation.locationLabel(section)
     }
     private func amountInput(_ item: PrepItem) -> some View {
         TextField("Made", text: Binding(get: { model.inputs[item.id] ?? "" }, set: { model.inputs[item.id] = $0 }))
-            .textFieldStyle(.roundedBorder).frame(minHeight: 44)
+            .monospacedDigit().filledField()
             #if os(iOS)
             .keyboardType(.numberPad)
             #endif
@@ -215,12 +230,12 @@ private struct PrepStoreView: View {
     }
     private func recordButton(_ item: PrepItem) -> some View {
         Button { focused = nil; Task { await model.record(item) } } label: { Text("Record").fixedSize(horizontal: false, vertical: true) }
-            .buttonStyle(.borderedProminent).disabled(model.busy || model.pending)
+            .buttonStyle(InkCapsuleStyle()).disabled(model.busy || model.pending)
             .accessibilityLabel("Record made").accessibilityIdentifier("prep-record-\(item.id)")
     }
     private func doneButton(_ item: PrepItem) -> some View {
         Button { focused = nil; doneItem = item } label: { Label("Done", systemImage: "checkmark").fixedSize(horizontal: false, vertical: true) }
-            .buttonStyle(.bordered).disabled(model.busy || model.pending)
+            .buttonStyle(OutlineButtonStyle()).disabled(model.busy || model.pending)
             .accessibilityLabel("Done · made all remaining")
     }
     private func timeLabel(_ raw: String) -> String {

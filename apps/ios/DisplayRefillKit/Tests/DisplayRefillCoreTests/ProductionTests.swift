@@ -5,12 +5,14 @@ import Testing
 private actor ProductionStub: ProductionAPI {
     var calls: [(ProductionMutation, String)] = []
     var failNext = false
+    var validationFailNext = false
     var delayed = false
     var shared = false
     var backup: Int?
     func share() { shared = true }
     var quantity: Int?
     func fail() { failNext = true }
+    func validationFail() { validationFailNext = true }
     func delay() { delayed = true }
     func record() -> [(ProductionMutation, String)] { calls }
     func productionDay(storeID: String) async throws -> ProductionDay { .init(date: "2026-10-03", sections: [], total_make: 0, complete: false) }
@@ -21,6 +23,7 @@ private actor ProductionStub: ProductionAPI {
     func productionMutate(storeID: String, mutation: ProductionMutation, key: String) async throws -> ProductionCheck {
         calls.append((mutation, key))
         if failNext { failNext = false; throw APIClientError.transport(.timedOut) }
+        if validationFailNext { validationFailNext = false; throw APIClientError.server(status: 422, code: .validationFailed, message: "Invalid worksheet input.", requestID: nil) }
         if delayed { delayed = false; try await Task.sleep(for: .milliseconds(50)) }
         if mutation.action == "counts" { quantity = mutation.items?.first?.have; backup = mutation.items?.first?.backup }
         return result()
@@ -79,6 +82,19 @@ private actor ProductionStub: ProductionAPI {
         #expect(model.check?.items.first?.have == 7)
         #expect(model.check?.items.first?.make == 3)
         #expect(model.saved)
+    }
+
+    @Test func validationFailureShowsRecoveryMessageAndReturnsToSections() async throws {
+        let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")
+        await model.start(.fruitMobile)
+        model.edit("i", text: "2")
+        await api.validationFail(); await model.save()
+        #expect(model.error == "That count was out of date, so it was cleared. Start the section again when you are ready.")
+        #expect(!model.pending)
+        #expect(!model.saved)
+        #expect(model.check == nil)
+        model.clearError()
+        #expect(model.error == nil)
     }
     @Test func cannotFinishUncountedSection() async {
         let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")

@@ -68,6 +68,8 @@ struct SessionRootView: View {
             switch session.phase {
             case .restoring, .loadingAccount:
                 ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Theme.page.ignoresSafeArea())
             case .signedOut, .signingIn:
                 SignInView(session: session, client: services.client)
             case .ready(let me):
@@ -85,6 +87,7 @@ struct SessionRootView: View {
                 }
             }
         }
+        .tint(Theme.action)
         .task { await session.start() }
     }
 }

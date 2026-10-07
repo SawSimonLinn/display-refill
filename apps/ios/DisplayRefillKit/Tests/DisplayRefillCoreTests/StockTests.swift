@@ -4,10 +4,13 @@ import Testing
 private actor StockStub: StockUpdateAPI {
     var calls: [(StockMutation, String)] = []
     var fail = true
+    var validationFail = false
+    func rejectValidation() { validationFail = true; fail = false }
     func recorded() -> [(StockMutation, String)] { calls }
     func updateStock(storeID: String, mutation: StockMutation, key: String) async throws -> PrepBoard {
         calls.append((mutation, key))
         if fail { fail = false; throw APIClientError.transport(.timedOut) }
+        if validationFail { validationFail = false; throw APIClientError.server(status: 422, code: .validationFailed, message: "Count all locations for this product.", requestID: nil) }
         return .init(updated_at: "now", items: [], missing_sections: [])
     }
 }
@@ -36,6 +39,15 @@ private actor StockStub: StockUpdateAPI {
         let api = StockStub(); let model = StockUpdateModel(api: api, storeID: "s")
         model.inputs["fruit_mobile"] = "10"; await model.save(item)
         #expect(await api.recorded().isEmpty); #expect(model.error != nil)
+    }
+
+    @Test func validationFailureUsesStockSaveMessage() async {
+        let api = StockStub(); await api.rejectValidation()
+        let model = StockUpdateModel(api: api, storeID: "s")
+        model.inputs = ["fruit_mobile": "10", "fruit_case": "33"]
+        await model.save(item)
+        #expect(model.error == "This stock update could not be saved. Close and reopen the product, then enter each location again.")
+        #expect(!model.pending)
     }
     @Test func interruptedStockUpdateRestoresBothLocationsAndTheExactKey() async throws {
         let key = "stock-test-" + UUID().uuidString; defer { UserDefaults.standard.removeObject(forKey: key) }

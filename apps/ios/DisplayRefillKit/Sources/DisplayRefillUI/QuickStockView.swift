@@ -18,19 +18,23 @@ struct QuickStockView: View {
                 Text("All sections").tag("")
                 ForEach(ProductionSection.allCases) { Text($0.label).tag($0.rawValue) }
             }
-            if let error = model.error { Text(error); Button("Retry") { Task { await model.refresh() } } }
+            if let error = model.error {
+                Label(error, systemImage: "exclamationmark.circle").foregroundStyle(Theme.verify)
+                Button("Retry") { Task { await model.refresh() } }
+            }
             if let board = model.board {
                 if board.items.isEmpty { Text("Complete your first section counts to enable quick updates.") }
                 ForEach(board.items.filter { item in (section.isEmpty || item.locations.contains { $0.section.rawValue == section }) && (search.isEmpty || item.product_name.localizedCaseInsensitiveContains(search)) }.sorted { $0.product_name < $1.product_name }) { item in
                     Button { selected = item } label: {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(item.product_name).font(.headline)
-                            Text(item.locations.map { $0.section.label }.joined(separator: " · ")).font(.caption)
+                            Text(item.product_name).font(.headline).foregroundStyle(Theme.action)
+                            Text(item.locations.map { $0.section.label }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
                         }.padding(.vertical, 6)
                     }.accessibilityIdentifier("quick-stock-\(item.id)")
                 }
             } else if model.loading { ProgressView("Loading stock") }
         }
+        .pageBackground()
         .navigationTitle("Update Stock")
         .searchable(text: $search, prompt: "Find product")
         .task { await model.refresh() }
@@ -51,24 +55,26 @@ private struct StockEditor: View {
     }
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(item.product_name).font(.title2.bold())
-                Text("Last saved counts · edit to update stock").font(.caption).foregroundStyle(.secondary)
-                ForEach(item.locations, id: \.section) { location in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(location.section.label).font(.headline)
-                        Text("HAVE").font(.subheadline)
-                        countField(location.section.rawValue, label: "Have, \(location.section.label)")
-
-                    }
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.product_name).font(.largeTitle.bold())
+                    Text("Last saved counts · edit to update stock").font(.subheadline).foregroundStyle(.secondary)
                 }
-                if let error = model.error { Text(error).foregroundStyle(.red) }
+                ForEach(item.locations, id: \.section) { location in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(location.section.label).font(.headline)
+                        Eyebrow("Have")
+                        countField(location.section.rawValue, label: "Have, \(location.section.label)")
+                    }.card()
+                }
+                if let error = model.error { Label(error, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.destructive) }
                 Button(model.pending ? "Retry stock save" : "Save stock & update prep") { focused = nil; Task { await model.save(item); if model.saved { dismiss() } } }
-                    .buttonStyle(.borderedProminent).disabled(model.busy || model.conflict)
+                    .buttonStyle(PrimaryButtonStyle()).disabled(model.busy || model.conflict)
                     .accessibilityIdentifier("quick-stock-save")
-                if model.pending { Text("Keep this count open until the save is resolved.").font(.footnote) }
+                if model.pending { Text("Keep this count open until the save is resolved.").font(.footnote).foregroundStyle(.secondary) }
             }.padding()
         }
+        .background(Theme.page.ignoresSafeArea())
         .navigationTitle("Recount Product")
         .task { model.loadCounts(item) }
         .interactiveDismissDisabled(model.pending || model.busy)
@@ -87,7 +93,8 @@ private struct StockEditor: View {
     }
     private func countField(_ key: String, label: String) -> some View {
         TextField("Not counted", text: Binding(get: { model.inputs[key] ?? "" }, set: { model.inputs[key] = $0 }))
-            .textFieldStyle(.roundedBorder).disabled(model.pending || model.busy)
+            .font(.title3.weight(.semibold)).monospacedDigit()
+            .filledField().disabled(model.pending || model.busy)
             #if os(iOS)
             .keyboardType(.numberPad)
             #endif

@@ -8,15 +8,24 @@ struct OperationsSummaryView: View {
     @State private var error: String?
     @Environment(\.scenePhase) private var phase
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(report.map { "\($0.made) made" } ?? "— made", systemImage: "shippingbox")
-                Spacer()
-                Label(report.map { "\($0.wasted) wasted" } ?? "— wasted", systemImage: "trash")
-            }.font(.headline).accessibilityIdentifier("operations-today")
-            NavigationLink("Today’s made & waste") { OperationsReportView(store: store, api: api) }
-            if let error { Text(error).font(.caption).foregroundStyle(.orange) }
-        }.padding(12).background(.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+        NavigationLink { OperationsReportView(store: store, api: api) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Eyebrow("Today")
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 24) {
+                    StatFigure(value: report?.made, label: "made")
+                    StatFigure(value: report?.wasted, label: "wasted")
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("operations-today")
+                Text("Today’s made & waste").font(.subheadline).foregroundStyle(.secondary)
+                if let error { Label(error, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(Theme.verify) }
+            }.card()
+        }.buttonStyle(.plain)
         .task(id: phase) {
             guard phase == .active else { return }
             while !Task.isCancelled {
@@ -38,17 +47,20 @@ private struct OperationsReportView: View {
             Picker("Period", selection: $period) { Text("Day").tag("day"); Text("Week").tag("week"); Text("Month").tag("month") }.pickerStyle(.segmented)
             if let report {
                 Text("\(report.start_date) – \(report.end_date)").font(.caption)
-                HStack { Text("Made: \(report.made)"); Spacer(); Text("Wasted: \(report.wasted)") }.font(.headline)
+                HStack(spacing: 32) {
+                    StatFigure(value: report.made, label: "made")
+                    StatFigure(value: report.wasted, label: "wasted")
+                }.padding(.vertical, 4)
                 ForEach(report.products.filter { $0.made > 0 || $0.wasted > 0 }) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.product_name).font(.headline)
-                        HStack { Text("\(item.made) made"); Spacer(); Text("\(item.wasted) wasted") }.font(.subheadline)
+                        HStack { Text("\(item.made) made"); Spacer(); Text("\(item.wasted) wasted") }.font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
                 if report.made == 0 && report.wasted == 0 { Text("No preparation or waste recorded for this period.") }
             } else if error == nil { ProgressView() }
             if let error { Text(error).foregroundStyle(.red) }
-        }.navigationTitle("Made & Waste")
+        }.pageBackground().navigationTitle("Made & Waste")
         .task(id: period) {
             report = nil; error = nil
             do { let result = try await api.operations(storeID: store.id.uuidString, day: nil, period: period); if !Task.isCancelled { report = result } }
@@ -105,26 +117,36 @@ private struct WasteStoreView: View {
             }
             if model.loading && model.report == nil { ProgressView("Loading waste log") }
             if let report = model.report {
-                HStack { Text("\(report.made) made"); Spacer(); Text("\(report.wasted) wasted") }.font(.headline).accessibilityIdentifier("waste-totals")
+                HStack(spacing: 32) {
+                    StatFigure(value: report.made, label: "made")
+                    StatFigure(value: report.wasted, label: "wasted")
+                }
+                .padding(.vertical, 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("waste-totals")
                 if report.entries.isEmpty { Text("No waste recorded. Log containers when you throw them away.") }
                 ForEach(report.entries) { entry in
                     VStack(alignment: .leading, spacing: 6) {
-                        HStack(alignment: .top) { Text(entry.product_name).font(.headline); Spacer(); Text(entry.voided ? "Undone" : "\(entry.quantity)").font(.headline) }
-                        Text("\(entry.reason.label) · \(entry.actor_name)").font(.subheadline)
+                        HStack(alignment: .top) {
+                            Text(entry.product_name).font(.headline)
+                            Spacer()
+                            if entry.voided { Pill(text: "Undone") } else { Text("\(entry.quantity)").font(.title3.weight(.semibold)).monospacedDigit() }
+                        }
+                        Text("\(entry.reason.label) · \(entry.actor_name)").font(.subheadline).foregroundStyle(.secondary)
                         Text(time(entry.created_at)).font(.caption).foregroundStyle(.secondary)
                         if !entry.note.isEmpty { Text(entry.note).font(.subheadline) }
-                        if entry.can_void { Button("Undo entry", role: .destructive) { undo = entry }.disabled(model.pending || model.busy) }
-                    }.accessibilityIdentifier("waste-entry-\(entry.id)")
+                        if entry.can_void { Button("Undo entry", role: .destructive) { undo = entry }.font(.subheadline).disabled(model.pending || model.busy) }
+                    }.padding(.vertical, 4).accessibilityIdentifier("waste-entry-\(entry.id)")
                 }
                 if report.entries.count == 200 { Text("Showing the latest 200 entries for this date.").font(.caption) }
             }
             if model.error != nil && !model.pending { Button("Reload") { Task { await model.load(day: day) } } }
         }
+        .pageBackground()
         .navigationTitle("Waste Log")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .tint(.green)
         .toolbar { ToolbarItem(placement: .primaryAction) { Button { adding = true } label: { Label("Log waste", systemImage: "plus") }.disabled(model.report == nil || model.pending || model.busy) } }
         .refreshable { await model.load(day: day) }
         .task(id: day + String(describing: phase)) {
@@ -175,8 +197,9 @@ private struct WasteEntryView: View {
                 Text("After discarding stock, update HAVE in Stock Check.").font(.footnote)
                 if let error = model.error { Text(error).foregroundStyle(.red) }
             }.disabled(model.pending || model.busy)
+                .pageBackground()
                 .safeAreaInset(edge: .bottom) {
-                    if model.pending { Button("Retry waste save") { Task { await model.retry(); if model.saved { dismiss() } } }.buttonStyle(.borderedProminent).padding().disabled(model.busy) }
+                    if model.pending { Button("Retry waste save") { Task { await model.retry(); if model.saved { dismiss() } } }.buttonStyle(PrimaryButtonStyle()).padding().disabled(model.busy) }
                 }
                 .navigationTitle("Log Waste")
                 .toolbar {
@@ -203,6 +226,21 @@ private struct WasteProductPicker: View {
                 let rows = items.filter { $0.family == family && (query.isEmpty || $0.product_name.localizedCaseInsensitiveContains(query)) }
                 if !rows.isEmpty { Section(family) { ForEach(rows) { item in Button(item.product_name) { selected = item.id; dismiss() } } } }
             }
-        }.navigationTitle("Product").searchable(text: $query, prompt: "Product name")
+        }.pageBackground().navigationTitle("Product").searchable(text: $query, prompt: "Product name")
+    }
+}
+
+/// Large tabular number with a quiet label beneath, for at-a-glance totals.
+struct StatFigure: View {
+    let value: Int?
+    let label: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value.map(String.init) ?? "—")
+                .font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                .minimumScaleFactor(0.6).lineLimit(1)
+            Text(label).font(.subheadline).foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 }

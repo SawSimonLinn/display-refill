@@ -1,10 +1,11 @@
 // Public app configuration. Never put service-role keys, database URLs or
 // vision provider keys here: everything in this file ships inside the app.
-// xcconfig treats "//" as a comment, so URLs use "/$()/" to split the slashes.
+// xcconfig treats "//" as a comment, so URLs compose the slashes through SLASH.
 
-API_BASE_URL = http:/$()/localhost:3000
-SUPABASE_URL = http:/$()/127.0.0.1:54321
-SUPABASE_PUBLISHABLE_KEY =
+SLASH = /
+API_BASE_URL = https:$(SLASH)$(SLASH)display-refill-admin.vercel.app
+SUPABASE_URL = https:$(SLASH)$(SLASH)immmuxzarcwjwlrfspwj.supabase.co
+SUPABASE_PUBLISHABLE_KEY = sb_publishable_250VJx1tZiC6JtM1YyFw3g_tBs4gh8b
 
 // Developer overrides (git-ignored). Copy Local.example.xcconfig to Local.xcconfig.
 #include? "Local.xcconfig"

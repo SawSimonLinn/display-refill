@@ -21,6 +21,7 @@ targets:
     platform: iOS
     sources:
       - path: DisplayRefill/App
+      - path: DisplayRefill/Resources
     configFiles:
       Debug: DisplayRefill/Config/Shared.xcconfig
       Release: DisplayRefill/Config/Shared.xcconfig

@@ -25,43 +25,94 @@ public struct SignInView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                if let notice {
-                    Section { Label(notice, systemImage: "info.circle") }
-                }
-                Section("Account") {
-                    emailField
-                    SecureField("Password", text: $password)
-                        .textContentType(.password)
-                        .submitLabel(.go)
-                        .onSubmit(submit)
-                    if let error = session.signInError {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(Theme.destructive)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 32) {
+                    header
+                    if let notice {
+                        Notice(text: notice, systemImage: "info.circle", tint: .secondary)
                     }
-                    Button(action: submit) {
-                        if busy {
-                            HStack { ProgressView(); Text("Signing in…") }
-                        } else {
-                            Text("Sign in")
+                    VStack(spacing: 12) {
+                        emailField.filledField()
+                        SecureField("Password", text: $password)
+                            .textContentType(.password)
+                            .submitLabel(.go)
+                            .onSubmit(submit)
+                            .filledField()
+                        if let error = session.signInError {
+                            Label(error, systemImage: "exclamationmark.triangle")
+                                .font(.subheadline)
+                                .foregroundStyle(Theme.destructive)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    .disabled(busy || email.isEmpty || password.isEmpty)
-                    Button("Forgot password?") { showingReset = true }
-                        .disabled(busy)
+                    VStack(spacing: 8) {
+                        Button(action: submit) {
+                            if busy {
+                                HStack { ProgressView().tint(Theme.onAction); Text("Signing in…") }
+                            } else {
+                                Text("Sign in")
+                            }
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(busy || email.isEmpty || password.isEmpty)
+                        Button("Forgot password?") { showingReset = true }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(minHeight: 44)
+                            .disabled(busy)
+                    }
+                    serverStatus
                 }
-                Section("Server") {
-                    ServerStatusRow(state: health.state)
-                    Button("Check again") { Task { await health.check() } }
-                        .disabled(health.state == .loading)
-                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 32)
+                .frame(maxWidth: 480)
+                .frame(maxWidth: .infinity)
             }
-            .navigationTitle("Display Refill")
+            .scrollDismissesKeyboard(.interactively)
+            .background(Theme.page.ignoresSafeArea())
             .task { await health.check() }
             .sheet(isPresented: $showingReset) {
                 ForgotPasswordView(client: client, initialEmail: email)
             }
         }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    ForEach(["stock", "prep", "build book", "waste"], id: \.self) { Pill(text: $0) }
+                }
+                Color.clear.frame(height: 0)
+            }
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("refill")
+                    .font(.system(size: 64, weight: .black))
+                    .tracking(-2)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityLabel("Display Refill")
+                Text("Stock, prep and waste in one place.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 40)
+    }
+
+    private var serverStatus: some View {
+        HStack(spacing: 12) {
+            ServerStatusRow(state: health.state)
+                .font(.footnote)
+            Spacer(minLength: 8)
+            Button("Check again") { Task { await health.check() } }
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.action)
+                .frame(minHeight: 44)
+                .disabled(health.state == .loading)
+        }
+        .padding(.horizontal, 16)
+        .background(Theme.surface, in: Capsule())
     }
 
     @ViewBuilder private var emailField: some View {
@@ -124,25 +175,30 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("The link opens a web page where you choose a new password. Then sign in here.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     TextField("Email", text: $email)
                         .textContentType(.username)
                         .autocorrectionDisabled()
+                        .filledField()
                     Button("Send reset link") { Task { await send() } }
+                        .buttonStyle(PrimaryButtonStyle())
                         .disabled(state == .sending || email.isEmpty)
-                } footer: {
-                    Text("The link opens a web page where you choose a new password. Then sign in here.")
+                    switch state {
+                    case .sent:
+                        Notice(text: "If an account exists for that address, a reset link is on its way.", systemImage: "envelope", tint: Theme.confirmed)
+                    case .failed(let message):
+                        Notice(text: message, systemImage: "exclamationmark.triangle", tint: Theme.destructive)
+                    case .idle, .sending:
+                        EmptyView()
+                    }
                 }
-                switch state {
-                case .sent:
-                    Label("If an account exists for that address, a reset link is on its way.", systemImage: "envelope")
-                case .failed(let message):
-                    Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.destructive)
-                case .idle, .sending:
-                    EmptyView()
-                }
+                .padding(24)
             }
+            .background(Theme.page.ignoresSafeArea())
             .navigationTitle("Reset password")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }

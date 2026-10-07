@@ -57,13 +57,29 @@ extension URLSessionAccountAPI: StockUpdateAPI {
             _ = try await api.updateStock(storeID: storeID, mutation: op.mutation, key: op.key)
             operation = nil; pending = false; saved = true; persist()
         } catch {
-            self.error = HistoryFailure.message(error)
+            self.error = Self.message(error)
             if case .server(let status, _, _, _) = error as? APIClientError, (400..<500).contains(status), status != 429 {
                 operation = nil; pending = false; persist()
                 if status == 409 { conflict = true; self.error = "Stock or preparation changed during this count. Close and reopen this product, then count again including the newly made containers." }
             }
         }
         busy = false
+    }
+
+    private static func message(_ error: any Error) -> String {
+        guard let apiError = error as? APIClientError else { return HistoryFailure.message(error) }
+        switch apiError {
+        case .server(422, .validationFailed, let message, _):
+            return message == "Count all locations for this product."
+                ? "This stock update could not be saved. Close and reopen the product, then enter each location again."
+                : message
+        case .server(_, _, let message, _):
+            return message
+        case .transport:
+            return "Can't reach the server. Check your connection and try again."
+        default:
+            return HistoryFailure.message(apiError)
+        }
     }
     private func persist() {
         guard let persistenceKey else { return }

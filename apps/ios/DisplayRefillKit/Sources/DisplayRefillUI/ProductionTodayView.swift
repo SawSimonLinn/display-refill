@@ -49,38 +49,50 @@ private struct ProductionStoreView: View {
     }
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("\(store.storeNumber) · \(store.name)").font(.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 16) {
+                Pill(text: "\(store.storeNumber) · \(store.name)", systemImage: "storefront")
                 if let error = model.error {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label(error, systemImage: "exclamationmark.circle").fixedSize(horizontal: false, vertical: true)
+                    Notice(text: error) {
                         if model.conflict {
                             Text("If preparation changed during counting, start a fresh count including the new containers.")
+                                .font(.footnote).foregroundStyle(.secondary)
                             Button("Load latest, keep my edits") { Task { await model.reloadConflict() } }
+                                .buttonStyle(OutlineButtonStyle())
                         } else {
-                            Button("Retry / Save my edits") { Task { await model.retry() } }.disabled(model.busy)
+                            if model.pending {
+                                Button("Retry / Save my edits") { Task { await model.retry() } }
+                                    .buttonStyle(OutlineButtonStyle()).disabled(model.busy)
+                            } else {
+                                Button("Dismiss") { model.clearError() }
+                                    .buttonStyle(OutlineButtonStyle()).disabled(model.busy)
+                            }
                         }
                     if model.pending && !model.busy {
                             Button("Discard unsaved edits", role: .destructive) { discardEdits = true }
+                                .font(.subheadline).frame(minHeight: 44)
                         }
-                    }.padding().background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                    }
                 }
                 if let check = model.check, check.status == "draft" {
                     editor(check)
                 } else {
                     if model.pending, model.check?.status == "finished" {
-                        Text("Your unsaved entries were not applied to the finished check.")
-                        ForEach(model.check?.items ?? []) { item in
-                            Text("\(item.product_name): \(model.input[item.id] ?? "Not counted")")
-                        }
-                        Button("Discard unsaved entries & return to sections", role: .destructive) { model.discardFinishedEdits() }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Your unsaved entries were not applied to the finished check.").font(.subheadline)
+                            ForEach(model.check?.items ?? []) { item in
+                                Text("\(item.product_name): \(model.input[item.id] ?? "Not counted")")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Button("Discard unsaved entries & return to sections", role: .destructive) { model.discardFinishedEdits() }
+                                .font(.subheadline).frame(minHeight: 44)
+                        }.card()
                     }
                     if let operations = api as? any OperationsAPI {
                         OperationsSummaryView(store: store, api: operations)
                     }
                     if let prep = api as? any PrepAPI, let stock = api as? any StockUpdateAPI {
                         NavigationLink("Quick stock update") { QuickStockView(store: store, api: prep, stockAPI: stock, userID: userID) }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(PrimaryButtonStyle())
                     }
                     sections
                 }
@@ -88,11 +100,11 @@ private struct ProductionStoreView: View {
         }
         // A newly opened count begins at its first item; saves keep the same identity.
         .id(model.check?.status == "draft" ? model.check?.id ?? "sections" : "sections")
+        .background(Theme.page.ignoresSafeArea())
         .navigationTitle("Stock Check")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .tint(.green)
         .task { await model.load() }
         .confirmationDialog("Discard only your unsaved edits? Saved counts remain.", isPresented: $discardEdits, titleVisibility: .visible) {
             Button("Discard unsaved edits", role: .destructive) { model.discardLocalEdits() }
@@ -123,42 +135,63 @@ private struct ProductionStoreView: View {
     }
     private var sections: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sections").font(.headline)
+            Eyebrow("Sections").padding(.top, 8).accessibilityAddTraits(.isHeader)
             ForEach(Array(ProductionSection.allCases.enumerated()), id: \.element.id) { index, section in
                 let finished = model.day?.sections.first(where: { $0.section == section })
                 Button {
                     Task { await model.start(section) }
                 } label: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("\(index + 1). \(section.label)").font(.headline)
-                        if let time = finished?.finished_at {
-                            Text("Finished \(timeLabel(time)) · \(finished?.in_progress == true ? "Recheck in progress" : "Check again")").font(.subheadline)
-                        } else { Text(finished?.in_progress == true ? "Resume count" : "Start count").font(.subheadline) }
-                    }.frame(maxWidth: .infinity, alignment: .leading).padding()
-                        .background(.green.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+                    HStack(spacing: 14) {
+                        Group {
+                            if finished?.finished_at != nil && finished?.in_progress != true {
+                                Image(systemName: "checkmark").font(.subheadline.bold())
+                            } else {
+                                Text("\(index + 1)").font(.subheadline.bold()).monospacedDigit()
+                            }
+                        }
+                        .frame(width: 36, height: 36)
+                        .background(Theme.field, in: Circle())
+                        .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(index + 1). \(section.label)").font(.headline)
+                            Group {
+                                if let time = finished?.finished_at {
+                                    Text("Finished \(timeLabel(time)) · \(finished?.in_progress == true ? "Recheck in progress" : "Check again")")
+                                } else { Text(finished?.in_progress == true ? "Resume count" : "Start count") }
+                            }.font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }.contentShape(Rectangle()).card(padding: 14)
                 }.buttonStyle(.plain).disabled(model.busy || model.pending)
             }
         }
     }
     private func editor(_ check: ProductionCheck) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(check.section.label).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
+            Text(check.section.label).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+            let counted = check.items.filter { !(model.input[$0.id] ?? "").isEmpty }.count
+            ProgressView(value: Double(counted), total: Double(max(check.items.count, 1)))
+                .tint(Theme.action).accessibilityHidden(true)
             HStack {
                 Text("\(check.items.filter { !(model.input[$0.id] ?? "").isEmpty }.count) of \(check.items.count) counted")
                 Spacer()
                 Text(model.busy ? "Saving…" : model.pending ? "Unsaved" : "Saved")
                     .accessibilityLabel(model.busy ? "Saving…" : model.pending ? "Unsaved entries" : "All entries saved")
                     .accessibilityIdentifier("production-save-status")
-            }.font(.caption).foregroundStyle(model.pending ? Color.orange : Color.secondary)
+            }.font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(model.pending ? Theme.verify : Color.secondary)
+                .padding(.bottom, 4)
             ForEach(check.items) { item in
                 if check.section == .fruitCase,
                    let index = check.items.firstIndex(where: { $0.id == item.id }),
                    index == 0 || check.items[index - 1].category != item.category {
-                    Text(item.category.isEmpty ? "Fruit" : item.category)
-                        .font(.headline).fixedSize(horizontal: false, vertical: true)
+                    Eyebrow(item.category.isEmpty ? "Fruit" : item.category)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 8)
                         .accessibilityAddTraits(.isHeader)
                 }
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text(item.product_name).font(.headline).fixedSize(horizontal: false, vertical: true)
                     // Keep number-entry focus stable while the server updates the shortage.
                     if dynamicTypeSize.isAccessibilitySize {
@@ -166,8 +199,7 @@ private struct ProductionStoreView: View {
                     } else {
                         HStack(alignment: .center, spacing: 16) { haveField(item); makeLabel(item).frame(width: 88, alignment: .trailing) }
                     }
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
-                    .background(Color.secondary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+                }.card()
             }
             Button {
                 focused = nil
@@ -181,22 +213,22 @@ private struct ProductionStoreView: View {
                 }
             } label: {
                 Text(check.section == .veggieCase ? "Finish & see what to make" : "Finish & next section")
-                    .font(.headline).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.vertical, 8)
-            }.buttonStyle(.borderedProminent).disabled(!model.canFinish)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.buttonStyle(PrimaryButtonStyle()).disabled(!model.canFinish).padding(.top, 8)
             Menu("More") {
                 Button("Start fresh count", role: .destructive) { restart = true }
                     .disabled(model.busy || model.pending && !model.conflict)
-            }.frame(minHeight: 44)
+            }.font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44)
             Text("Enter 0 if empty. Leave uncounted items blank.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
     private func haveField(_ item: ProductionItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("HAVE").font(.caption.bold())
+            Eyebrow("Have")
             TextField("Not counted", text: Binding(get: { model.input[item.id] ?? "" }, set: { model.edit(item.id, text: $0) }))
-                .textFieldStyle(.roundedBorder)
-                .frame(minHeight: 44)
+                .font(.title3.weight(.semibold)).monospacedDigit()
+                .filledField()
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
@@ -208,10 +240,10 @@ private struct ProductionStoreView: View {
     }
     private func makeLabel(_ item: ProductionItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("TO MAKE").font(.caption2.bold()).foregroundStyle(.secondary)
+            Eyebrow("To make")
             Text(item.make.map(String.init) ?? "—")
                 .accessibilityIdentifier("production-make-\(item.id)")
-                .font(.title2.bold()).foregroundStyle(.green)
+                .font(.system(.largeTitle, weight: .semibold)).monospacedDigit()
         }.accessibilityElement(children: .combine)
     }
     private func nextField() {
