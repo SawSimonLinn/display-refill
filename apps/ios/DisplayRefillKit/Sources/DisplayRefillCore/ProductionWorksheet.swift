@@ -204,9 +204,9 @@ extension URLSessionAccountAPI: ProductionAPI {
             self.error = Self.message(error)
             if case .server(409, _, _, _) = error as? APIClientError { conflict = true }
             else if case .server(422, .validationFailed, _, _) = error as? APIClientError {
+                // Keep the open count; the message says what to fix.
                 operation = nil; dirty = []; pending = false
                 syncInputs(check?.items ?? [])
-                check = nil
             } else if case .server(let status, _, _, _) = error as? APIClientError, (400..<500).contains(status), status != 429 {
                 operation = nil; pending = false
             }
@@ -218,9 +218,9 @@ extension URLSessionAccountAPI: ProductionAPI {
         guard let apiError = error as? APIClientError else { return HistoryFailure.message(error) }
         switch apiError {
         case .server(422, .validationFailed, let message, _):
-            return message == "Count every item before finishing."
-                ? message
-                : "That count was out of date, so it was cleared. Start the section again when you are ready."
+            return ["The request contains invalid values.", "Invalid worksheet input."].contains(message)
+                ? "That count could not be saved. Check the numbers and try again."
+                : message
         case .server(409, .conflict, _, _):
             return "This section changed on another device. Reload the latest counts, then save again."
         case .server(_, _, let message, _):

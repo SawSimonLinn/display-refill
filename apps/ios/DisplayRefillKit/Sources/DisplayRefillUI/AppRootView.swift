@@ -73,7 +73,7 @@ struct SessionRootView: View {
             case .signedOut, .signingIn:
                 SignInView(session: session, client: services.client)
             case .ready(let me):
-                SignedInView(me: me, api: services.manual, onReload: session.loadAccount, onSignOut: session.signOut)
+                SignedInView(me: me, api: services.manual, client: services.client, onReload: session.loadAccount, onSignOut: session.signOut)
             case .accessRemoved:
                 AccessRemovedView(onRetry: session.loadAccount, onSignOut: session.signOut)
             case .failed(let message):

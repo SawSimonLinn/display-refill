@@ -84,15 +84,15 @@ private actor ProductionStub: ProductionAPI {
         #expect(model.saved)
     }
 
-    @Test func validationFailureShowsRecoveryMessageAndReturnsToSections() async throws {
+    @Test func validationFailureShowsMessageAndKeepsCountOpen() async throws {
         let api = ProductionStub(); let model = ProductionWorksheet(api: api, storeID: "s")
         await model.start(.fruitMobile)
         model.edit("i", text: "2")
         await api.validationFail(); await model.save()
-        #expect(model.error == "That count was out of date, so it was cleared. Start the section again when you are ready.")
+        #expect(model.error == "That count could not be saved. Check the numbers and try again.")
         #expect(!model.pending)
         #expect(!model.saved)
-        #expect(model.check == nil)
+        #expect(model.check != nil)
         model.clearError()
         #expect(model.error == nil)
     }

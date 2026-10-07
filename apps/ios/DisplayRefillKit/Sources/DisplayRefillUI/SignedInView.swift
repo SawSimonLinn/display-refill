@@ -1,22 +1,34 @@
 import DisplayRefillCore
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
-/// First production version: manual stock checks, prep, build book and waste only.
+/// First production version: manual stock checks, prep, build book and waste,
+/// plus a Profile tab for stores, settings, help and account.
 public struct SignedInView: View {
     let me: Me
     let api: any ManualScanAPI
+    let client: (any APIClient)?
     let onReload: () async -> Void
     let onSignOut: () async -> Void
 
-    public init(me: Me, api: any ManualScanAPI, onReload: @escaping () async -> Void, onSignOut: @escaping () async -> Void) {
+    private enum Tab: Hashable { case stock, prep, book, waste, profile }
+    @State private var tab: Tab = .stock
+    @AppStorage(AppPreferences.appearanceKey) private var appearance = AppearanceChoice.system.rawValue
+    @AppStorage(AppPreferences.keepAwakeKey) private var keepAwake = false
+    @Environment(\.scenePhase) private var scenePhase
+
+    public init(me: Me, api: any ManualScanAPI, client: (any APIClient)? = nil, onReload: @escaping () async -> Void, onSignOut: @escaping () async -> Void) {
         self.me = me
         self.api = api
+        self.client = client
         self.onReload = onReload
         self.onSignOut = onSignOut
     }
 
     public var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             NavigationStack {
                 Group {
                     if let productionAPI = api as? any ProductionAPI {
@@ -28,37 +40,71 @@ public struct SignedInView: View {
                 .toolbar { accountMenu }
             }
             .tabItem { Label("Stock Check", systemImage: "checklist") }
+            .tag(Tab.stock)
 
             if let prepAPI = api as? any PrepAPI {
                 NavigationStack {
                     PrepListView(stores: me.stores, api: prepAPI, userID: me.userID.uuidString)
                         .toolbar { accountMenu }
-                }.tabItem { Label("Prep List", systemImage: "shippingbox") }
+                }
+                .tabItem { Label("Prep List", systemImage: "shippingbox") }
+                .tag(Tab.prep)
             }
 
             NavigationStack {
                 BuildBookView().toolbar { accountMenu }
-            }.tabItem { Label("Build Book", systemImage: "book") }
+            }
+            .tabItem { Label("Build Book", systemImage: "book") }
+            .tag(Tab.book)
 
             if let operationsAPI = api as? any OperationsAPI {
                 NavigationStack {
                     WasteLogView(stores: me.stores, api: operationsAPI, userID: me.userID.uuidString)
                         .toolbar { accountMenu }
-                }.tabItem { Label("Waste Log", systemImage: "trash") }
+                }
+                .tabItem { Label("Waste Log", systemImage: "trash") }
+                .tag(Tab.waste)
             }
 
+            NavigationStack {
+                ProfileView(me: me, client: client, onSignOut: onSignOut)
+                    .refreshable { await onReload() }
+            }
+            .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            .tag(Tab.profile)
         }
+        .preferredColorScheme(AppearanceChoice(rawValue: appearance)?.colorScheme)
+        .onAppear(perform: applyKeepAwake)
+        .onChange(of: keepAwake) { applyKeepAwake() }
+        .onChange(of: scenePhase) { applyKeepAwake() }
+        .onDisappear { setIdleTimerDisabled(false) }
     }
 
+    /// Quick access from any work tab; the Profile tab has the full account page.
     private var accountMenu: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Menu {
-                if let email = me.email { Text(email) }
+                Section {
+                    Text(me.displayName.isEmpty ? (me.email ?? "Signed in") : me.displayName)
+                        .lineLimit(1).truncationMode(.middle)
+                    if let email = me.email, !me.displayName.isEmpty { Text(email).lineLimit(1).truncationMode(.middle) }
+                }
+                Button { tab = .profile } label: { Label("Profile & settings", systemImage: "gearshape") }
                 Button("Sign out", role: .destructive) { Task { await onSignOut() } }
             } label: {
                 Label("Account", systemImage: "person.circle")
             }
         }
+    }
+
+    private func applyKeepAwake() {
+        setIdleTimerDisabled(keepAwake && scenePhase == .active)
+    }
+
+    private func setIdleTimerDisabled(_ disabled: Bool) {
+        #if canImport(UIKit)
+        UIApplication.shared.isIdleTimerDisabled = disabled
+        #endif
     }
 }
 

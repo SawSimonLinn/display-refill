@@ -82,7 +82,9 @@ public enum APIResponseDecoder {
             }
         }
         if let envelope = try? decoder.decode(ErrorEnvelope.self, from: data) {
-            throw .server(status: status, code: envelope.error.code, message: envelope.error.message, requestID: envelope.requestID)
+            // Server functions put the human-readable reason for a rejected request in `request`.
+            let message = envelope.error.fieldErrors["request"]?.first ?? envelope.error.message
+            throw .server(status: status, code: envelope.error.code, message: message, requestID: envelope.requestID)
         }
         throw .unexpectedResponse(status: status)
     }

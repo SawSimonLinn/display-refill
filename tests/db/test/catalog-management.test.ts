@@ -177,6 +177,15 @@ describe("products and POG identities", () => {
     expect(archived.data).toMatchObject({ archived: true, revision: 2 });
     expect((await auditOf(g!.id)).map((e) => e.event_type)).toEqual(["pog.created", "pog.archived"]);
   });
+
+  it("POG kind must be one of the four sections", async () => {
+    const { data: g } = await w.service.rpc("create_pog", { p_actor: adminC.id, p_org: C.org, p_name: "Kinded", p_kind: "veggie_case" });
+    expect(g).toMatchObject({ kind: "veggie_case" });
+    expect((await w.service.rpc("create_pog", { p_actor: adminC.id, p_org: C.org, p_name: "Bad", p_kind: "bakery" })).error?.message).toBe("VALIDATION_FAILED");
+    expect((await w.service.rpc("update_pog", { p_actor: adminC.id, p_pog_id: g!.id, p_expected_revision: 1, p_changes: { kind: null } })).error?.message).toBe("VALIDATION_FAILED");
+    const changed = await w.service.rpc("update_pog", { p_actor: adminC.id, p_pog_id: g!.id, p_expected_revision: 1, p_changes: { kind: "fruit_case" } });
+    expect(changed.data).toMatchObject({ kind: "fruit_case", revision: 2 });
+  });
 });
 
 describe("displays", () => {

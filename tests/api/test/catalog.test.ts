@@ -149,7 +149,7 @@ describe("admin configures stores and products", () => {
   });
 
   it("creates a POG identity with an empty draft version 1; managers see published versions only", async () => {
-    const res = await post("/api/v1/pogs", adminC.token, { name: `Endcap ${h.run}` });
+    const res = await post("/api/v1/pogs", adminC.token, { name: `Endcap ${h.run}`, kind: "veggie_case" });
     expect(res.status, res.text).toBe(201);
     const pog = Pog.parse(res.json.data);
     expect(pog.versions).toEqual([expect.objectContaining({ version_number: 1, state: "draft", published_at: null, slot_count: 0 })]);
@@ -160,6 +160,16 @@ describe("admin configures stores and products", () => {
     expect(managerView.find((p) => p.pog_id === C.pog)?.versions.map((v) => v.state)).toEqual(["published"]);
     expect(managerView.find((p) => p.pog_id === pog.pog_id)?.versions).toEqual([]);
   });
+
+  it("requires a valid POG kind on create and lets admins change it", async () => {
+    expect((await post("/api/v1/pogs", adminC.token, { name: `No kind ${h.run}` })).status).toBe(422);
+    expect((await post("/api/v1/pogs", adminC.token, { name: `Bad kind ${h.run}`, kind: "bakery" })).status).toBe(422);
+    const pog = Pog.parse((await post("/api/v1/pogs", adminC.token, { name: `Kind ${h.run}`, kind: "fruit_mobile" })).json.data);
+    expect(pog.kind).toBe("fruit_mobile");
+    const res = await patch(`/api/v1/pogs/${pog.pog_id}`, adminC.token, { expected_revision: pog.revision, kind: "salad_mobile" });
+    expect(res.status, res.text).toBe(200);
+    expect(Pog.parse(res.json.data).kind).toBe("salad_mobile");
+  });
 });
 
 describe("catalog changes are admin-only and organization-scoped", () => {
@@ -167,7 +177,7 @@ describe("catalog changes are admin-only and organization-scoped", () => {
     for (const u of [managerC1, employeeC1]) {
       expect((await post("/api/v1/stores", u.token, { name: "No", store_number: `NO-${h.run}`, timezone: "UTC" })).status).toBe(403);
       expect((await post("/api/v1/products", u.token, { name: "No", short_name: "No", category: "c", container_type: "cup" })).status).toBe(403);
-      expect((await post("/api/v1/pogs", u.token, { name: "No" })).status).toBe(403);
+      expect((await post("/api/v1/pogs", u.token, { name: "No", kind: "fruit_case" })).status).toBe(403);
       expect((await patch(`/api/v1/stores/${C.store1}`, u.token, { expected_revision: 1, name: "Taken over" })).status).toBe(403);
       expect((await patch(`/api/v1/products/${C.product}`, u.token, { expected_revision: 1, name: "Renamed" })).status).toBe(403);
       expect((await patch(`/api/v1/pogs/${C.pog}`, u.token, { expected_revision: 1, archived: true })).status).toBe(403);

@@ -51,9 +51,14 @@ export default async function DisplaysPage(props: PageProps<"/displays">) {
     listDisplays(caller, me, storeId, { status: canEdit ? status : "active", cursor: stringParam(params.cursor), limit: 50 }),
     canEdit ? listPogs(caller, me, { status: "active", limit: 100, organization_id: store.value.organization_id }) : null,
   ]);
+  // Versions arrive newest first, so the first published one of each POG is its latest.
   const versions: VersionOption[] =
     pogs?.ok
-      ? pogs.value.items.flatMap((p) => p.versions.filter((v) => v.state === "published").map((v) => ({ pog_version_id: v.pog_version_id, label: `${p.name} · v${v.version_number}` })))
+      ? pogs.value.items.flatMap((p) =>
+          p.versions
+            .filter((v) => v.state === "published")
+            .map((v, i) => ({ pog_version_id: v.pog_version_id, pog_id: p.pog_id, pog_name: p.name, kind: p.kind, version_number: v.version_number, published_at: v.published_at, latest: i === 0 })),
+        )
       : [];
   const timezone = me.stores.find((s) => s.store_id === storeId)?.timezone ?? "UTC";
   const keep = { store_id: storeId };
@@ -69,7 +74,7 @@ export default async function DisplaysPage(props: PageProps<"/displays">) {
       {!store.value.active ? (
         <PermissionNote>This store is archived. Its displays cannot be scanned or added to until an admin restores the store.</PermissionNote>
       ) : canEdit ? (
-        <CreateDisplayForm storeId={storeId} storeName={store.value.name} versions={versions} />
+        <CreateDisplayForm storeId={storeId} storeName={store.value.name} versions={versions} timezone={timezone} />
       ) : (
         <PermissionNote>Only managers of this store and organization admins can change its displays.</PermissionNote>
       )}

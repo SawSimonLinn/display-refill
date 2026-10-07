@@ -107,3 +107,7 @@ Current prep reads latest counts per product and section across dates. Archived 
 ### Waste ledger and reports
 
 `production_waste_events` (migration 29) stores immutable `waste` and `void` events scoped to organization/store/product, with positive quantity, selected business date, reason/note, product-name/category/type snapshots, actor and actual timestamp. Unique `void_of` permits one reversal; a trigger requires reversal identity/quantity/date/snapshot fields to match the original. Browser roles have no direct access. Server-only `production_operations_read` and `production_waste_record` recheck memberships. Made reporting uses the existing prep ledger; waste is net of reversals. No sales quantities or inferred stock changes are introduced.
+
+### POG kind (migration 30)
+
+`pogs.kind` is one of the four production sections (`fruit_mobile`, `salad_mobile`, `fruit_case`, `veggie_case`). It is nullable only so POGs created before the migration keep working; `POST /pogs` requires it and `PATCH /pogs/:id` can set it but never clear it. `create_pog` gains a trailing `p_kind` and `update_pog` accepts `kind`; both validate through `private.clean_pog_kind` and record kind in audit metadata. Displays expose it as `active_pog.pog_kind`. A version's "updated" date in the UI is its `published_at`; the Displays page flags a display whose POG has a newer published version and offers a one-click reassignment through the existing display PATCH.

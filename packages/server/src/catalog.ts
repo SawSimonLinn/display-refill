@@ -1,4 +1,5 @@
 import type {
+  AssignedPog,
   CreateDisplayRequest,
   CreatePogRequest,
   CreateProductRequest,
@@ -257,10 +258,10 @@ export async function updateProduct(service: DbClient, actorId: string, productI
 // POG identities
 // ---------------------------------------------------------------------------
 
-const POG_COLUMNS = "id, organization_id, name, archived, revision, created_at, updated_at, pog_versions(id, version_number, state, published_at, pog_slots(count))";
+const POG_COLUMNS = "id, organization_id, name, kind, archived, revision, created_at, updated_at, pog_versions(id, version_number, state, published_at, pog_slots(count))";
 
 type PogRow = {
-  id: string; organization_id: string; name: string; archived: boolean; revision: number; created_at: string; updated_at: string;
+  id: string; organization_id: string; name: string; kind: string | null; archived: boolean; revision: number; created_at: string; updated_at: string;
   pog_versions: Array<{ id: string; version_number: number; state: string; published_at: string | null; pog_slots: Array<{ count: number }> }>;
 };
 
@@ -268,6 +269,7 @@ const toPog = (r: PogRow): Pog => ({
   pog_id: r.id,
   organization_id: r.organization_id,
   name: r.name,
+  kind: r.kind as Pog["kind"],
   archived: r.archived,
   revision: r.revision,
   created_at: iso(r.created_at),
@@ -313,7 +315,7 @@ async function loadPog(service: DbClient, pogId: string): Promise<ServiceResult<
 
 /** Creates the POG identity and its empty draft version 1. */
 export async function createPog(service: DbClient, actorId: string, organizationId: string, input: CreatePogRequest, requestId: string): Promise<ServiceResult<Pog>> {
-  const { data, error } = await service.rpc("create_pog", { p_actor: actorId, p_org: organizationId, p_name: input.name, p_request_id: requestId });
+  const { data, error } = await service.rpc("create_pog", { p_actor: actorId, p_org: organizationId, p_name: input.name, p_kind: input.kind, p_request_id: requestId });
   if (error) return fromDbError(error);
   return loadPog(service, data.id);
 }
@@ -336,13 +338,13 @@ export async function updatePog(service: DbClient, actorId: string, pogId: strin
 
 // Explicit relationship names: scans also references both displays and
 // pog_versions, so PostgREST could otherwise see an ambiguous path.
-const VERSION_EMBED = "pog_versions!displays_organization_id_active_pog_version_id_fkey(id, version_number, published_at, pogs(id, name, archived))";
+const VERSION_EMBED = "pog_versions!displays_organization_id_active_pog_version_id_fkey(id, version_number, published_at, pogs(id, name, kind, archived))";
 const DISPLAY_COLUMNS = `id, organization_id, store_id, name, active, revision, created_at, updated_at, active_pog_version_id, ${VERSION_EMBED}, scans(created_at)`;
 
 type DisplayRow = {
   id: string; organization_id: string; store_id: string; name: string; active: boolean; revision: number; created_at: string; updated_at: string;
   active_pog_version_id: string | null;
-  pog_versions: { id: string; version_number: number; published_at: string | null; pogs: { id: string; name: string; archived: boolean } | null } | null;
+  pog_versions: { id: string; version_number: number; published_at: string | null; pogs: { id: string; name: string; kind: string | null; archived: boolean } | null } | null;
   scans: Array<{ created_at: string }>;
 };
 
@@ -359,7 +361,7 @@ const toDisplay = (r: DisplayRow, archivedProductVersions: Set<string>): Display
     updated_at: iso(r.updated_at),
     active_pog:
       v && v.pogs
-        ? { pog_id: v.pogs.id, pog_name: v.pogs.name, pog_archived: v.pogs.archived, pog_version_id: v.id, version_number: v.version_number, published_at: isoOrNull(v.published_at) }
+        ? { pog_id: v.pogs.id, pog_name: v.pogs.name, pog_kind: v.pogs.kind as AssignedPog["pog_kind"], pog_archived: v.pogs.archived, pog_version_id: v.id, version_number: v.version_number, published_at: isoOrNull(v.published_at) }
         : null,
     latest_scan_at: isoOrNull(r.scans[0]?.created_at),
     has_archived_products: r.active_pog_version_id !== null && archivedProductVersions.has(r.active_pog_version_id),
@@ -454,7 +456,7 @@ export async function getDisplay(client: DbClient, displayId: string): Promise<S
     .select(
       `id, organization_id, store_id, name, active, revision, created_at, updated_at, active_pog_version_id,
        stores!displays_organization_id_store_id_fkey(id, name, store_number, timezone, active),
-       pog_versions!displays_organization_id_active_pog_version_id_fkey(id, version_number, published_at, pogs(id, name, archived),
+       pog_versions!displays_organization_id_active_pog_version_id_fkey(id, version_number, published_at, pogs(id, name, kind, archived),
          pog_slots(id, label, target_quantity, refill_threshold, sort_order, products!pog_slots_organization_id_product_id_fkey(id, name, short_name, active))),
        scans(created_at)`,
     )

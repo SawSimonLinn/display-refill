@@ -148,6 +148,10 @@ export type UpdateProductRequest = z.infer<typeof UpdateProductRequest>;
 
 export const PogVersionState = z.enum(["draft", "published"]);
 
+/** Store section a POG is for; the same four sections as production. */
+export const PogKind = z.enum(["fruit_mobile", "salad_mobile", "fruit_case", "veggie_case"]);
+export type PogKind = z.infer<typeof PogKind>;
+
 export const PogVersionSummary = z.strictObject({
   pog_version_id: Uuid,
   version_number: z.number().int().positive(),
@@ -161,6 +165,8 @@ export const Pog = z.strictObject({
   pog_id: Uuid,
   organization_id: Uuid,
   name: z.string(),
+  /** Null only for POGs created before kinds existed. */
+  kind: PogKind.nullable(),
   archived: z.boolean(),
   revision: z.number().int().positive(),
   created_at: Rfc3339Utc,
@@ -173,14 +179,16 @@ export type Pog = z.infer<typeof Pog>;
 export const CreatePogRequest = z.strictObject({
   organization_id: Uuid.optional(),
   name: text(200),
+  kind: PogKind,
 });
 export type CreatePogRequest = z.infer<typeof CreatePogRequest>;
 
-const pogChange = atLeastOne<{ name?: string; archived?: boolean }>(["name", "archived"]);
+const pogChange = atLeastOne<{ name?: string; kind?: PogKind; archived?: boolean }>(["name", "kind", "archived"]);
 export const UpdatePogRequest = z
   .strictObject({
     expected_revision: ExpectedRevision,
     name: text(200).optional(),
+    kind: PogKind.optional(),
     archived: z.boolean().optional(),
   })
   .refine(pogChange.check, { error: pogChange.message });
@@ -193,6 +201,7 @@ export type UpdatePogRequest = z.infer<typeof UpdatePogRequest>;
 export const AssignedPog = z.strictObject({
   pog_id: Uuid,
   pog_name: z.string(),
+  pog_kind: PogKind.nullable(),
   pog_archived: z.boolean(),
   pog_version_id: Uuid,
   version_number: z.number().int().positive(),

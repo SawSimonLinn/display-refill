@@ -15,7 +15,7 @@ const mutation = (path: string, body: unknown, token = admin.token, key = random
 const slots = (over: Partial<PogSlotInput> = {}): PogSlotInput[] => [{ label: "A1", product_id: product, ...whole, target_quantity: 5, refill_threshold: 2, sort_order: 0, ...over }];
 const prefix = (v: PogVersionDetail) => `/api/v1/pog-versions/${v.pog_version_id}`;
 async function draft() {
-  const res = await mutation("/api/v1/pogs", { name: `Builder ${randomUUID()}` });
+  const res = await mutation("/api/v1/pogs", { name: `Builder ${randomUUID()}`, kind: "fruit_case" });
   expect(res.status, res.text).toBe(201);
   return detail(res.json.data.pog_id, res.json.data.versions[0].pog_version_id);
 }

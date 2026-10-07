@@ -209,13 +209,13 @@ isOneToOne: false
                   ]
                 },"pogs": {
                   Row: {
-                    "archived": boolean,"created_at": string,"id": string,"name": string,"organization_id": string,"revision": number,"updated_at": string
+                    "archived": boolean,"created_at": string,"id": string,"kind": string | null,"name": string,"organization_id": string,"revision": number,"updated_at": string
                   }
                   Insert: {
-                    "archived"?: boolean,"created_at"?: string,"id"?: string,"name": string,"organization_id": string,"revision"?: number,"updated_at"?: string
+                    "archived"?: boolean,"created_at"?: string,"id"?: string,"kind"?: string | null,"name": string,"organization_id": string,"revision"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "archived"?: boolean,"created_at"?: string,"id"?: string,"name"?: string,"organization_id"?: string,"revision"?: number,"updated_at"?: string
+                    "archived"?: boolean,"created_at"?: string,"id"?: string,"kind"?: string | null,"name"?: string,"organization_id"?: string,"revision"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -695,10 +695,11 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "create_pog":
-{ Args: { "p_actor": string,"p_name": string,"p_org": string,"p_request_id"?: string }; Returns: {
+{ Args: { "p_actor": string,"p_kind"?: string,"p_name": string,"p_org": string,"p_request_id"?: string }; Returns: {
               "archived": boolean,
 "created_at": string,
 "id": string,
+"kind": string | null,
 "name": string,
 "organization_id": string,
 "revision": number,
@@ -994,6 +995,7 @@ isOneToOne: false
               "archived": boolean,
 "created_at": string,
 "id": string,
+"kind": string | null,
 "name": string,
 "organization_id": string,
 "revision": number,

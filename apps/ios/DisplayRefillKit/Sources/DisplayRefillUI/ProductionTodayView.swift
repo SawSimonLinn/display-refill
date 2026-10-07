@@ -90,10 +90,6 @@ private struct ProductionStoreView: View {
                     if let operations = api as? any OperationsAPI {
                         OperationsSummaryView(store: store, api: operations)
                     }
-                    if let prep = api as? any PrepAPI, let stock = api as? any StockUpdateAPI {
-                        NavigationLink("Quick stock update") { QuickStockView(store: store, api: prep, stockAPI: stock, userID: userID) }
-                            .buttonStyle(PrimaryButtonStyle())
-                    }
                     sections
                 }
             }.padding()
