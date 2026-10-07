@@ -68,3 +68,4 @@ apps/ios/Verification/ProductionFixture.json
 
 # Launch video output from /brag (local only)
 brag-output/
+my-video/
