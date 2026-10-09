@@ -97,6 +97,10 @@ function TypeCard({ type, path, products, onSaved, onReload }: { type: DisplayTy
     });
     if (result) { setEditing(null); onSaved(result); }
   }
+  async function move(item: TypeItem, direction: "up" | "down") {
+    const result = await run<Types>(path, "POST", { action: "move_item", display_type_id: type.id, id: item.id, direction, expected_revision: item.revision });
+    if (result) onSaved(result);
+  }
   return (
     <section className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-card p-5" aria-labelledby={`type-${type.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -125,7 +129,7 @@ function TypeCard({ type, path, products, onSaved, onReload }: { type: DisplayTy
 
       <ul className="divide-y divide-border border-t border-border">
         {items.length === 0 && <li className="py-3 text-sm text-muted-foreground">No products yet. Stores using this type have nothing to count in it.</li>}
-        {items.map((item) => (
+        {items.map((item, index) => (
           <li key={item.id} className="py-3">
             {editing === item.id ? (
               <ItemForm typeId={type.id} path={path} products={products} item={item} onSaved={(t) => { setEditing(null); onSaved(t); }} onCancel={() => setEditing(null)} />
@@ -136,6 +140,12 @@ function TypeCard({ type, path, products, onSaved, onReload }: { type: DisplayTy
                   <p className="text-sm text-muted-foreground">{[item.category, item.product_type].filter(Boolean).join(" · ") || "Uncategorized"} · order {item.sort_order}</p>
                 </div>
                 <div className="text-right"><span className="block text-xs text-muted-foreground">Default PAR</span><span className="text-xl font-semibold tabular-nums">{item.par}</span></div>
+                <div className="flex gap-1">
+                  <button type="button" className={button} aria-label={`Move ${item.product_name} up`} title="Move up"
+                    disabled={busy || editing !== null || index === 0} onClick={() => void move(item, "up")}>↑</button>
+                  <button type="button" className={button} aria-label={`Move ${item.product_name} down`} title="Move down"
+                    disabled={busy || editing !== null || index === items.length - 1} onClick={() => void move(item, "down")}>↓</button>
+                </div>
                 <SecondaryButton onClick={() => setEditing(item.id)} disabled={editing !== null} subject={item.product_name}>Edit</SecondaryButton>
               </div>
             )}

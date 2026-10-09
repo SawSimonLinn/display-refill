@@ -171,3 +171,50 @@ extension Notice where Actions == EmptyView {
         self.init(text: text, systemImage: systemImage, tint: tint) { EmptyView() }
     }
 }
+
+/// Password entry with a show/hide button. Keeps the keyboard up while toggling.
+struct PasswordField: View {
+    let title: String
+    @Binding var text: String
+    /// New-password autofill (sign-up) instead of saved-password autofill.
+    var isNew = false
+    @State private var visible = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Group {
+                if visible {
+                    plainField
+                } else {
+                    SecureField(title, text: $text)
+                }
+            }
+            .textContentType(isNew ? .newPassword : .password)
+            .focused($focused)
+            Button {
+                let wasFocused = focused
+                visible.toggle()
+                if wasFocused { Task { @MainActor in focused = true } }
+            } label: {
+                Image(systemName: visible ? "eye.slash" : "eye")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(visible ? "Hide password" : "Show password")
+        }
+        .filledField()
+    }
+
+    @ViewBuilder private var plainField: some View {
+        #if os(iOS)
+        TextField(title, text: $text)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+        #else
+        TextField(title, text: $text).autocorrectionDisabled()
+        #endif
+    }
+}

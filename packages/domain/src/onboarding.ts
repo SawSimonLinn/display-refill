@@ -59,6 +59,13 @@ export const DisplayTypeAction = z.discriminatedUnion("action", [
     active: z.boolean(),
     expected_revision: z.int().positive().optional(),
   }).refine((x) => !x.id || x.expected_revision !== undefined, { error: "Revision is required when editing", path: ["expected_revision"] }),
+  z.strictObject({
+    action: z.literal("move_item"),
+    display_type_id: Uuid,
+    id: Uuid,
+    direction: z.enum(["up", "down"]),
+    expected_revision: z.int().positive(),
+  }),
 ]);
 export type DisplayTypeAction = z.infer<typeof DisplayTypeAction>;
 

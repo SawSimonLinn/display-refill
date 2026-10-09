@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * Admin: `save_type` or `save_item`. Edits carry `expected_revision`; new rows are unique by
+ * Admin: `save_type`, `save_item` or `move_item` (one place up or down). Edits carry `expected_revision`; new rows are unique by
  * code / product, so a repeated create is refused rather than duplicated. Item changes reach
  * every store using the type immediately (PAR only where the store has not overridden it).
  */

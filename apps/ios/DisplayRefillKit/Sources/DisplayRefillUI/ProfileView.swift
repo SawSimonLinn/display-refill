@@ -302,6 +302,7 @@ struct StoreDetailView: View {
                 LabeledContent("Local time") { StoreLocalTime(timezone: store.timezone) }
                 if let onboarding, store.role == .manager || store.role == .admin {
                     NavigationLink("Display cases") { DisplayCasesView(store: store, api: onboarding) }
+                    NavigationLink("PAR") { StorePARView(store: store, api: onboarding) }
                 }
             }
             Section {
@@ -337,7 +338,7 @@ struct StoreDetailView: View {
         let employee = ["Count stock and record preparation", "Log waste", "Read the build book"]
         switch store.role {
         case .employee: return employee
-        case .manager, .admin: return employee + ["Review store reports on the web dashboard"]
+        case .manager, .admin: return employee + ["Choose display cases and set PAR", "Review store reports on the web dashboard"]
         case .unknown: return ["Limited access. Update the app to see more."]
         }
     }

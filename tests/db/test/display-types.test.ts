@@ -149,3 +149,24 @@ it('POG kinds accept any active type of the organization',async()=>{
  expect(g.error).toBeNull();
  expect((await w.service.rpc('create_pog',{p_actor:admin.id,p_org:org,p_name:'Nope',p_kind:'no_such_type'})).error?.message).toBe('VALIDATION_FAILED');
 });
+
+it('admins move a product up or down; the order reaches stores using the type',async()=>{
+ const t0=await ok<Types>(typesMutate(admin.id,{action:'save_type',code:'move_case',name:'Move case',family:'Fruit',sort_order:60,active:true}));
+ const mc=typeOf(t0,'move_case');
+ // Equal sort orders: name breaks the tie (Type bowl before Type cup).
+ for(const p of [cup,bowl]) await ok(typesMutate(admin.id,{action:'save_item',display_type_id:mc.id,product_id:p,par:4,category:'',product_type:'',sort_order:5,active:true}));
+ await ok(select(managerA.id,storeA,[...(await config(managerA.id,storeA)).sections.filter(s=>s.selected).map(s=>s.id),mc.id]));
+ let items=typeOf(await ok<Types>(w.service.rpc('display_types_read',{p_actor:admin.id,p_org:org})),'move_case').items!;
+ expect(items.map(i=>i.product_id)).toEqual([bowl,cup]);
+ const c=items[1]!;
+ expect((await typesMutate(managerA.id,{action:'move_item',display_type_id:mc.id,id:c.id,direction:'up',expected_revision:c.revision})).error?.message).toBe('FORBIDDEN');
+ expect((await typesMutate(admin.id,{action:'move_item',display_type_id:mc.id,id:c.id,direction:'sideways',expected_revision:c.revision})).error?.message).toBe('VALIDATION_FAILED');
+ items=typeOf(await ok<Types>(typesMutate(admin.id,{action:'move_item',display_type_id:mc.id,id:c.id,direction:'up',expected_revision:c.revision})),'move_case').items!;
+ expect(items.map(i=>[i.product_id,(i as TypeItem&{sort_order:number}).sort_order])).toEqual([[cup,0],[bowl,1]]);
+ expect((await typesMutate(admin.id,{action:'move_item',display_type_id:mc.id,id:c.id,direction:'down',expected_revision:c.revision})).error?.message).toBe('CONFLICT');
+ const rows=await w.db.query("select product_id,sort_order from public.production_items where store_id=$1 and section='move_case' order by sort_order",[storeA]);
+ expect(rows.rows.map(r=>[r.product_id,r.sort_order])).toEqual([[cup,0],[bowl,1]]);
+ const top=items[0]!;
+ const same=typeOf(await ok<Types>(typesMutate(admin.id,{action:'move_item',display_type_id:mc.id,id:top.id,direction:'up',expected_revision:top.revision})),'move_case').items!;
+ expect(same.map(i=>i.revision)).toEqual(items.map(i=>i.revision));
+});

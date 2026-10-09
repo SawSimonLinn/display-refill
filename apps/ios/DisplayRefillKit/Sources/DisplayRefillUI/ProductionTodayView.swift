@@ -42,6 +42,7 @@ private struct ProductionStoreView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var discardEdits = false
     @State private var restart = false
+    @State private var editingCases = false
     init(store: Me.Store, api: any ProductionAPI, userID: String, lockStore: @escaping (Bool) -> Void) {
         self.lockStore = lockStore
         self.store = store; self.api = api; self.userID = userID
@@ -114,6 +115,25 @@ private struct ProductionStoreView: View {
             Button("Start fresh count", role: .destructive) { Task { await model.restartCount() } }
         }
         .onChange(of: model.pending || model.busy) { _, locked in lockStore(locked) }
+        .sheet(isPresented: $editingCases) {
+            if let onboarding = api as? any OnboardingAPI {
+                NavigationStack {
+                    ScrollView {
+                        DisplayCasesEditor(storeID: store.id.uuidString.lowercased(), api: onboarding,
+                                           intro: "Choose the display cases \(store.name) has right now. Add a case when a new one arrives; removing one keeps its history.") {
+                            editingCases = false
+                            Task { await model.load() }
+                        }.padding(20)
+                    }
+                    .pageBackground()
+                    .navigationTitle("Display cases")
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { editingCases = false } } }
+                }
+            }
+        }
         .toolbar {
             if model.check?.status == "draft" {
                 ToolbarItem(placement: .cancellationAction) {
@@ -135,7 +155,15 @@ private struct ProductionStoreView: View {
     }
     private var sections: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Eyebrow("Sections").padding(.top, 8).accessibilityAddTraits(.isHeader)
+            HStack {
+                Eyebrow("Sections").accessibilityAddTraits(.isHeader)
+                Spacer()
+                if store.role == .manager || store.role == .admin, api is any OnboardingAPI {
+                    Button { editingCases = true } label: { Label("Edit cases", systemImage: "slider.horizontal.3") }
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.action)
+                        .frame(minHeight: 44).disabled(model.busy || model.pending)
+                }
+            }.padding(.top, 8)
             ForEach(Array(model.sections.enumerated()), id: \.element.id) { index, section in
                 let finished = model.day?.sections.first(where: { $0.section == section })
                 Button {

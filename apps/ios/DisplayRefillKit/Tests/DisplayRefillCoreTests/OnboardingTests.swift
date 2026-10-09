@@ -108,6 +108,15 @@ private func signedIn(_ handler: @escaping StubTransport.Handler) -> (StubTransp
         #expect(put.url?.path == "/api/v1/stores/s1/display-types")
         #expect((body(put)["display_type_ids"] as? [String]) == ["t1", "t2"])
     }
+
+    @Test func displayCasesGroupByFamilyInServerOrder() throws {
+        let json = #"{"can_manage":true,"sections":[{"id":"a","code":"combo_4ft","name":"4ft Combo","family":"Other","selected":false},{"id":"b","code":"veg_combo_2_shelf","name":"2 Shelf Veg Combo","family":"Vegetables","selected":true},{"id":"c","code":"fruit_4ft","name":"4ft Fruit","family":"Fruit","selected":false},{"id":"d","code":"fruit_8ft","name":"8ft Fruit","family":"Fruit","selected":true},{"id":"e","code":"legacy","name":"No family","selected":false}]}"#
+        let cases = try JSONDecoder().decode(StoreDisplayCases.self, from: Data(json.utf8))
+        #expect(cases.sections.last?.family == "Other")
+        #expect(cases.groups.map(\.family) == ["Fruit", "Vegetables", "Other"])
+        #expect(cases.groups[0].choices.map(\.id) == ["c", "d"])
+        #expect(cases.groups[2].choices.map(\.id) == ["a", "e"])
+    }
 }
 
 @Suite struct DynamicSectionTests {
@@ -146,4 +155,24 @@ private struct FixedDayAPI: ProductionAPI {
     func productionDay(storeID: String) async throws -> ProductionDay { day }
     func productionCheck(storeID: String, checkID: String) async throws -> ProductionCheck { throw URLError(.badURL) }
     func productionMutate(storeID: String, mutation: ProductionMutation, key: String) async throws -> ProductionCheck { throw URLError(.badURL) }
+}
+
+@Suite struct AccessCodeFormatTests {
+    @Test func insertsDashAfterFourAndIgnoresTypedDashes() {
+        #expect(AccessCode.formatted("f8m8") == "F8M8")
+        #expect(AccessCode.formatted("F8M8-") == "F8M8")
+        #expect(AccessCode.formatted("F8M8K") == "F8M8-K")
+        #expect(AccessCode.formatted("F8M8-KA73") == "F8M8-KA73")
+        #expect(AccessCode.formatted("f8-m8 ka--73") == "F8M8-KA73")
+    }
+
+    @Test func capsAtEightCharacters() {
+        #expect(AccessCode.formatted("F8M8KA73ZZ") == "F8M8-KA73")
+        #expect(AccessCode.characters("F8M8-KA73") == "F8M8KA73")
+    }
+
+    @Test func completeOnlyAtEight() {
+        #expect(!AccessCode.isComplete("F8M8-KA7"))
+        #expect(AccessCode.isComplete("F8M8-KA73"))
+    }
 }

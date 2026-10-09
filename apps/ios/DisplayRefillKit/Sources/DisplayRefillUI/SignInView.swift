@@ -32,11 +32,9 @@ public struct SignInView: View {
                     }
                     VStack(spacing: 12) {
                         emailField.filledField()
-                        SecureField("Password", text: $password)
-                            .textContentType(.password)
+                        PasswordField(title: "Password", text: $password)
                             .submitLabel(.go)
                             .onSubmit(submit)
-                            .filledField()
                         if let error = session.signInError {
                             Label(error, systemImage: "exclamationmark.triangle")
                                 .font(.subheadline)
@@ -59,15 +57,19 @@ public struct SignInView: View {
                             .foregroundStyle(.secondary)
                             .frame(minHeight: 44)
                             .disabled(busy)
-                        if session.canSignUp {
-                            NavigationLink("New here? Create an account") { SignUpView(session: session) }
-                                .font(.subheadline.weight(.semibold))
-                                .frame(minHeight: 44)
-                                .disabled(busy)
-                        }
                     }
-                    if session.canUseSocialSignIn {
-                        SocialSignInButtons(session: session)
+                    if session.canUseSocialSignIn || session.canSignUp {
+                        VStack(spacing: 12) {
+                            if session.canUseSocialSignIn {
+                                SocialSignInButtons(session: session)
+                            }
+                            if session.canSignUp {
+                                NavigationLink("New here? Create an account") { SignUpView(session: session) }
+                                    .font(.subheadline.weight(.semibold))
+                                    .frame(minHeight: 44)
+                                    .disabled(busy)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 24)

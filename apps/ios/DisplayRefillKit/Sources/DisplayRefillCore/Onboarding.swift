@@ -57,7 +57,35 @@ public struct DisplayCaseChoice: Decodable, Sendable, Identifiable, Equatable {
     public let code: String
     public let name: String
     public let selected: Bool
-    public init(id: String, code: String, name: String, selected: Bool) { self.id = id; self.code = code; self.name = name; self.selected = selected }
+    /// Fruit, Vegetables, Salads or Other; groups the choices on screen.
+    public let family: String
+    public init(id: String, code: String, name: String, selected: Bool, family: String = "Other") {
+        self.id = id; self.code = code; self.name = name; self.selected = selected; self.family = family
+    }
+    private enum CodingKeys: String, CodingKey { case id, code, name, selected, family }
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        code = try c.decode(String.self, forKey: .code)
+        name = try c.decode(String.self, forKey: .name)
+        selected = try c.decode(Bool.self, forKey: .selected)
+        family = try c.decodeIfPresent(String.self, forKey: .family) ?? "Other"
+    }
+}
+
+extension StoreDisplayCases {
+    /// Choices grouped by family in a fixed order (Fruit, Vegetables, Salads, then the rest),
+    /// keeping the server's order inside each group. "Other" holds the fruit-and-veg combos.
+    public var groups: [(family: String, choices: [DisplayCaseChoice])] {
+        Self.grouped(sections)
+    }
+
+    public static func grouped(_ choices: [DisplayCaseChoice]) -> [(family: String, choices: [DisplayCaseChoice])] {
+        let order = ["Fruit", "Vegetables", "Salads"]
+        let families = order.filter { f in choices.contains { $0.family == f } }
+            + choices.map(\.family).filter { !order.contains($0) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        return families.map { f in (f, choices.filter { $0.family == f }) }
+    }
 }
 
 public struct StoreDisplayCases: Decodable, Sendable, Equatable {
@@ -66,7 +94,8 @@ public struct StoreDisplayCases: Decodable, Sendable, Equatable {
     public init(can_manage: Bool, sections: [DisplayCaseChoice]) { self.can_manage = can_manage; self.sections = sections }
 }
 
-public protocol OnboardingAPI: Sendable {
+/// Store managers also edit the store's PAR from the same screens.
+public protocol OnboardingAPI: StorePARAPI {
     func onboardingStatus() async throws(APIClientError) -> OnboardingStatus
     func joinOrganization(accessCode: String) async throws(APIClientError) -> OnboardingStatus
     /// `name`/`timezone` are needed only when the number is new (the caller then becomes manager).
@@ -95,6 +124,26 @@ extension URLSessionAccountAPI: OnboardingAPI {
         try await authorizedRequest("api/v1/stores/\(storeID)/display-types", method: "PUT", body: Self.json(["display_type_ids": typeIDs]))
     }
     private static func json(_ value: some Encodable) -> Data? { try? JSONEncoder().encode(value) }
+}
+
+/// Organization access codes: 8 letters or digits, shown as `XXXX-XXXX` (the server
+/// ignores the dash and case).
+public enum AccessCode {
+    public static let length = 8
+
+    /// Letters and digits only, uppercased, at most 8. Dashes, spaces and symbols are dropped.
+    public static func characters(_ input: String) -> String {
+        String(input.uppercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }.prefix(length))
+    }
+
+    /// What the field shows while typing: the dash appears once a 5th character is entered.
+    public static func formatted(_ input: String) -> String {
+        let chars = characters(input)
+        guard chars.count > 4 else { return chars }
+        return chars.prefix(4) + "-" + chars.dropFirst(4)
+    }
+
+    public static func isComplete(_ input: String) -> Bool { characters(input).count == length }
 }
 
 /// Public email sign-up with a 6-digit confirmation code (no email link).

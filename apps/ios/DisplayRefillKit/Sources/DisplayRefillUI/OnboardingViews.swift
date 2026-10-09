@@ -49,8 +49,8 @@ struct SignUpView: View {
                 .font(.subheadline).foregroundStyle(.secondary)
             TextField("Your name", text: $name).textContentType(.name).filledField()
             emailField.filledField()
-            SecureField("Password (12+ characters)", text: $password).textContentType(.newPassword).filledField()
-            SecureField("Confirm password", text: $confirm).textContentType(.newPassword).filledField()
+            PasswordField(title: "Password (12+ characters)", text: $password, isNew: true)
+            PasswordField(title: "Confirm password", text: $confirm, isNew: true)
             if let passwordProblem {
                 Text(passwordProblem).font(.footnote).foregroundStyle(Theme.verify)
             }
@@ -134,7 +134,7 @@ struct OnboardingView: View {
                     case .accessCode: accessCodeStep
                     case .store: storeStep
                     case .displayCases(let storeID, let name):
-                        DisplayCasesEditor(storeID: storeID, api: api, intro: "Choose the display cases \(name) has. Staff will count only these. You can change this later in Profile.", saveLabel: "Finish setup") {
+                        DisplayCasesEditor(storeID: storeID, api: api, intro: "Choose the display cases \(name) has. Staff will count only these. You can change this any time from Stock Check.", saveLabel: "Finish setup") {
                             Task { await onDone() }
                         }
                     }
@@ -167,7 +167,7 @@ struct OnboardingView: View {
             codeField.filledField()
             Button("Join") { Task { await join() } }
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(busy || code.filter { $0.isLetter || $0.isNumber }.count < 6)
+                .disabled(busy || !AccessCode.isComplete(code))
         }
     }
 
@@ -197,12 +197,24 @@ struct OnboardingView: View {
         }
     }
 
-    @ViewBuilder private var codeField: some View {
+    /// Shows XXXX-XXXX as the person types; a typed or pasted dash is ignored.
+    private var codeField: some View {
+        accessCodeTextField
+            .font(.title2.monospaced())
+            .onChange(of: code) { _, new in
+                let formatted = AccessCode.formatted(new)
+                if formatted != new { code = formatted }
+            }
+            .onSubmit { if AccessCode.isComplete(code), !busy { Task { await join() } } }
+    }
+
+    @ViewBuilder private var accessCodeTextField: some View {
         #if os(iOS)
-        TextField("Access code", text: $code).textInputAutocapitalization(.characters).autocorrectionDisabled()
-            .font(.title2.monospaced()).accessibilityIdentifier("access-code")
+        TextField("XXXX-XXXX", text: $code).textInputAutocapitalization(.characters).autocorrectionDisabled()
+            .keyboardType(.asciiCapable).submitLabel(.join).accessibilityIdentifier("access-code")
+            .accessibilityLabel("Access code")
         #else
-        TextField("Access code", text: $code).font(.title2.monospaced())
+        TextField("XXXX-XXXX", text: $code).accessibilityLabel("Access code")
         #endif
     }
 
@@ -218,7 +230,7 @@ struct OnboardingView: View {
         busy = true; error = nil
         defer { busy = false }
         do throws(APIClientError) {
-            let result = try await api.joinOrganization(accessCode: code)
+            let result = try await api.joinOrganization(accessCode: AccessCode.characters(code))
             organization = result.organization?.name
             if result.state == .complete { await onDone() } else { step = .store }
         } catch {
@@ -278,13 +290,20 @@ struct DisplayCasesEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(intro).font(.subheadline).foregroundStyle(.secondary)
             if loading { ProgressView("Loading display cases") }
-            ForEach(choices) { choice in
-                Toggle(choice.name, isOn: Binding(
-                    get: { chosen.contains(choice.id) },
-                    set: { on in saved = false; if on { chosen.insert(choice.id) } else { chosen.remove(choice.id) } }
-                ))
-                .disabled(!canManage || busy)
-                .card(padding: 14)
+            if !loading && !choices.isEmpty {
+                Text("\(chosen.count) of \(choices.count) selected").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            }
+            ForEach(StoreDisplayCases.grouped(choices), id: \.family) { group in
+                Eyebrow(group.family == "Other" ? "Fruit & Veg Combo" : group.family)
+                    .padding(.top, 6).accessibilityAddTraits(.isHeader)
+                ForEach(group.choices) { choice in
+                    Toggle(choice.name, isOn: Binding(
+                        get: { chosen.contains(choice.id) },
+                        set: { on in saved = false; if on { chosen.insert(choice.id) } else { chosen.remove(choice.id) } }
+                    ))
+                    .disabled(!canManage || busy)
+                    .card(padding: 14)
+                }
             }
             if !loading && !canManage {
                 Text("Only the store's manager can change display cases.").font(.footnote).foregroundStyle(.secondary)
