@@ -42,4 +42,14 @@ import Testing
         #expect(PrepPresentation.produce(items[7]) == "Mixed melon")
         #expect(PrepPresentation.produceOptions(items) == ["Watermelon", "Mixed melon", "Cantaloupe", "Honeydew", "Pineapple", "Kiwi"])
     }
+    @Test func prepHeadingsGroupFruitByProduceAndTheRestByCategory() {
+        func item(_ id: String, _ name: String, _ category: String, _ section: ProductionSection) -> PrepItem {
+            PrepItem(product_id: id, product_name: name, category: category, product_type: "", ready: true, needed: 1, made: 0, remaining: 1, revision: "1", oldest_count: "", locations: [.init(section: section, have: 0, backup: nil, backup_required: nil, display_need: 1, checked_at: "")], activity: [])
+        }
+        let items = [item("cobb", "Cobb", "Individual salads", .saladMobile), item("bowl", "Chicken bowl", "$5 bowls", .saladMobile),
+                     item("blt", "BLT", "Individual salads", .saladMobile), item("carrot", "Carrots", "", .veggieCase), item("pine", "$5 PINEAPPLE", "", .fruitCase)]
+        let sorted = PrepPresentation.sorted(items, by: .sections)
+        #expect(sorted.map(\.id) == ["pine", "carrot", "bowl", "blt", "cobb"])
+        #expect(sorted.map(PrepPresentation.heading) == ["Pineapple", "Vegetables", "$5 bowls", "Individual salads", "Individual salads"])
+    }
 }

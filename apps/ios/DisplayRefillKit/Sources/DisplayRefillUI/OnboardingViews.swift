@@ -280,6 +280,8 @@ struct DisplayCasesEditor: View {
 
     @State private var choices: [DisplayCaseChoice] = []
     @State private var chosen: Set<String> = []
+    /// Families shown open; all start collapsed so the list fits on one screen.
+    @State private var expanded: Set<String> = []
     @State private var canManage = false
     @State private var loading = true
     @State private var busy = false
@@ -294,16 +296,31 @@ struct DisplayCasesEditor: View {
                 Text("\(chosen.count) of \(choices.count) selected").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             }
             ForEach(StoreDisplayCases.grouped(choices), id: \.family) { group in
-                Eyebrow(group.family == "Other" ? "Fruit & Veg Combo" : group.family)
-                    .padding(.top, 6).accessibilityAddTraits(.isHeader)
-                ForEach(group.choices) { choice in
+                let open = expanded.contains(group.family)
+                Button {
+                    withAnimation(.snappy) { if open { expanded.remove(group.family) } else { expanded.insert(group.family) } }
+                } label: {
+                    HStack {
+                        Eyebrow(group.family == "Other" ? "Fruit & Veg Combo" : group.family)
+                        Spacer()
+                        Text("\(group.choices.filter { chosen.contains($0.id) }.count) of \(group.choices.count)")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(open ? 90 : 0))
+                    }
+                    .padding(.top, 6).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityValue(open ? "Expanded" : "Collapsed")
+                if open { ForEach(group.choices) { choice in
                     Toggle(choice.name, isOn: Binding(
                         get: { chosen.contains(choice.id) },
                         set: { on in saved = false; if on { chosen.insert(choice.id) } else { chosen.remove(choice.id) } }
                     ))
                     .disabled(!canManage || busy)
                     .card(padding: 14)
-                }
+                } }
             }
             if !loading && !canManage {
                 Text("Only the store's manager can change display cases.").font(.footnote).foregroundStyle(.secondary)

@@ -43,6 +43,8 @@ private struct ProductionStoreView: View {
     @State private var discardEdits = false
     @State private var restart = false
     @State private var editingCases = false
+    /// Collapsed category headings in the count editor, as "section|category".
+    @State private var collapsed: Set<String> = []
     init(store: Me.Store, api: any ProductionAPI, userID: String, lockStore: @escaping (Bool) -> Void) {
         self.lockStore = lockStore
         self.store = store; self.api = api; self.userID = userID
@@ -146,7 +148,7 @@ private struct ProductionStoreView: View {
                 }
             }
             #if os(iOS)
-            NumberEntryBar(isLast: focused != nil && focused == model.check?.items.last?.id) {
+            NumberEntryBar(isLast: focused != nil && focused == model.check.flatMap { visibleItems($0).last?.id }) {
                 if let focused { model.edit(focused, text: "") }
                 nextField()
             } next: { nextField() }
@@ -211,18 +213,13 @@ private struct ProductionStoreView: View {
             }.font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(model.pending ? Theme.verify : Color.secondary)
                 .padding(.bottom, 4)
             ForEach(check.items) { item in
-                // Category headings: 6ft fruit, and any non-standard type whose admin set categories.
-                if check.section == .fruitCase || (!check.section.isStandard && !item.category.isEmpty),
+                // Category headings start each run of items; tapping one collapses its items.
+                if let category = category(item, in: check),
                    let index = check.items.firstIndex(where: { $0.id == item.id }),
                    index == 0 || check.items[index - 1].category != item.category {
-                    Text(item.category.isEmpty ? "Fruit" : item.category)
-                        .font(.title2.bold())
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.leading, 10)
-                        .overlay(alignment: .leading) { Capsule().fill(Theme.action).frame(width: 4) }
-                        .padding(.top, 16)
-                        .accessibilityAddTraits(.isHeader)
+                    categoryHeading(category, in: check)
                 }
+                if !isCollapsed(item, in: check) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(item.product_name).font(.headline).fixedSize(horizontal: false, vertical: true)
                     // Keep number-entry focus stable while the server updates the shortage.
@@ -232,6 +229,7 @@ private struct ProductionStoreView: View {
                         HStack(alignment: .center, spacing: 16) { haveField(item); makeLabel(item).frame(width: 88, alignment: .trailing) }
                     }
                 }.card()
+                }
             }
             Button {
                 focused = nil
@@ -277,9 +275,50 @@ private struct ProductionStoreView: View {
         }.accessibilityElement(children: .combine)
     }
     private func nextField() {
-        guard let items = model.check?.items else { return }
-        focused = fieldAfter(after: focused, in: items.map(\.id))
+        guard let check = model.check else { return }
+        focused = fieldAfter(after: focused, in: visibleItems(check).map(\.id))
         Task { await model.save() }
+    }
+    /// Heading for an item: 6ft fruit, and any non-standard type whose admin set categories.
+    private func category(_ item: ProductionItem, in check: ProductionCheck) -> String? {
+        guard check.section == .fruitCase || (!check.section.isStandard && !item.category.isEmpty) else { return nil }
+        return item.category.isEmpty ? "Fruit" : item.category
+    }
+    private func collapseKey(_ category: String, in check: ProductionCheck) -> String { "\(check.section)|\(category)" }
+    private func isCollapsed(_ item: ProductionItem, in check: ProductionCheck) -> Bool {
+        guard let category = category(item, in: check) else { return false }
+        return collapsed.contains(collapseKey(category, in: check))
+    }
+    private func visibleItems(_ check: ProductionCheck) -> [ProductionItem] {
+        check.items.filter { !isCollapsed($0, in: check) }
+    }
+    private func categoryHeading(_ category: String, in check: ProductionCheck) -> some View {
+        let key = collapseKey(category, in: check)
+        let open = !collapsed.contains(key)
+        let items = check.items.filter { self.category($0, in: check) == category }
+        let counted = items.filter { !(model.input[$0.id] ?? "").isEmpty }.count
+        return Button {
+            if open, let focused, items.contains(where: { $0.id == focused }) { self.focused = nil }
+            withAnimation(.snappy) { if open { collapsed.insert(key) } else { collapsed.remove(key) } }
+        } label: {
+            HStack(spacing: 10) {
+                Text(category)
+                    .font(.title2.bold())
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Text("\(counted) of \(items.count)").font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(open ? 90 : 0))
+            }
+            .padding(.leading, 10)
+            .overlay(alignment: .leading) { Capsule().fill(Theme.action).frame(width: 4) }
+            .padding(.top, 16)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityValue(open ? "Expanded, \(counted) of \(items.count) counted" : "Collapsed, \(counted) of \(items.count) counted")
     }
     private func timeLabel(_ raw: String) -> String {
         let formatter = ISO8601DateFormatter()

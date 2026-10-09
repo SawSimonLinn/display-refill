@@ -44,6 +44,13 @@ public enum PrepPresentation {
         if item.locations.contains(where: { $0.section == .veggieCase }) { return "Vegetables" }
         return "Salads"
     }
+    /// Collapsible heading on the Prep List: fruit by produce, everything else by its category
+    /// (or its group when the admin set none).
+    public static func heading(_ item: PrepItem) -> String {
+        let group = family(item)
+        if group == "Fruit" { return produce(item) }
+        return item.category.isEmpty ? group : item.category
+    }
     public static func fruitCategory(_ item: PrepItem) -> String {
         if item.product_name.hasPrefix("$5") || item.category == "$5 bowls" { return "$5 bowls" }
         if item.product_name.hasPrefix("$10") || item.category == "$10 bowls" { return "$10 bowls" }
@@ -64,6 +71,9 @@ public enum PrepPresentation {
                     }
                     let ac = categories.firstIndex(of: fruitCategory(a)) ?? 5, bc = categories.firstIndex(of: fruitCategory(b)) ?? 5
                     if ac != bc { return ac < bc }
+                } else if a.category != b.category {
+                    // Keep each category together so its heading appears once; uncategorized first.
+                    return a.category.localizedStandardCompare(b.category) == .orderedAscending
                 }
             } else if order == .quantity, a.remaining != b.remaining { return (a.remaining ?? -1) > (b.remaining ?? -1) }
             let comparison = a.product_name.localizedStandardCompare(b.product_name)
