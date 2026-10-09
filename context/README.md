@@ -47,6 +47,7 @@ This folder contains specifications. Features 01 (repository foundation), 02 (da
 12. [Operations, Retention and Recovery](feature-specs/12-operations-retention.md)
 13. [Pilot Evaluation and Release](feature-specs/13-pilot-release.md)
 14. [Production Worksheet — HAVE / MAKE](feature-specs/14-production-worksheet.md)
+16. [Self-service Stores and Display Case Types](feature-specs/16-self-service-stores-display-types.md)
 
 ## Examples
 - [POG draft](examples/pog-draft.json): synthetic normalized rectangles; product names are illustrative, not a ready-to-submit API payload.

@@ -55,7 +55,9 @@ function newerVersion(versions: VersionOption[], current: Display["active_pog"])
 
 const kindOptions = (versions: VersionOption[]) => [
   { value: ALL_KINDS, label: "All kinds" },
-  ...POG_KINDS.filter((k) => versions.some((v) => v.kind === k)).map((k) => ({ value: k, label: pogKindLabel(k) })),
+  // Standard types first, then any other display case types the versions use.
+  ...[...new Set([...POG_KINDS, ...versions.flatMap((v) => (v.kind ? [v.kind] : []))])]
+    .filter((k) => versions.some((v) => v.kind === k)).map((k) => ({ value: k, label: pogKindLabel(k) })),
   ...(versions.some((v) => v.kind === null) ? [{ value: "none", label: "No kind" }] : []),
 ];
 

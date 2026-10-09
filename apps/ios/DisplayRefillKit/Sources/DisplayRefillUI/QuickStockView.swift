@@ -12,11 +12,16 @@ struct QuickStockView: View {
         self.store = store; self.stockAPI = stockAPI; self.userID = userID
         _model = State(initialValue: PrepListModel(api: api, storeID: store.id.uuidString))
     }
+    static func sections(_ board: PrepBoard?) -> [ProductionSection] {
+        let used = Set((board?.items ?? []).flatMap { $0.locations.map(\.section) })
+        return ProductionSection.standard.filter(used.contains) + used.filter { !$0.isStandard }.sorted { $0.rawValue < $1.rawValue }
+    }
     var body: some View {
         List {
             Picker("Section", selection: $section) {
                 Text("All sections").tag("")
-                ForEach(ProductionSection.allCases) { Text($0.label).tag($0.rawValue) }
+                // The sections that appear in this store's counts, standard ones first.
+                ForEach(Self.sections(model.board)) { Text($0.label).tag($0.rawValue) }
             }
             if let error = model.error {
                 Label(error, systemImage: "exclamationmark.circle").foregroundStyle(Theme.verify)

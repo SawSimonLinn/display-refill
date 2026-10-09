@@ -55,6 +55,13 @@ public actor SessionManager {
         return new
     }
 
+    /// Keeps a session obtained outside password sign-in (sign-up email code, Feature 16).
+    public func adopt(_ new: AuthSession) {
+        session = new
+        restored = true
+        try? store.save(new)
+    }
+
     /// A token valid for at least `expiryLeeway`, refreshing first if needed.
     public func validAccessToken() async throws(AuthError) -> String {
         guard let current = restore() else { throw .sessionExpired }

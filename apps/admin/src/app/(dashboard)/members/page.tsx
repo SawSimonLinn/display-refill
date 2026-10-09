@@ -1,6 +1,7 @@
 import { createServiceClient, listMembers, resolveAdminOrganization } from "@display-refill/server";
 import { ShieldAlert } from "lucide-react";
 import type { Metadata } from "next";
+import { AccessCodeCard } from "@/components/members/access-code-card";
 import { InviteMemberForm } from "@/components/members/invite-member-form";
 import { MemberRow } from "@/components/members/member-row";
 import { getAdminConfig } from "@/server/config";
@@ -42,6 +43,7 @@ export default async function MembersPage(props: PageProps<"/members">) {
           Invite people by email and choose their stores. Employees use the iPhone app; managers and admins can also use this dashboard.
         </p>
       </div>
+      <AccessCodeCard organizationId={org.value} />
       <InviteMemberForm organizationId={org.value} stores={stores} />
       {!members || !members.ok ? (
         <p role="alert" className="text-destructive">Members could not be loaded. Reload to try again.</p>

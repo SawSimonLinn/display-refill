@@ -203,3 +203,18 @@ See [Feature 14](feature-specs/14-waste-and-made-reporting.md).
 - `{action:"void", entry_id}`
 
 Returns the affected business day’s operations report. Undo is owner-or-manager and appends an immutable reversal; it does not delete history. Unknown/cross-store resources are 404, prohibited undo 403, reused key with changed body or repeat undo 409, invalid input 422. Revoked access is rechecked before any idempotency replay. Waste does not modify stock counts or prep events. Sales are not reported or inferred.
+
+## Self-service onboarding and display case types
+
+See [Feature 16](feature-specs/16-self-service-stores-display-types.md). JSON bodies are strict; errors use the standard envelope (unknown/inaccessible 404, role 403, invalid 422, stale revision or duplicate 409, limit 429 with `retry-after`). These routes take no `Idempotency-Key`: creates are unique by code/product/store number, edits carry `expected_revision`, and PUT/onboarding calls are naturally repeatable.
+
+- Sign-up is Supabase Auth `signUp` (email, password, optional `display_name` metadata) and `verifyOtp({type:"email"})` with the 6-digit code from the confirmation email; the email has no link. The web `/auth/confirm` flow still accepts only invite/recovery.
+- `GET /onboarding` (no membership needed) → `{state:"access_code"|"removed"|"store"|"complete", organization:{organization_id,name,role}|null, stores:[{store_id,name,store_number,timezone,role}]}`. `/me` is unchanged and still 403 without an active membership.
+- `POST /onboarding/join {access_code}` (no membership needed). Case, spaces and dashes are ignored. Joins as `member`; repeat returns the same state. Wrong/disabled/rotated codes: 422 `field_errors.access_code`. Revoked member: 403. Already in another organization: 422. Limited to 10 attempts per account and 50 per client per 15 minutes.
+- `POST /onboarding/store {store_number, name?, timezone?}` → `{created, role:"manager"|"employee", store:{store_id,organization_id,name,store_number,timezone}}`. Number match is case-insensitive in the caller's organization. A new number requires `name` and an IANA `timezone`; an archived store is 422.
+- `PATCH /stores/:id/settings {expected_revision, name, timezone}` → store JSON. Store managers and org admins.
+- `GET /display-types[?organization_id]` → `{can_manage, types:[{id,code,name,family,sort_order,active,revision,store_count,items}]}`; `items` (`id,product_id,product_name,product_active,par,category,product_type,sort_order,active,revision,updated_at`) only for admins, null otherwise; members see active types.
+- `POST /display-types[?organization_id]` (admins): `{action:"save_type", id?, code (new only, ^[a-z][a-z0-9_]{1,39}$), name, family:"Fruit"|"Vegetables"|"Salads"|"Other", sort_order, active, expected_revision (edit)}` or `{action:"save_item", display_type_id, id?, product_id, par, category, product_type, sort_order, active, expected_revision (edit)}`. Returns the type list. Item edits reach every store using the type; stores keep overridden PAR.
+- `PUT /stores/:id/display-types {display_type_ids:[1..50 unique]}` (store managers, org admins) → the store's production config (`sections` with `selected`, items with `default_par`/`par_overridden` for managers).
+- `GET|POST /access-code[?organization_id]` (admins): `{organization_id, code:"XXXX-XXXX"|null, active, updated_at}`; POST `{action:"rotate"|"disable"|"enable"}`. Rotation invalidates the old code. Audit never records the code.
+- Production `section` and POG `kind` are type codes (format checked by the API; the database requires an active type of the organization and, for counts, one the store selected). `POST /stock/:store_id` accepts up to 50 locations.

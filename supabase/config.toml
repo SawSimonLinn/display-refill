@@ -177,7 +177,9 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = false
+# Public email sign-up is on (Feature 16, D105): a new account has no membership and reads
+# nothing until it redeems the organization access code. Mirror on hosted projects.
+enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -224,14 +226,14 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
-# Must stay true or the email provider (and sign-in) is disabled. Public signup is
-# blocked by [auth] enable_signup = false above.
+# Must stay true or the email provider (and sign-in) is disabled.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# The app confirms with the 6-digit code from templates/confirmation.html (no link).
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -256,6 +258,10 @@ otp_expiry = 3600
 [auth.email.template.invite]
 subject = "You have been invited to Display Refill"
 content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Your Display Refill code"
+content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
 subject = "Reset your Display Refill password"

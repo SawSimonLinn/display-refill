@@ -59,7 +59,16 @@ sign-in; a network failure keeps the session. `URLSessionAccountAPI` sends
 `Authorization: Bearer` to `/api/v1/me`. Sign-out clears the Keychain item,
 HTTP caches and the app's image folders, then revokes the session.
 "Forgot password?" calls `POST /api/v1/auth/password-reset`; the email opens a
-web page to choose the password. There is no sign-up.
+web page to choose the password.
+
+Sign-up (Feature 16): "New here? Create an account" signs up with Supabase
+Auth (`SignUpAPI`), then the 6-digit code from the email (`verify`,
+`type: email`). A new account enters the organization access code, then joins
+its store by number or sets up a new store (becoming its manager) and picks the
+store's display cases. Managers change display cases later in Profile → My
+stores → store → Display cases. Stock Check lists the sections the server sends
+(`ProductionSection` is a type code, not a fixed enum), so admin-added display
+case types appear without an app update.
 
 Live check against a local stack (macOS, not iOS): start the admin app on
 :3100 against local Supabase, create a user with one store membership, then run
@@ -67,6 +76,13 @@ the compiled test binary with `DISPLAY_REFILL_LIVE=1 LIVE_API_BASE_URL=…
 LIVE_SUPABASE_URL=… LIVE_PUBLISHABLE_KEY=… LIVE_EMAIL=… LIVE_PASSWORD=…
 LIVE_EXPECTED_STORE_IDS=…`. `DISPLAY_REFILL_KEYCHAIN_TEST=1` enables a real
 Keychain round trip (writes to the login keychain and deletes the item).
+
+Live onboarding check: `DISPLAY_REFILL_LIVE_ONBOARDING=1 LIVE_API_BASE_URL=…
+LIVE_PUBLISHABLE_KEY=… LIVE_ACCESS_CODE=… [LIVE_MAILPIT_URL=…] swift test
+--filter LiveOnboardingTests` signs up a fresh account, reads the code from
+Mailpit and creates a store. It leaves that store in the code's organization,
+so use a dedicated organization (not the seeded Org A) or reset afterwards —
+`bearer-auth.test.ts` expects only the seeded stores in Org A.
 
 ## App Store release
 

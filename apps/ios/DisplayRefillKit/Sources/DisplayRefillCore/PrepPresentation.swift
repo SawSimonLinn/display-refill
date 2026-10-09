@@ -76,6 +76,7 @@ public enum PrepPresentation {
         case .saladMobile: "M. Salad bunker"
         case .fruitCase: "D. 6ft Fruit"
         case .veggieCase: "D. Veggie display"
+        default: section.label
         }
     }
 }

@@ -14,22 +14,77 @@ public final class AppSession {
         case ready(Me)
         /// Signed in, but the server reports no active membership (403).
         case accessRemoved
+        /// New account: access code, then create or join a store (Feature 16).
+        case onboarding(OnboardingStatus)
         case failed(String)
     }
 
     public private(set) var phase: Phase = .restoring
     public private(set) var signInError: String?
+    /// Sign-up form/code errors, shown on the sign-up screen.
+    public private(set) var signUpError: String?
+    public private(set) var signUpBusy = false
 
     private let sessions: SessionManager
     private let account: any AccountAPI
     private let cleaner: any LocalDataCleaner
+    public let onboarding: (any OnboardingAPI)?
+    private let signUpAPI: (any SignUpAPI)?
     private var watchTask: Task<Void, Never>?
 
-    public init(sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner) {
+    public init(sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil) {
         self.sessions = sessions
         self.account = account
         self.cleaner = cleaner
+        self.onboarding = onboarding
+        self.signUpAPI = signUp
     }
+
+    public var canSignUp: Bool { signUpAPI != nil && onboarding != nil }
+
+    /// Creates the account; Supabase emails a 6-digit code. Returns true when the code step should show.
+    public func signUp(email: String, password: String, name: String) async -> Bool {
+        guard let signUpAPI else { return false }
+        signUpError = nil; signUpBusy = true
+        defer { signUpBusy = false }
+        do throws(AuthError) {
+            try await signUpAPI.signUp(email: Self.normalized(email), password: password, displayName: name.trimmingCharacters(in: .whitespacesAndNewlines))
+            return true
+        } catch {
+            signUpError = Self.message(for: error)
+            return false
+        }
+    }
+
+    /// Confirms the emailed code, keeps the session and continues to onboarding.
+    public func confirmSignUp(email: String, code: String) async {
+        guard let signUpAPI else { return }
+        signUpError = nil; signUpBusy = true
+        do throws(AuthError) {
+            let session = try await signUpAPI.verifySignUpCode(email: Self.normalized(email), code: code.filter(\.isNumber))
+            await sessions.adopt(session)
+        } catch {
+            signUpBusy = false
+            signUpError = Self.message(for: error)
+            return
+        }
+        signUpBusy = false
+        await loadAccount()
+    }
+
+    public func resendSignUpCode(email: String) async -> Bool {
+        guard let signUpAPI else { return false }
+        signUpError = nil
+        do throws(AuthError) {
+            try await signUpAPI.resendSignUpCode(email: Self.normalized(email))
+            return true
+        } catch {
+            signUpError = Self.message(for: error)
+            return false
+        }
+    }
+
+    private static func normalized(_ email: String) -> String { email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
 
     /// Restores a saved session and loads the account, or shows sign-in.
     public func start() async {
@@ -57,14 +112,25 @@ public final class AppSession {
     public func loadAccount() async {
         phase = .loadingAccount
         do throws(APIClientError) {
-            phase = .ready(try await account.me())
+            let me = try await account.me()
+            // A member with no store (not an admin) still has to create or join one.
+            if me.stores.isEmpty, me.capabilities.adminOrganizationIDs.isEmpty, let onboarding,
+               let status = try? await onboarding.onboardingStatus(), status.state == .store {
+                phase = .onboarding(status)
+            } else {
+                phase = .ready(me)
+            }
         } catch {
             switch error {
             case .signedOut:
                 await endLocally(notice: "Your session ended. Sign in again.")
             case .server(status: 403, _, _, _):
-                // Revoked: drop cached account data but keep the session so
-                // the user can retry after an admin restores access.
+                // New account (no membership yet) or revoked. Revoked: drop cached account data
+                // but keep the session so the user can retry after an admin restores access.
+                if let onboarding, let status = try? await onboarding.onboardingStatus(), status.state == .accessCode {
+                    phase = .onboarding(status)
+                    return
+                }
                 cleaner.removeAll()
                 phase = .accessRemoved
             case .transport:
@@ -83,6 +149,7 @@ public final class AppSession {
     private func endLocally(notice: String?) async {
         cleaner.removeAll()
         signInError = nil
+        signUpError = nil
         phase = .signedOut(notice: notice)
     }
 
@@ -105,6 +172,9 @@ public final class AppSession {
         case .rateLimited: "Too many attempts. Wait a few minutes and try again."
         case .transport: "Can't reach the server. Check your connection and retry."
         case .sessionExpired, .unexpected: "Sign-in failed. Try again shortly."
+        case .weakPassword: "Choose a longer password (at least 12 characters) that is hard to guess."
+        case .signUpRejected: "That email can't be used. Check it and try again."
+        case .invalidCode: "That code is wrong or has expired. Check the latest email or send a new code."
         }
     }
 }

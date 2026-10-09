@@ -24,7 +24,7 @@ export default async function SignInPage(props: PageProps<"/sign-in">) {
   const next = safeNextPath(typeof params.next === "string" ? params.next : undefined);
   const { configured } = getPublicConfig();
   return (
-    <AuthCard title="Sign in" description="Display Refill admin. Accounts are created by invitation.">
+    <AuthCard title="Sign in" description="Display Refill admin. Create your account in the iPhone app, or accept an invitation.">
       {params.signed_out ? <Notice tone="success">You have signed out.</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       {!configured ? <Notice tone="error">Sign-in is not configured on this server.</Notice> : null}

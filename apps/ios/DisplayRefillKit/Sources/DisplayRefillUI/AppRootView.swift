@@ -8,25 +8,34 @@ public struct AppServices: Sendable {
     public let account: any AccountAPI
     public let manual: any ManualScanAPI
     public let cleaner: any LocalDataCleaner
+    /// Feature 16 sign-up and onboarding; nil hides "Create account".
+    public let onboarding: (any OnboardingAPI)?
+    public let signUp: (any SignUpAPI)?
 
-    public init(client: any APIClient, sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, manual: any ManualScanAPI) {
+    public init(client: any APIClient, sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, manual: any ManualScanAPI,
+                onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil) {
         self.client = client
         self.sessions = sessions
         self.account = account
         self.cleaner = cleaner
         self.manual = manual
+        self.onboarding = onboarding
+        self.signUp = signUp
     }
 
     public static func live(_ config: AppConfiguration) -> AppServices {
         let transport = URLSessionTransport()
         let auth = SupabaseAuthClient(supabaseURL: config.supabaseURL, publishableKey: config.supabasePublishableKey, transport: transport)
         let sessions = SessionManager(auth: auth, store: KeychainSessionStore())
+        let api = URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport)
         return AppServices(
             client: URLSessionAPIClient(baseURL: config.apiBaseURL),
             sessions: sessions,
             account: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport),
             cleaner: AppLocalDataCleaner(),
-            manual: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport)
+            manual: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport),
+            onboarding: api,
+            signUp: auth
         )
     }
 }
@@ -60,7 +69,8 @@ struct SessionRootView: View {
 
     init(services: AppServices) {
         self.services = services
-        _session = State(initialValue: AppSession(sessions: services.sessions, account: services.account, cleaner: services.cleaner))
+        _session = State(initialValue: AppSession(sessions: services.sessions, account: services.account, cleaner: services.cleaner,
+                                                  onboarding: services.onboarding, signUp: services.signUp))
     }
 
     var body: some View {
@@ -76,6 +86,12 @@ struct SessionRootView: View {
                 SignedInView(me: me, api: services.manual, client: services.client, onReload: session.loadAccount, onSignOut: session.signOut)
             case .accessRemoved:
                 AccessRemovedView(onRetry: session.loadAccount, onSignOut: session.signOut)
+            case .onboarding(let status):
+                if let api = session.onboarding {
+                    OnboardingView(status: status, api: api, onDone: session.loadAccount, onSignOut: session.signOut)
+                } else {
+                    AccessRemovedView(onRetry: session.loadAccount, onSignOut: session.signOut)
+                }
             case .failed(let message):
                 ContentUnavailableView {
                     Label("Couldn't load your account", systemImage: "wifi.exclamationmark")

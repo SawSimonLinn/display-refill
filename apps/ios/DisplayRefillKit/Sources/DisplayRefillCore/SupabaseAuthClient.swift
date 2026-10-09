@@ -1,7 +1,7 @@
 import Foundation
 
-/// Supabase Auth operations the app needs. Email/password only; there is no
-/// sign-up (accounts come from admin invitations).
+/// Supabase Auth operations the app needs. Email/password only. Sign-up with an
+/// email code is the separate `SignUpAPI` (Feature 16); invitations still work.
 public protocol SupabaseAuthAPI: Sendable {
     func signIn(email: String, password: String) async throws(AuthError) -> AuthSession
     func refresh(refreshToken: String) async throws(AuthError) -> AuthSession
@@ -75,6 +75,21 @@ public struct SupabaseAuthClient: SupabaseAuthAPI {
         }
     }
 
+    /// POST with a nested JSON body (sign-up metadata), publishable key only.
+    func postJSON(_ path: String, body: [String: Any]) async throws(AuthError) -> (Data, HTTPURLResponse) {
+        var request = URLRequest(url: supabaseURL.appending(path: path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(publishableKey, forHTTPHeaderField: "apikey")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            return try await transport.send(request)
+        } catch {
+            throw .transport(error.code)
+        }
+    }
+
     private struct TokenResponse: Decodable {
         struct User: Decodable {
             let id: UUID
@@ -96,7 +111,7 @@ public struct SupabaseAuthClient: SupabaseAuthAPI {
         }
     }
 
-    private func decodeSession(_ data: Data) throws(AuthError) -> AuthSession {
+    func decodeSession(_ data: Data) throws(AuthError) -> AuthSession {
         guard let token = try? JSONDecoder().decode(TokenResponse.self, from: data), !token.accessToken.isEmpty, !token.refreshToken.isEmpty else {
             throw .unexpected(status: 200)
         }

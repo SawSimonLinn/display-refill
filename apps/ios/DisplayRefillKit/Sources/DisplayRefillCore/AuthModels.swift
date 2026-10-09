@@ -34,6 +34,12 @@ public enum AuthError: Error, Equatable, Sendable {
     case rateLimited
     case transport(URLError.Code)
     case unexpected(status: Int)
+    /// Sign-up: Supabase rejected the password as too weak (Feature 16).
+    case weakPassword
+    /// Sign-up: the request was refused (invalid email, sign-up disabled).
+    case signUpRejected
+    /// Sign-up: wrong or expired email code.
+    case invalidCode
 }
 
 // MARK: - GET /api/v1/me

@@ -1,5 +1,6 @@
 import { z } from "zod";
-export const ProductionSection = z.enum(["fruit_mobile", "salad_mobile", "fruit_case", "veggie_case"]);
+/** Display case type code (Feature 16). The store's selected types are checked by the database. */
+export const ProductionSection = z.string().regex(/^[a-z][a-z0-9_]{1,39}$/, { error: "must be a display case type code" });
 export const ProductionAction = z.discriminatedUnion("action", [
  z.strictObject({action:z.literal("configure"),item_id:z.uuid().optional(),product_id:z.uuid(),section:ProductionSection,
  par:z.int().min(0).max(9999),category:z.string().trim().max(100),product_type:z.string().trim().max(100),

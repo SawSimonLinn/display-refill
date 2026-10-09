@@ -9,13 +9,16 @@ import { ArchivedBadge } from "../catalog/list-parts";
 import { pogKindLabel, pogKindOptions } from "@/lib/pog-kinds";
 import { errorsFor, FailureNotice, SecondaryButton, SelectField, SubmitButton, TextField, useEdits, useMutation } from "../catalog/form-kit";
 
-export function PogKindBadge({ kind }: { kind: PogKind | null }) {
+/** Kind choices: the organization's active display case types (Feature 16). */
+export type KindOption = { value: string; label: string };
+
+export function PogKindBadge({ kind, label }: { kind: PogKind | null; label?: string }) {
   return (
-    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${kind ? "border-border" : "border-warning text-warning"}`}>{pogKindLabel(kind)}</span>
+    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${kind ? "border-border" : "border-warning text-warning"}`}>{label ?? pogKindLabel(kind)}</span>
   );
 }
 
-export function CreatePogForm({ organizationId }: { organizationId: string }) {
+export function CreatePogForm({ organizationId, kinds = pogKindOptions }: { organizationId: string; kinds?: KindOption[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [kind, setKind] = useState("");
@@ -44,7 +47,7 @@ export function CreatePogForm({ organizationId }: { organizationId: string }) {
           label="Kind"
           value={kind}
           onChange={setKind}
-          options={[{ value: "", label: "Choose a section…" }, ...pogKindOptions]}
+          options={[{ value: "", label: "Choose a display case type…" }, ...kinds]}
           errors={errorsFor(failure, "kind")}
           hint="Stores pick from POGs of the same kind."
         />
@@ -65,7 +68,7 @@ export function CreatePogForm({ organizationId }: { organizationId: string }) {
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
 
-export function PogRow({ pog, canEdit }: { pog: Pog; canEdit: boolean }) {
+export function PogRow({ pog, canEdit, kinds = pogKindOptions }: { pog: Pog; canEdit: boolean; kinds?: KindOption[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const edits = useEdits({ name: pog.name, kind: pog.kind ?? "" });
@@ -89,7 +92,7 @@ export function PogRow({ pog, canEdit }: { pog: Pog; canEdit: boolean }) {
         <div className="flex flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2 font-medium">
             {pog.name}
-            <PogKindBadge kind={pog.kind} />
+            <PogKindBadge kind={pog.kind} label={kinds.find((k) => k.value === pog.kind)?.label} />
             {pog.archived ? <ArchivedBadge label="Archived · cannot be newly assigned" /> : null}
           </span>
           {pog.versions.length === 0 ? (
@@ -155,7 +158,7 @@ export function PogRow({ pog, canEdit }: { pog: Pog; canEdit: boolean }) {
               label="Kind"
               value={edits.value.kind}
               onChange={(kind) => edits.onChange({ ...edits.value, kind })}
-              options={[...(pog.kind ? [] : [{ value: "", label: "No kind — choose one" }]), ...pogKindOptions]}
+              options={[...(pog.kind ? [] : [{ value: "", label: "No kind — choose one" }]), ...(pog.kind && !kinds.some((k) => k.value === pog.kind) ? [{ value: pog.kind, label: pogKindLabel(pog.kind) }] : []), ...kinds]}
               errors={errorsFor(failure, "kind")}
             />
           </div>

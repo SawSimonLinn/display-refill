@@ -83,9 +83,14 @@ describe("authenticated users cannot write directly", () => {
     expect(anon.error?.code).toBe(DENIED);
   });
 
-  it("anonymous users cannot write and cannot sign up", async () => {
+  it("anonymous users cannot write; sign-up waits for the email code (Feature 16)", async () => {
     expect((await errorOf(w.anon.from("organizations").insert({ name: "Mine" })))?.code).toBe(DENIED);
-    const signUp = await w.anon.auth.signUp({ email: `signup-${w.run}@example.com`, password: "a-long-password-123" });
-    expect(signUp.error?.message).toMatch(/signups not allowed/i);
+    const email = `signup-${w.run}@example.com`;
+    const signUp = await w.anon.auth.signUp({ email, password: "a-long-password-123" });
+    expect(signUp.error).toBeNull();
+    expect(signUp.data.session).toBeNull();
+    const signIn = await w.anon.auth.signInWithPassword({ email, password: "a-long-password-123" });
+    expect(signIn.error?.code).toBe("email_not_confirmed");
+    expect((await w.db.query("select count(*)::int n from public.organization_memberships m join auth.users u on u.id=m.user_id where u.email=$1", [email])).rows[0].n).toBe(0);
   });
 });

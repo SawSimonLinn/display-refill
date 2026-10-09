@@ -56,6 +56,8 @@ struct ProfileView: View {
     let me: Me
     let client: (any APIClient)?
     let onSignOut: () async -> Void
+    /// Lets managers change their store's display cases (Feature 16).
+    var onboarding: (any OnboardingAPI)? = nil
 
     @State private var confirmSignOut = false
     @State private var confirmReset = false
@@ -73,7 +75,7 @@ struct ProfileView: View {
 
             Section("Work") {
                 NavigationLink {
-                    MyStoresView(me: me)
+                    MyStoresView(me: me, onboarding: onboarding)
                 } label: {
                     row("My stores", systemImage: "storefront", detail: "\(me.stores.count)")
                 }
@@ -205,10 +207,12 @@ private struct ProfileHeader: View {
 
 struct MyStoresView: View {
     let me: Me
+    let onboarding: (any OnboardingAPI)?
     @AppStorage private var defaultStore: String
 
-    init(me: Me) {
+    init(me: Me, onboarding: (any OnboardingAPI)? = nil) {
         self.me = me
+        self.onboarding = onboarding
         _defaultStore = AppStorage(wrappedValue: "", AppPreferences.defaultStoreKey(userID: me.userID.uuidString))
     }
 
@@ -221,7 +225,7 @@ struct MyStoresView: View {
                     Section {
                         ForEach(me.stores) { store in
                             NavigationLink {
-                                StoreDetailView(store: store, userID: me.userID.uuidString)
+                                StoreDetailView(store: store, userID: me.userID.uuidString, onboarding: onboarding)
                             } label: {
                                 StoreRow(store: store, isDefault: store.id.uuidString == defaultStore)
                             }
@@ -278,10 +282,12 @@ private struct StoreLocalTime: View {
 
 struct StoreDetailView: View {
     let store: Me.Store
+    let onboarding: (any OnboardingAPI)?
     @AppStorage private var defaultStore: String
 
-    init(store: Me.Store, userID: String) {
+    init(store: Me.Store, userID: String, onboarding: (any OnboardingAPI)? = nil) {
         self.store = store
+        self.onboarding = onboarding
         _defaultStore = AppStorage(wrappedValue: "", AppPreferences.defaultStoreKey(userID: userID))
     }
 
@@ -294,6 +300,9 @@ struct StoreDetailView: View {
                 LabeledContent("Store number", value: store.storeNumber).monospacedDigit()
                 LabeledContent("Time zone", value: store.timezone)
                 LabeledContent("Local time") { StoreLocalTime(timezone: store.timezone) }
+                if let onboarding, store.role == .manager || store.role == .admin {
+                    NavigationLink("Display cases") { DisplayCasesView(store: store, api: onboarding) }
+                }
             }
             Section {
                 LabeledContent("Your role", value: store.role.label)

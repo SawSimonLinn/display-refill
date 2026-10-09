@@ -14,6 +14,8 @@ export const limits = {
   passwordResetPerClient: sharedLimit({ scope: "reset-client", limit: 20, windowMs: 15 * 60_000 }),
   invitesPerActor: sharedLimit({ scope: "invite", limit: 30, windowMs: 10 * 60_000 }),
   setPasswordPerUser: sharedLimit({ scope: "set-password", limit: 10, windowMs: 15 * 60_000 }),
+  accessCodePerUser: sharedLimit({ scope: "access-code", limit: 10, windowMs: 15 * 60_000 }),
+  accessCodePerClient: sharedLimit({ scope: "access-code-client", limit: 50, windowMs: 15 * 60_000 }),
 };
 
 /** Best-effort client key. Only meaningful behind a proxy that sets X-Forwarded-For. */

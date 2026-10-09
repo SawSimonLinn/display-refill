@@ -136,7 +136,7 @@ private struct ProductionStoreView: View {
     private var sections: some View {
         VStack(alignment: .leading, spacing: 10) {
             Eyebrow("Sections").padding(.top, 8).accessibilityAddTraits(.isHeader)
-            ForEach(Array(ProductionSection.allCases.enumerated()), id: \.element.id) { index, section in
+            ForEach(Array(model.sections.enumerated()), id: \.element.id) { index, section in
                 let finished = model.day?.sections.first(where: { $0.section == section })
                 Button {
                     Task { await model.start(section) }
@@ -153,7 +153,7 @@ private struct ProductionStoreView: View {
                         .background(Theme.field, in: Circle())
                         .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("\(index + 1). \(section.label)").font(.headline)
+                            Text("\(index + 1). \(model.label(section))").font(.headline)
                             Group {
                                 if let time = finished?.finished_at {
                                     Text("Finished \(timeLabel(time)) · \(finished?.in_progress == true ? "Recheck in progress" : "Check again")")
@@ -170,7 +170,7 @@ private struct ProductionStoreView: View {
     }
     private func editor(_ check: ProductionCheck) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(check.section.label).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+            Text(model.label(check.section)).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
             let counted = check.items.filter { !(model.input[$0.id] ?? "").isEmpty }.count
             ProgressView(value: Double(counted), total: Double(max(check.items.count, 1)))
                 .tint(Theme.action).accessibilityHidden(true)
@@ -183,7 +183,8 @@ private struct ProductionStoreView: View {
             }.font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(model.pending ? Theme.verify : Color.secondary)
                 .padding(.bottom, 4)
             ForEach(check.items) { item in
-                if check.section == .fruitCase,
+                // Category headings: 6ft fruit, and any non-standard type whose admin set categories.
+                if check.section == .fruitCase || (!check.section.isStandard && !item.category.isEmpty),
                    let index = check.items.firstIndex(where: { $0.id == item.id }),
                    index == 0 || check.items[index - 1].category != item.category {
                     Text(item.category.isEmpty ? "Fruit" : item.category)
@@ -208,14 +209,12 @@ private struct ProductionStoreView: View {
                 focused = nil
                 Task {
                     await model.finish()
-                    if model.check?.status == "finished",
-                       let index = ProductionSection.allCases.firstIndex(of: check.section),
-                       index + 1 < ProductionSection.allCases.count {
-                        await model.start(ProductionSection.allCases[index + 1])
+                    if model.check?.status == "finished", let next = model.section(after: check.section) {
+                        await model.start(next)
                     }
                 }
             } label: {
-                Text(check.section == .veggieCase ? "Finish & see what to make" : "Finish & next section")
+                Text(model.section(after: check.section) == nil ? "Finish & see what to make" : "Finish & next section")
                     .fixedSize(horizontal: false, vertical: true)
             }.buttonStyle(PrimaryButtonStyle()).disabled(!model.canFinish).padding(.top, 8)
             Menu("More") {

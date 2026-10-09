@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { ProductionSection } from "@display-refill/domain";
 import { createServiceClient, fieldErrorsOf, fromDbError, jsonData, jsonError, jsonFailure, parseIdempotencyKey, readJsonBody, resolveRequestId } from "@display-refill/server";
 import { authenticateApi } from "@/server/api-auth";
 import { uuidParam } from "@/server/api-handlers";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ store_id: string }> };
-const Input = z.strictObject({product_id:z.uuid(),expected_revision:z.string().regex(/^[a-f0-9]{64}$/),counts:z.array(z.strictObject({section:z.enum(["fruit_mobile","salad_mobile","fruit_case","veggie_case"]),have:z.int().min(0).max(9999),backup:z.int().min(0).max(9999).optional()})).min(1).max(4)});
+const Input = z.strictObject({product_id:z.uuid(),expected_revision:z.string().regex(/^[a-f0-9]{64}$/),counts:z.array(z.strictObject({section:ProductionSection,have:z.int().min(0).max(9999),backup:z.int().min(0).max(9999).optional()})).min(1).max(50)});
 export async function POST(request: Request, context: Context) {
  const requestId = resolveRequestId(request.headers);
  const auth = await authenticateApi(request, requestId, { mutation: true }); if (!auth.ok) return auth.response;

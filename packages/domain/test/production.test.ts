@@ -12,7 +12,9 @@ it('keeps unknown separate from explicit zero and rejects duplicate or invalid i
  for(const have of [-1,1.5,10000,'2'])expect(ProductionAction.safeParse({action:'counts',check_id:id,expected_revision:1,items:[{id,have}]}).success).toBe(false);
  expect(ProductionAction.safeParse({action:'counts',check_id:id,expected_revision:1,items:[{id,have:1},{id,have:2}]}).success).toBe(false);
 });
-it('requires a check ID for detail and rejects unsupported sections',()=>{
+it('requires a check ID for detail and rejects malformed section codes',()=>{
  expect(ProductionQuery.safeParse({view:'check'}).success).toBe(false);
- expect(ProductionAction.safeParse({action:'start',section:'unknown'}).success).toBe(false);
+ // Sections are display case type codes (Feature 16); the database refuses types the store has not selected.
+ for(const section of ['Cold Case','1case','x','cold-case',''])expect(ProductionAction.safeParse({action:'start',section}).success).toBe(false);
+ expect(ProductionAction.safeParse({action:'start',section:'cold_case'}).success).toBe(true);
 });

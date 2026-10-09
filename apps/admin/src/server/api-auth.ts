@@ -37,9 +37,15 @@ type AuthOutcome = { ok: true; ctx: ApiContext } | { ok: false; response: Respon
  *
  * Tokens are verified with Supabase Auth on every request, and memberships
  * are read fresh, so a revoked membership or a signed-out session is denied
- * on the next request. A caller with no active membership gets 403.
+ * on the next request. A caller with no active membership gets 403, except on
+ * onboarding routes (`allowWithoutMembership`), where a new account redeems the
+ * access code; those routes check the onboarding state in the database.
  */
-export async function authenticateApi(request: Request, requestId: string, options: { mutation: boolean }): Promise<AuthOutcome> {
+export async function authenticateApi(
+  request: Request,
+  requestId: string,
+  options: { mutation: boolean; allowWithoutMembership?: boolean },
+): Promise<AuthOutcome> {
   const result = getAdminConfig();
   if (!result.ok) {
     getLogger().error("api: configuration invalid", { request_id: requestId, variables: result.error.problems.map((p) => p.variable) });
@@ -75,7 +81,7 @@ export async function authenticateApi(request: Request, requestId: string, optio
   }
   const me = await loadMe(createCallerClient(config, accessToken), verified.value);
   if (!me.ok) return { ok: false, response: jsonFailure(me, requestId) };
-  if (!hasActiveMembership(me.value)) {
+  if (!options.allowWithoutMembership && !hasActiveMembership(me.value)) {
     return { ok: false, response: jsonError("FORBIDDEN", "Your access has been removed. Contact your administrator.", requestId) };
   }
   return { ok: true, ctx: { config, logger, user: verified.value, me: me.value, via, accessToken } };

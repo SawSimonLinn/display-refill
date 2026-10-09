@@ -67,7 +67,7 @@ public struct SignedInView: View {
             }
 
             NavigationStack {
-                ProfileView(me: me, client: client, onSignOut: onSignOut)
+                ProfileView(me: me, client: client, onSignOut: onSignOut, onboarding: api as? any OnboardingAPI)
                     .refreshable { await onReload() }
             }
             .tabItem { Label("Profile", systemImage: "person.crop.circle") }

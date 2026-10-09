@@ -972,3 +972,48 @@ On 2026-10-06, owner confirmed hosted admin login works after creating a fake ho
 Owner reported TestFlight validation failure for missing 120x120 iPhone icon and missing `CFBundleIconName`. Added `DisplayRefill/Resources/Assets.xcassets/AppIcon.appiconset` with required iPhone icon PNG sizes plus iOS marketing icon, set `CFBundleIconName=AppIcon`, and updated `apps/ios/project.yml` to include `DisplayRefill/Resources` in the app target. Regenerated the Xcode project and archived locally with hosted staging config: `/tmp/DisplayRefill-IconCheck.xcarchive` archive exit 0. Verified bundle identifier `com.displayrefill.app`, `CFBundleIconName=AppIcon`, `Assets.car`, and `AppIcon60x60@2x.png` (120x120) are present in the archived app. Upload/TestFlight validation after this fix has not yet been observed.
 
 Owner installed TestFlight build and saw "App not configured": `API_BASE_URL must be an http:// or https:// URL` and `SUPABASE_URL must be an http:// or https:// URL`. The TestFlight build came from committed/shared config, not the local ignored `Local.xcconfig`. Put hosted staging public values into committed app configuration. Initial archive checks showed `xcconfig` slash parsing still reduced URLs to `https:`, so the hosted public values were written directly into `DisplayRefill/Resources/Info.plist` for this staging build. Archive `/tmp/DisplayRefill-HostedConfig3.xcarchive` exit 0 verified `API_BASE_URL=https://display-refill-admin.vercel.app`, `SUPABASE_URL=https://immmuxzarcwjwlrfspwj.supabase.co`, publishable key present, `CFBundleIconName=AppIcon`, and `ITSAppUsesNonExemptEncryption=false`. A new TestFlight upload from this updated project is required; the broken installed build will not self-update until TestFlight receives the new archive.
+
+## 2026-10-07 — Feature 16 unit 1: display case types (database)
+
+Owner decisions and plan: feature-specs/16-self-service-stores-display-types.md, D105–D110. Unit 1 adds migration `20261007000400_display_types.sql` (generated from the live function definitions with checked substitutions; every replacement count asserted), regenerated `packages/server/src/database.types.ts`, and `tests/db/test/display-types.test.ts`.
+
+Evidence (local, after `npm run db:reset` from empty):
+- New display-type DB tests 5/5: standard types on new org/store, admin-only edits and no browser table/RPC access, default PAR propagation with manager override/reset and snapshot preservation, revision conflict, new type selection/deselection/archiving across stores, day/prep section lists, audit, POG kind validation.
+- Full DB suite 179/180; API suite 117/118 (`/tmp/f16-api.log`). The one failure in each is A12, reproduced on the schema without this migration. `db:types:check` OK, typecheck OK, unit tests 138/138.
+
+Not done in this unit: API routes, access code, sign-up, admin pages, iOS. Domain/API still accept only the four original section codes (unit 2). Hosted database not migrated.
+
+## 2026-10-07 — Feature 16 unit 2: access code, sign-up and onboarding API
+
+Migration `20261007000500_access_code_onboarding.sql` (access codes, `onboarding_read`, `redeem_access_code`, `onboarding_store`, `store_settings_update`). Supabase Auth: public sign-up with email confirmation by code (`supabase/templates/confirmation.html`). Routes: `/onboarding`, `/onboarding/join`, `/onboarding/store`, `/display-types`, `/access-code`, `/stores/:id/display-types`, `/stores/:id/settings`. Domain: `onboarding.ts`; production section and POG kind are now type codes; stock route allows 50 locations. Contracts in api-contracts.md; permissions in auth-and-permissions.md.
+
+Evidence (local, after `supabase stop/start` for the Auth config and `db:reset`):
+- `tests/db/test/onboarding.test.ts` 5/5; updated `direct-writes` sign-up test passes (sign-up needs the email code; no membership).
+- `tests/api/test/onboarding.test.ts` 6/6: real sign-up + Mailpit code + verifyOtp, `/me` 403 before the code, wrong/right code, create/join store, admin types/items, manager type selection, Stock Check of a new type, store settings, rate limit 429.
+- `npm run check` exit 0 (`/tmp/f16-check.log`; existing Edge Runtime warning). Full DB 184/185, full API 123/124 (`/tmp/f16-api2.log`); the one failure in each is A12.
+- Local stack note: `supabase/.temp/rest-version` pins PostgREST v14.18 (hosted link); pulling it failed through the `desktop` Docker credential helper, so start used a temporary `DOCKER_CONFIG` without `credsStore`. No user Docker config changed.
+
+Not done: admin pages (unit 3), iOS (unit 4), hosted Auth settings/migrations.
+
+## 2026-10-07 — Feature 16 unit 3: admin dashboard
+
+- New admin page `/display-types` (`components/display-types/display-types-manager.tsx`): add/edit/archive types (name, permanent code, family, order) and each type's products with default PAR, category, type, order, active. Nav entry shown to org admins only.
+- Members page: `AccessCodeCard` (create, copy, new code with confirmation, turn off/on).
+- Production → PAR setup: sections come from the server; managers choose the store's display cases (`PUT /stores/:id/display-types`); items show "Store override · default N" and the edit form offers "Use default"; type items cannot change section. Prep dashboard names non-standard sections. POG kind choices come from the organization's active types.
+- Sign-in copy mentions app sign-up.
+
+Evidence: `npm run check` exit 0 (`/tmp/f16-check3.log`). Browser check on a local production build (:3200, local Supabase only, synthetic admin/manager): created "Cold Case" and added a product with default PAR 5; selected Cold Case and removed Salad/Veggie for A Store 1 (database rows confirmed); manager PAR 8 shows "Store override · default 5" (`par_overridden=true` confirmed); access code created and shown; manager nav hides Display types and Members. Screenshots in the session scratchpad only. agent-browser ref clicks on checkboxes missed after re-renders; DOM clicks on the same controls worked, so this was treated as tool behavior. No accessibility audit beyond labels/roles.
+
+## 2026-10-07 — Feature 16 unit 4: iOS sign-up, onboarding and dynamic sections
+
+- Core: `Onboarding.swift` (`OnboardingAPI` on `URLSessionAccountAPI`; `SignUpAPI` on `SupabaseAuthClient`: sign-up, verify code, resend), `SessionManager.adopt`, `AuthError.weakPassword|signUpRejected|invalidCode`. `ProductionSection` is now a string-backed type code with the standard constants; `ProductionDay.Section.name`; worksheet `sections`, `label(_:)`, `section(after:)`.
+- UI: `OnboardingViews.swift` (SignUpView with email code, OnboardingView: access code → join or set up store → display cases, `DisplayCasesEditor`/`DisplayCasesView`), "New here? Create an account" on sign-in, Profile store detail "Display cases" for managers/admins, `AppSession` `.onboarding` phase (403 + `access_code` → onboarding; revoked stays Access removed; member without store → store step). Stock Check sections, next-section and the final "Finish & see what to make" follow the store's server list; quick stock section filter uses sections present in prep data.
+- Bug found by the live check and fixed in migration `…0400` (D111): store creation failed when the organization's types already had products. Regression test added to `display-types.test.ts`.
+
+Evidence:
+- `swift test`: 101/102; all 11 new tests pass; the failure is A08, reproduced on unchanged adfc8d5 (`/tmp/f16-swift-1.log`, `/tmp/f16-base-photo.log`).
+- iOS Simulator build of the package (`xcodebuild -scheme DisplayRefillKit-Package -destination 'generic/platform=iOS Simulator'`) succeeded, compiling the iOS-only branches.
+- Live onboarding check (`LiveOnboardingTests`) against local admin build on :3200 + local Supabase/Mailpit: passed (`/tmp/f16-swift-live.log`).
+- After the D111 fix and reset: DB 185/186, API 123/124 (`/tmp/f16-api5.log`); the one failure in each is A12.
+
+Not verified: the new screens in the Simulator or on a device (the app's Info.plist targets hosted staging, so no local UI run was attempted), VoiceOver/large text on the new screens, hosted Auth email delivery. Older installed builds decode only the four standard sections and will fail to load Stock Check for a store that selects a new type until updated.

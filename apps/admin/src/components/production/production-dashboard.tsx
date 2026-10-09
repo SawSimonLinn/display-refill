@@ -6,13 +6,13 @@ import { PrepDashboard } from "./prep-dashboard";
 import { apiRequest, type ApiFailure } from "@/lib/api-client";
 import { useEdits, useMutation } from "@/components/catalog/form-kit";
 
-const sections = ["fruit_mobile", "salad_mobile", "fruit_case", "veggie_case"] as const;
-type Section = typeof sections[number];
-const labels: Record<Section, string> = { fruit_mobile: "M1 BUNKER (FRUIT)", salad_mobile: "SALAD DESTINATION", fruit_case: "6FT FRUIT", veggie_case: "Veggie display case" };
+/** Display case types of the organization; `selected` ones are this store's sections, in type order. */
+type Section = { id: string; code: string; name: string; family: string; selected: boolean };
 type Store = { store_id: string; organization_id: string; name: string; store_number: string; timezone: string };
 type Product = { product_id: string; name: string; category: string; container_type: string };
-type Item = { id: string; product_id: string; product_name: string; section: Section; category: string; product_type: string; par?: number; active: boolean; sort_order: number; revision: number; updated_at: string; updated_by: string };
-type Config = { can_manage: boolean; items: Item[] };
+type Item = { id: string; product_id: string; product_name: string; section: string; category: string; product_type: string; par?: number; active: boolean; sort_order: number; revision: number; updated_at: string; updated_by: string | null;
+  from_display_type?: boolean; par_overridden?: boolean; default_par?: number | null };
+type Config = { can_manage: boolean; sections: Section[]; items: Item[] };
 type EditEvent = { id: string; kind: string; actor_id: string; actor_name: string; created_at: string; item_id: string | null; check_id: string | null; before: Record<string, unknown> | null; after: Record<string, unknown> | null };
 const field = "min-h-11 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm";
 const button = "min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium disabled:opacity-50";
@@ -88,19 +88,20 @@ function StoreProduction({ store, onEditingChange }: { store: Store; onEditingCh
     </div>
     {loading && <p role="status">Loading current production records…</p>}
     {failure && <ErrorMessage failure={failure} />}
-    {tab === "day" && <PrepDashboard storeId={store.store_id} zone={store.timezone} />}
+    {tab === "day" && <PrepDashboard storeId={store.store_id} zone={store.timezone} sectionNames={Object.fromEntries((config?.sections ?? []).map((s) => [s.code, s.name]))} />}
     {tab === "config" && config && <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-border bg-card p-4"><h2 className="text-lg font-semibold">Store stocking targets</h2><p className="mt-1 text-sm text-muted-foreground">PAR is hidden from employees. Changes apply to new checks; checks already started keep their original targets. Products can appear in multiple sections. Staff enter one HAVE count per display; To make shows the shortage for that section. The Prep List combines matching products.</p></div>
+      <div className="rounded-lg border border-border bg-card p-4"><h2 className="text-lg font-semibold">Store stocking targets</h2><p className="mt-1 text-sm text-muted-foreground">PAR is hidden from employees. Changes apply to new checks; checks already started keep their original targets. Products can appear in multiple sections. Staff enter one HAVE count per display; To make shows the shortage for that section. The Prep List combines matching products.</p><p className="mt-2 text-sm text-muted-foreground">Products and default PAR come from the organization’s display case types. Changing PAR here overrides the default for this store only; set it back to the default to follow admin updates again.</p></div>
+      {config.can_manage && <TypePicker base={`/stores/${store.store_id}/display-types`} sections={config.sections} disabled={editing !== null} onSaved={(c) => { setConfig(c); refresh(); }} />}
       {!config.can_manage ? <p>You do not have permission to change PAR for this store.</p> : <>
         <button type="button" className={`${button} self-start bg-success text-primary-foreground`} disabled={editing !== null} onClick={() => setEditing("new")}>Add worksheet product</button>
-        {editing === "new" && <ItemForm products={products} base={base} onSaved={(c) => { setConfig(c); setEditing(null); refresh(); }} onCancel={() => setEditing(null)} onReload={refresh} />}
+        {editing === "new" && <ItemForm sections={selectedSections(config)} products={products} base={base} onSaved={(c) => { setConfig(c); setEditing(null); refresh(); }} onCancel={() => setEditing(null)} onReload={refresh} />}
       </>}
-      {editing && editing !== "new" && config.items.find((i) => i.id === editing) && <ItemForm key={editing} item={config.items.find((i) => i.id === editing)} products={products} base={base} onSaved={(c) => { setConfig(c); setEditing(null); refresh(); }} onCancel={() => setEditing(null)} onReload={refresh} />}
-      {sections.map((section, index) => <section key={section} className="min-w-0 rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 text-lg font-semibold"><span className="mr-2 text-muted-foreground">0{index + 1}</span>{labels[section]}</h2>
-        {!config.items.some((i) => i.section === section) && <p className="text-sm text-muted-foreground">No products configured. Add approved products and PAR quantities to enable this section.</p>}
-        <ul className="divide-y divide-border">{config.items.filter((i) => i.section === section).sort((a, b) => a.sort_order - b.sort_order).map((item) => <li key={item.id} className="py-4 first:pt-0 last:pb-0">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><h3 className="break-words font-medium">{item.product_name}{!item.active ? " · Inactive" : ""}</h3><p className="text-sm text-muted-foreground">{[item.category, item.product_type].filter(Boolean).join(" · ") || "Uncategorized"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {time(item.updated_at, store.timezone)} · revision {item.revision}</p></div><div className="text-right"><span className="block text-xs text-muted-foreground">PAR</span><span className="text-xl font-semibold tabular-nums">{item.par ?? "—"}</span></div>{config.can_manage && <button type="button" className={button} aria-label={`Edit ${item.product_name}`} disabled={editing !== null} onClick={() => setEditing(item.id)}>Edit</button>}</div>
+      {editing && editing !== "new" && config.items.find((i) => i.id === editing) && <ItemForm key={editing} sections={selectedSections(config)} item={config.items.find((i) => i.id === editing)} products={products} base={base} onSaved={(c) => { setConfig(c); setEditing(null); refresh(); }} onCancel={() => setEditing(null)} onReload={refresh} />}
+      {selectedSections(config).map((section, index) => <section key={section.code} className="min-w-0 rounded-lg border border-border bg-card p-4">
+        <h2 className="mb-3 text-lg font-semibold"><span className="mr-2 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>{section.name}</h2>
+        {!config.items.some((i) => i.section === section.code) && <p className="text-sm text-muted-foreground">No products configured. An admin adds products to this display case type, or add a product for this store only.</p>}
+        <ul className="divide-y divide-border">{config.items.filter((i) => i.section === section.code).sort((a, b) => a.sort_order - b.sort_order).map((item) => <li key={item.id} className="py-4 first:pt-0 last:pb-0">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><h3 className="break-words font-medium">{item.product_name}{!item.active ? " · Inactive" : ""}</h3><p className="text-sm text-muted-foreground">{[item.category, item.product_type].filter(Boolean).join(" · ") || "Uncategorized"}{item.from_display_type ? "" : " · Added for this store"}</p><p className="mt-1 text-xs text-muted-foreground">Updated {time(item.updated_at, store.timezone)} · revision {item.revision}</p></div><div className="text-right"><span className="block text-xs text-muted-foreground">PAR</span><span className="text-xl font-semibold tabular-nums">{item.par ?? "—"}</span>{item.par_overridden && <span className="block text-xs text-warning">Store override · default {item.default_par}</span>}</div>{config.can_manage && <button type="button" className={button} aria-label={`Edit ${item.product_name}`} disabled={editing !== null} onClick={() => setEditing(item.id)}>Edit</button>}</div>
         </li>)}</ul>
       </section>)}
     </div>}
@@ -113,8 +114,32 @@ function EventDetails({ event }: { event: EditEvent }) {
   return <ul className="mt-2 text-sm text-muted-foreground">{keys.filter((key) => event.before?.[key] !== event.after?.[key]).map((key) => <li key={key}>{key === "par" ? "PAR" : key === "have" ? "HAVE" : key.replaceAll("_", " ")}: {String(event.before?.[key] ?? "Not set")} → {String(event.after?.[key] ?? "Not set")}</li>)}</ul>;
 }
 
-function ItemForm({ item, products, base, onSaved, onCancel, onReload }: { item?: Item; products: Product[]; base: string; onSaved: (c: Config) => void; onCancel: () => void; onReload: () => void }) {
-  const initial = { product_id: item?.product_id ?? "", section: item?.section ?? "fruit_mobile", par: item?.par?.toString() ?? "", category: item?.category ?? "", product_type: item?.product_type ?? "", sort_order: String(item?.sort_order ?? 0), active: String(item?.active ?? true) };
+const selectedSections = (config: Config) => config.sections.filter((s) => s.selected);
+
+/** Store managers choose which display case types this store has. */
+function TypePicker({ base, sections, disabled, onSaved }: { base: string; sections: Section[]; disabled: boolean; onSaved: (c: Config) => void }) {
+  const current = sections.filter((s) => s.selected).map((s) => s.id);
+  const [chosen, setChosen] = useState<string[]>(current);
+  const mutation = useMutation();
+  const changed = chosen.length !== current.length || chosen.some((id) => !current.includes(id));
+  return <form className="rounded-lg border border-border bg-card p-4" onSubmit={async (e) => {
+    e.preventDefault();
+    const result = await mutation.run<Config>(base, "PUT", { display_type_ids: chosen });
+    if (result) onSaved(result);
+  }}>
+    <fieldset disabled={disabled || mutation.busy} className="flex flex-col gap-3">
+      <legend className="text-lg font-semibold">Display cases in this store</legend>
+      <p className="text-sm text-muted-foreground">Staff count only the cases you choose. Removing one keeps its history; its products stop appearing in Stock Check and the Prep List.</p>
+      <div className="grid gap-2 sm:grid-cols-2">{sections.map((s) => <label key={s.id} className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm">
+        <input type="checkbox" checked={chosen.includes(s.id)} onChange={(e) => setChosen(e.target.checked ? [...chosen, s.id] : chosen.filter((id) => id !== s.id))} />{s.name}</label>)}</div>
+      {mutation.failure && <ErrorMessage failure={mutation.failure} />}
+      <div className="flex flex-wrap gap-2"><button type="submit" className={`${button} bg-success text-primary-foreground`} disabled={!changed || chosen.length === 0}>{mutation.busy ? "Saving…" : "Save display cases"}</button>{changed && <button type="button" className={button} onClick={() => setChosen(current)}>Undo changes</button>}</div>
+    </fieldset>
+  </form>;
+}
+
+function ItemForm({ item, sections, products, base, onSaved, onCancel, onReload }: { item?: Item; sections: Section[]; products: Product[]; base: string; onSaved: (c: Config) => void; onCancel: () => void; onReload: () => void }) {
+  const initial = { product_id: item?.product_id ?? "", section: item?.section ?? sections[0]?.code ?? "", par: item?.par?.toString() ?? "", category: item?.category ?? "", product_type: item?.product_type ?? "", sort_order: String(item?.sort_order ?? 0), active: String(item?.active ?? true) };
   const edits = useEdits(initial);
   const value = edits.value;
   const mutation = useMutation();
@@ -130,8 +155,9 @@ function ItemForm({ item, products, base, onSaved, onCancel, onReload }: { item?
     <h3 className="font-semibold">{item ? `Edit ${item.product_name}` : "Add worksheet product"}</h3>
     <fieldset disabled={mutation.busy || mutation.failure?.kind === "network"} className="grid min-w-0 gap-4 sm:grid-cols-2">
       <label className="min-w-0 text-sm font-medium">Product<select required disabled={Boolean(item)} className={field} value={value.product_id} onChange={(e) => { const p = products.find((p) => p.product_id === e.target.value); edits.onChange({ ...value, product_id: e.target.value, category: p?.category ?? "", product_type: p?.container_type ?? "" }); }}><option value="">Select a catalog product</option>{item && !products.some((p) => p.product_id === item.product_id) && <option value={item.product_id}>{item.product_name} (inactive catalog product)</option>}{products.map((p) => <option key={p.product_id} value={p.product_id}>{p.name}</option>)}</select></label>
-      <label className="min-w-0 text-sm font-medium">Display section<select className={field} value={value.section} onChange={(e) => change("section", e.target.value)}>{sections.map((s) => <option key={s} value={s}>{labels[s]}</option>)}</select></label>
-      <label className="text-sm font-medium">PAR · sellable packages<input className={field} required type="number" min="0" max="9999" step="1" value={value.par} onChange={(e) => change("par", e.target.value)} /></label>
+      <label className="min-w-0 text-sm font-medium">Display section<select className={field} disabled={item?.from_display_type} value={value.section} onChange={(e) => change("section", e.target.value)}>{item && !sections.some((s) => s.code === item.section) && <option value={item.section}>{item.section} (not used at this store)</option>}{sections.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}</select></label>
+      <label className="text-sm font-medium">PAR · sellable packages<input className={field} required type="number" min="0" max="9999" step="1" value={value.par} onChange={(e) => change("par", e.target.value)} />
+        {item?.from_display_type && item.default_par != null && <span className="mt-1 flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">Default {item.default_par}{value.par !== String(item.default_par) && <button type="button" className="underline" onClick={() => change("par", String(item.default_par))}>Use default</button>}</span>}</label>
       <label className="text-sm font-medium">Order within section<input className={field} required type="number" min="0" max="999" step="1" value={value.sort_order} onChange={(e) => change("sort_order", e.target.value)} /></label>
       <label className="text-sm font-medium">Category<input className={field} maxLength={100} value={value.category} onChange={(e) => change("category", e.target.value)} /></label>
       <label className="text-sm font-medium">Product type<input className={field} maxLength={100} value={value.product_type} onChange={(e) => change("product_type", e.target.value)} /></label>

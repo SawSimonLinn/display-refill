@@ -1,7 +1,7 @@
 # Authentication and Permissions
 
 ## Identity
-Supabase Auth email/password only for MVP. Admin invites users; public signup is disabled. Invite acceptance and password reset use allowlisted web/mobile redirect destinations. Initial organization admin is provisioned through a documented operator-only bootstrap; never “first user becomes admin.” SDK versions and redirect handling must be verified during implementation.
+Supabase Auth email/password only for MVP. Admin invites users, or (Feature 16, D105) anyone signs up with email confirmation and joins with the organization access code; a signed-up account without a membership can read only its onboarding state. Invite acceptance and password reset use allowlisted web/mobile redirect destinations. Initial organization admin is provisioned through a documented operator-only bootstrap; never “first user becomes admin.” SDK versions and redirect handling must be verified during implementation.
 
 Web sessions use Supabase SSR cookie integration. iOS sends `Authorization: Bearer <access_token>`. Verify tokens server-side using supported Supabase verification; do not trust decoded claims without verification. Query active memberships for authorization. Logout clears user data and local images; revoked membership blocks subsequent API calls even if the access token has not expired.
 
@@ -59,3 +59,9 @@ Image access reads the version with a caller-scoped client first. Managers see p
 
 ## Implementation (feature 11)
 History list (`GET /scans`), detail, review record (`GET /scans/:id/history`) and image access all start with the same caller-scoped read of `scans` (RLS: `accessible_store_ids`). Filters only narrow; a store/display/organization filter the caller cannot read is 404. Revoking a store assignment removes that store's scans from all four routes on the next request even with a live token (tested); revoking the organization membership gives 403. The service client is used only after that read, for the one visible scan: actor display names and analysis attempt versions, returned only to that store's managers and org admins (D75). Employees read their stores' history and records (matrix row "Read scan history") but the web dashboard remains managers/admins only; history routes are read-only.
+
+## Implementation (feature 16)
+- Public sign-up (`[auth] enable_signup = true`, `enable_confirmations = true`, 6-digit code template). A new account's `/me` is 403 until it redeems the access code; only `GET /onboarding` and `POST /onboarding/join` accept callers without a membership (`authenticateApi({allowWithoutMembership})`).
+- The access code grants organization `member` only, never admin, and cannot restore a revoked membership or add a second organization. Attempts use the shared D83 windows (10/account, 50/client per 15 min). Codes live in a service-only table; audit metadata omits them.
+- `onboarding_store` locks the organization row so two accounts creating the same number get one store with one manager; later accounts become employees. Store managers may edit name/timezone (`store_settings_update`) and choose display types; store number, archiving and type/PAR defaults stay admin-only. Anyone with the code can join any active store of the organization by number (owner decision D107).
+- Hosted Supabase must mirror these Auth settings and the confirmation template before the app's sign-up works there.

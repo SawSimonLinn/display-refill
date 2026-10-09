@@ -1,17 +1,35 @@
 import Foundation
 import Observation
 
-public enum ProductionSection: String, Codable, Sendable, CaseIterable, Identifiable {
-    case fruitMobile = "fruit_mobile", saladMobile = "salad_mobile", fruitCase = "fruit_case", veggieCase = "veggie_case"
+/// A store section: the code of one of the organization's display case types (Feature 16).
+/// The four standard codes keep their established labels; other types are named by the server
+/// (`ProductionDay.Section.name`), with a readable fallback from the code.
+public struct ProductionSection: RawRepresentable, Codable, Hashable, Sendable, Identifiable {
+    public let rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: any Decoder) throws { rawValue = try decoder.singleValueContainer().decode(String.self) }
+    public func encode(to encoder: any Encoder) throws { var c = encoder.singleValueContainer(); try c.encode(rawValue) }
     public var id: String { rawValue }
+
+    public static let fruitMobile = Self(rawValue: "fruit_mobile")
+    public static let saladMobile = Self(rawValue: "salad_mobile")
+    public static let fruitCase = Self(rawValue: "fruit_case")
+    public static let veggieCase = Self(rawValue: "veggie_case")
+    /// The standard sections in walking order; a store's own list comes from the server.
+    public static let standard: [Self] = [.fruitMobile, .saladMobile, .fruitCase, .veggieCase]
+
+    public var isStandard: Bool { Self.standard.contains(self) }
     public var label: String {
         switch self {
         case .fruitMobile: "M1 BUNKER (FRUIT)"
         case .saladMobile: "SALAD DESTINATION"
         case .fruitCase: "6FT FRUIT"
         case .veggieCase: "Veggie display case"
+        default: rawValue.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
+    /// The established label for standard sections, else the server's name when known.
+    public func label(named name: String?) -> String { isStandard ? label : (name ?? label) }
 }
 public struct ProductionItem: Codable, Sendable, Identifiable, Equatable {
     public let id: String
@@ -40,6 +58,8 @@ public struct ProductionDay: Decodable, Sendable {
     public struct Section: Decodable, Sendable, Identifiable {
         public var id: String { section.rawValue }
         public let section: ProductionSection
+        /// Display case type name (servers before Feature 16 omit it).
+        public let name: String?
         public let check_id: String?
         public let finished_at: String?
         public let in_progress: Bool?
@@ -121,6 +141,16 @@ extension URLSessionAccountAPI: ProductionAPI {
     public func load() async {
         do { day = try await api.productionDay(storeID: storeID) }
         catch { self.error = Self.message(error) }
+    }
+    /// The store's sections in order: from the server, or the standard four before the first load.
+    public var sections: [ProductionSection] { day.map { $0.sections.map(\.section) } ?? ProductionSection.standard }
+    public func label(_ section: ProductionSection) -> String {
+        section.label(named: day?.sections.first { $0.section == section }?.name)
+    }
+    /// The section after `section` in this store's order, if any.
+    public func section(after section: ProductionSection) -> ProductionSection? {
+        guard let index = sections.firstIndex(of: section), index + 1 < sections.count else { return nil }
+        return sections[index + 1]
     }
     public func start(_ section: ProductionSection) async {
         guard !busy, !pending, !conflict else { return }

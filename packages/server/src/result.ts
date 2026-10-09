@@ -39,6 +39,7 @@ const PUBLIC_CONFLICT_DETAILS = new Set([
   "Stock or preparation changed during this count. Start a fresh count including all ready containers.",
   "Someone recorded preparation during this count. Start a fresh count including all ready containers.",
   "Configure additional sections before starting today’s checks.",
+  "This product is already in this display case type.",
 ]);
 
 /** Request field names our functions put in HINT (snake_case identifiers only). */

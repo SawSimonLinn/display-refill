@@ -1,8 +1,8 @@
 import DisplayRefillCore
 import SwiftUI
 
-/// Email/password sign-in. Accounts come from admin invitations; there is no
-/// sign-up. Password reset emails link to the web page that sets a new password.
+/// Email/password sign-in, with "Create account" (email code + access code, Feature 16)
+/// when the app is configured for it. Password reset emails link to the web page that sets a new password.
 public struct SignInView: View {
     @Bindable private var session: AppSession
     @State private var email = ""
@@ -58,6 +58,12 @@ public struct SignInView: View {
                             .foregroundStyle(.secondary)
                             .frame(minHeight: 44)
                             .disabled(busy)
+                        if session.canSignUp {
+                            NavigationLink("New here? Create an account") { SignUpView(session: session) }
+                                .font(.subheadline.weight(.semibold))
+                                .frame(minHeight: 44)
+                                .disabled(busy)
+                        }
                     }
                 }
                 .padding(.horizontal, 24)

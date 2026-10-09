@@ -148,8 +148,8 @@ export type UpdateProductRequest = z.infer<typeof UpdateProductRequest>;
 
 export const PogVersionState = z.enum(["draft", "published"]);
 
-/** Store section a POG is for; the same four sections as production. */
-export const PogKind = z.enum(["fruit_mobile", "salad_mobile", "fruit_case", "veggie_case"]);
+/** Display case type code a POG is for (Feature 16); the database checks it is an active type of the organization. */
+export const PogKind = z.string().regex(/^[a-z][a-z0-9_]{1,39}$/, { error: "must be a display case type code" });
 export type PogKind = z.infer<typeof PogKind>;
 
 export const PogVersionSummary = z.strictObject({

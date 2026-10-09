@@ -170,3 +170,15 @@ Owner explicitly removed the cooler-backup input and requested immediate numeric
 
 ### D104 — Salad and fruit grouping (2026-10-05)
 Use the owner’s displayed section names SALAD DESTINATION and6FT FRUIT. Keep all9 existing salad identities, put SOUTHWEST before BLT per supplied table, keep approved PAR values. Add five explicit fruit categories with counts12/11/14/7/7. Owner confirmed slices/quarters/60oz belong to Party tray. Display category headings within the continuous fruit count screen; keyboard Next crosses category boundaries. No historical count changes or imported HAVE examples.
+
+
+## Self-service stores and display case types (owner confirmed 2026-10-07)
+See [Feature16](feature-specs/16-self-service-stores-display-types.md).
+- D105 (supersedes the "public signup is disabled" rule in auth-and-permissions.md): public email/password sign-up with email confirmation. A new account has no membership and reads nothing until it redeems the organization access code. Invites and the operator bootstrap remain.
+- D106: One active access code per organization, stored service-only, shown to and rotated by org admins. Redeeming grants `member` organization role only. Wrong/disabled codes return one generic error and are rate limited with the D83 shared windows.
+- D107: Store onboarding is create-or-join by store number within the organization. Creator becomes store manager; later joiners become employees. Store number matching stays case-insensitive (D39 rules).
+- D108: Sections become organization `display_types` (code, name, family, order). Existing codes `fruit_mobile`, `salad_mobile`, `fruit_case`, `veggie_case` are kept as type codes so existing rows, clients and history keep working. `production_items`, `production_checks` and `pogs.kind` reference a type by (organization, code).
+- D109: Admin `display_type_items` hold default PAR/category/type/order. Stores copy them into `production_items` on selection. Admin edits update every selecting store's row except PAR on rows with `par_overridden`. A manager PAR edit sets the override; reset copies the default back. Snapshots on started checks never change.
+- D110: Deselecting a type deactivates its store items (history kept). Selection order is the admin type order; stores cannot reorder types.
+- D111: Copies a store receives when it is created (trigger, no person) write no `par.updated` production event; `store.created` audit covers them. Person-driven syncs (admin type edits, manager selection) keep logging PAR changes. Found by the live iOS onboarding check: the copy failed on `production_events.actor_id NOT NULL` when the organization's types already had products.
+- D112: iOS `ProductionSection` is a string-backed type code. The four standard codes keep their existing labels; other codes use the server's `name` (day payload), falling back to the code in title case on screens that only have prep data.
