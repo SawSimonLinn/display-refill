@@ -11,9 +11,11 @@ public struct AppServices: Sendable {
     /// Feature 16 sign-up and onboarding; nil hides "Create account".
     public let onboarding: (any OnboardingAPI)?
     public let signUp: (any SignUpAPI)?
+    /// Sign in with Apple / Google; nil hides the buttons.
+    public let social: (any SocialAuthAPI)?
 
     public init(client: any APIClient, sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, manual: any ManualScanAPI,
-                onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil) {
+                onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil, social: (any SocialAuthAPI)? = nil) {
         self.client = client
         self.sessions = sessions
         self.account = account
@@ -21,6 +23,7 @@ public struct AppServices: Sendable {
         self.manual = manual
         self.onboarding = onboarding
         self.signUp = signUp
+        self.social = social
     }
 
     public static func live(_ config: AppConfiguration) -> AppServices {
@@ -35,7 +38,8 @@ public struct AppServices: Sendable {
             cleaner: AppLocalDataCleaner(),
             manual: URLSessionAccountAPI(baseURL: config.apiBaseURL, sessions: sessions, transport: transport),
             onboarding: api,
-            signUp: auth
+            signUp: auth,
+            social: auth
         )
     }
 }
@@ -70,7 +74,7 @@ struct SessionRootView: View {
     init(services: AppServices) {
         self.services = services
         _session = State(initialValue: AppSession(sessions: services.sessions, account: services.account, cleaner: services.cleaner,
-                                                  onboarding: services.onboarding, signUp: services.signUp))
+                                                  onboarding: services.onboarding, signUp: services.signUp, social: services.social))
     }
 
     var body: some View {

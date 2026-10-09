@@ -60,7 +60,7 @@ public struct URLSessionAccountAPI: AccountAPI {
             return try await body()
         } catch {
             switch error {
-            case .sessionExpired, .invalidCredentials, .invalidCode: throw .signedOut
+            case .sessionExpired, .invalidCredentials, .invalidCode, .cancelled, .socialSignInFailed: throw .signedOut
             case .weakPassword, .signUpRejected: throw .unexpectedResponse(status: 422)
             case .transport(let code): throw .transport(code)
             case .rateLimited: throw .server(status: 429, code: .rateLimited, message: "Too many requests.", requestID: nil)

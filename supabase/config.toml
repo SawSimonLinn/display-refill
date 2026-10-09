@@ -164,7 +164,8 @@ site_url = "http://localhost:3000"
 # Display Refill: only the web confirm page. Invite and recovery emails link there
 # (templates below); the API always builds redirect_to from APP_ORIGIN. A value
 # outside this list falls back to site_url. Mirror on hosted projects.
-additional_redirect_urls = ["http://localhost:3000/auth/confirm"]
+# displayrefill://auth-callback is where Google sign-in (PKCE) returns to the iOS app.
+additional_redirect_urls = ["http://localhost:3000/auth/confirm", "displayrefill://auth-callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -338,9 +339,11 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Sign in with Apple from the iOS app (native ID token). client_id is the app's bundle ID;
+# no secret is needed for native sign-in. Mirror on hosted projects.
 [auth.external.apple]
-enabled = false
-client_id = ""
+enabled = true
+client_id = "com.displayrefill.app"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth callback URL derived from auth.external_url.
@@ -351,6 +354,17 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 # If enabled, it will allow the user to successfully authenticate when the provider does not return an email address.
+email_optional = false
+
+# Google sign-in from the iOS app (hosted OAuth + PKCE). Web client from Google Cloud with
+# the authorized redirect URI <supabase url>/auth/v1/callback. Mirror on hosted projects.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
 email_optional = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.

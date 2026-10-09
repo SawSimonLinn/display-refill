@@ -1,7 +1,8 @@
 import Foundation
 
-/// Supabase Auth operations the app needs. Email/password only. Sign-up with an
-/// email code is the separate `SignUpAPI` (Feature 16); invitations still work.
+/// Supabase Auth operations the app needs: email/password. Sign-up with an
+/// email code is the separate `SignUpAPI` (Feature 16), Apple and Google are
+/// `SocialAuthAPI`; invitations still work.
 public protocol SupabaseAuthAPI: Sendable {
     func signIn(email: String, password: String) async throws(AuthError) -> AuthSession
     func refresh(refreshToken: String) async throws(AuthError) -> AuthSession
@@ -14,7 +15,7 @@ public protocol SupabaseAuthAPI: Sendable {
 /// Kept behind `SupabaseAuthAPI` so it can be swapped for supabase-swift once
 /// the iOS toolchain can build package dependencies (decision D31).
 public struct SupabaseAuthClient: SupabaseAuthAPI {
-    private let supabaseURL: URL
+    let supabaseURL: URL
     private let publishableKey: String
     private let transport: any HTTPTransport
     private let now: @Sendable () -> Date
@@ -75,13 +76,20 @@ public struct SupabaseAuthClient: SupabaseAuthAPI {
         }
     }
 
-    /// POST with a nested JSON body (sign-up metadata), publishable key only.
-    func postJSON(_ path: String, body: [String: Any]) async throws(AuthError) -> (Data, HTTPURLResponse) {
-        var request = URLRequest(url: supabaseURL.appending(path: path))
-        request.httpMethod = "POST"
+    /// JSON request with a nested body (sign-up metadata, social sign-in), publishable key
+    /// and optional user token.
+    func postJSON(_ path: String, query: String? = nil, method: String = "POST", body: [String: Any], bearer: String? = nil) async throws(AuthError) -> (Data, HTTPURLResponse) {
+        guard var components = URLComponents(url: supabaseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
+            throw .unexpected(status: 0)
+        }
+        components.percentEncodedQuery = query
+        guard let url = components.url else { throw .unexpected(status: 0) }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(publishableKey, forHTTPHeaderField: "apikey")
+        if let bearer { request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization") }
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
             return try await transport.send(request)

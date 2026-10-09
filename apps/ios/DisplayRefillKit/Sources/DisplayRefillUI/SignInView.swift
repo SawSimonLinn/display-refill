@@ -1,8 +1,9 @@
+import AuthenticationServices
 import DisplayRefillCore
 import SwiftUI
 
 /// Email/password sign-in, with "Create account" (email code + access code, Feature 16)
-/// when the app is configured for it. Password reset emails link to the web page that sets a new password.
+/// and "Continue with Apple / Google" (which also create the account) when the app is configured for them. Password reset emails link to the web page that sets a new password.
 public struct SignInView: View {
     @Bindable private var session: AppSession
     @State private var email = ""
@@ -65,6 +66,9 @@ public struct SignInView: View {
                                 .disabled(busy)
                         }
                     }
+                    if session.canUseSocialSignIn {
+                        SocialSignInButtons(session: session)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 32)
@@ -121,6 +125,78 @@ public struct SignInView: View {
         let (email, password) = (email, password)
         self.password = ""
         Task { await session.signIn(email: email, password: password) }
+    }
+}
+
+/// "Continue with Apple" and "Continue with Google". Both create the account on first use;
+/// the new account then enters the organization access code like an email sign-up.
+struct SocialSignInButtons: View {
+    @Bindable var session: AppSession
+    /// Raw nonce for the Apple request in flight; Apple only receives its hash.
+    @State private var appleNonce: String?
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var busy: Bool { session.phase == .signingIn }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                VStack { Divider() }
+                Text("or").font(.subheadline).foregroundStyle(.secondary)
+                VStack { Divider() }
+            }
+            .accessibilityHidden(true)
+            SignInWithAppleButton(.continue, onRequest: prepareApple, onCompletion: finishApple)
+                .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                .frame(height: 50)
+                .clipShape(Capsule())
+                .disabled(busy)
+            Button {
+                Task {
+                    await session.signInWithGoogle { url in
+                        // Ephemeral: no Google cookies stay behind on a shared store device.
+                        try await webAuthenticationSession.authenticate(using: url, callbackURLScheme: SocialSignIn.callbackScheme, preferredBrowserSession: .ephemeral)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("G").font(.title3.weight(.bold)).accessibilityHidden(true)
+                    Text("Continue with Google")
+                }
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .overlay(Capsule().strokeBorder(.secondary.opacity(0.5)))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(busy)
+        }
+    }
+
+    private func prepareApple(_ request: ASAuthorizationAppleIDRequest) {
+        let nonce = SocialSignIn.randomString()
+        appleNonce = nonce
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = SocialSignIn.hashedNonce(nonce)
+    }
+
+    private func finishApple(_ result: Result<ASAuthorization, any Error>) {
+        let nonce = appleNonce
+        appleNonce = nil
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken, let idToken = String(data: tokenData, encoding: .utf8), let nonce
+            else {
+                session.showSocialSignInError(.socialSignInFailed)
+                return
+            }
+            let name = credential.fullName.map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
+            Task { await session.signInWithApple(idToken: idToken, rawNonce: nonce, fullName: name) }
+        case .failure(let error):
+            session.showSocialSignInError((error as? ASAuthorizationError)?.code == .canceled ? .cancelled : .socialSignInFailed)
+        }
     }
 }
 

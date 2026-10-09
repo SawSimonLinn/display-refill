@@ -84,6 +84,17 @@ Mailpit and creates a store. It leaves that store in the code's organization,
 so use a dedicated organization (not the seeded Org A) or reset afterwards —
 `bearer-auth.test.ts` expects only the seeded stores in Org A.
 
+
+**Apple and Google (D113).** The sign-in screen also offers "Continue with
+Apple" (native sheet, ID token to `grant_type=id_token`) and "Continue with
+Google" (Supabase hosted OAuth + PKCE in an ephemeral `webAuthenticationSession`,
+returning to `displayrefill://auth-callback`). Both create the account on first
+use. Setup per Supabase project: enable the Apple provider with client ID
+`com.displayrefill.app`; enable Google with a Google Cloud web client whose
+authorized redirect URI is `<SUPABASE_URL>/auth/v1/callback`; add
+`displayrefill://auth-callback` to the Auth redirect URLs. The app target
+carries the `com.apple.developer.applesignin` entitlement (project.yml).
+
 ## App Store release
 
 Version and build live in `project.yml` (`MARKETING_VERSION`,

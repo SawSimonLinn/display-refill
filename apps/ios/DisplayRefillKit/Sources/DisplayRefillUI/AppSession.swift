@@ -1,3 +1,4 @@
+import AuthenticationServices
 import DisplayRefillCore
 import Observation
 
@@ -30,17 +31,76 @@ public final class AppSession {
     private let cleaner: any LocalDataCleaner
     public let onboarding: (any OnboardingAPI)?
     private let signUpAPI: (any SignUpAPI)?
+    private let social: (any SocialAuthAPI)?
     private var watchTask: Task<Void, Never>?
 
-    public init(sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil) {
+    public init(sessions: SessionManager, account: any AccountAPI, cleaner: any LocalDataCleaner, onboarding: (any OnboardingAPI)? = nil, signUp: (any SignUpAPI)? = nil,
+                social: (any SocialAuthAPI)? = nil) {
         self.sessions = sessions
         self.account = account
         self.cleaner = cleaner
         self.onboarding = onboarding
         self.signUpAPI = signUp
+        self.social = social
     }
 
     public var canSignUp: Bool { signUpAPI != nil && onboarding != nil }
+    public var canUseSocialSignIn: Bool { social != nil }
+
+    /// Finishes Sign in with Apple. `fullName` is only present the first time a person
+    /// signs in with Apple, so it is saved as the display name then.
+    public func signInWithApple(idToken: String, rawNonce: String, fullName: String?) async {
+        guard let social else { return }
+        signInError = nil
+        phase = .signingIn
+        let session: AuthSession
+        do throws(AuthError) {
+            session = try await social.signInWithApple(idToken: idToken, rawNonce: rawNonce)
+        } catch {
+            showSocialSignInError(error)
+            return
+        }
+        await sessions.adopt(session)
+        if let name = fullName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            // Best effort: without it the person shows as "Team member".
+            try? await social.updateDisplayName(String(name.prefix(200)), accessToken: session.accessToken)
+        }
+        await loadAccount()
+    }
+
+    /// Google through Supabase's hosted OAuth with PKCE. `authenticate` opens the page in a
+    /// web authentication session and returns the callback URL.
+    public func signInWithGoogle(authenticate: (URL) async throws -> URL) async {
+        guard let social else { return }
+        let verifier = SocialSignIn.randomString()
+        guard let url = social.googleAuthorizeURL(redirectTo: SocialSignIn.callbackURL, codeChallenge: SocialSignIn.codeChallenge(for: verifier)) else { return }
+        signInError = nil
+        phase = .signingIn
+        let callback: URL
+        do {
+            callback = try await authenticate(url)
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            showSocialSignInError(.cancelled)
+            return
+        } catch {
+            showSocialSignInError(.transport((error as? URLError)?.code ?? .unknown))
+            return
+        }
+        do throws(AuthError) {
+            let code = try SocialSignIn.authCode(from: callback)
+            await sessions.adopt(try await social.exchangeAuthCode(code, codeVerifier: verifier))
+        } catch {
+            showSocialSignInError(error)
+            return
+        }
+        await loadAccount()
+    }
+
+    /// Back to the sign-in form; a cancelled sheet shows nothing.
+    public func showSocialSignInError(_ error: AuthError) {
+        phase = .signedOut(notice: nil)
+        signInError = error == .cancelled ? nil : Self.message(for: error)
+    }
 
     /// Creates the account; Supabase emails a 6-digit code. Returns true when the code step should show.
     public func signUp(email: String, password: String, name: String) async -> Bool {
@@ -175,6 +235,8 @@ public final class AppSession {
         case .weakPassword: "Choose a longer password (at least 12 characters) that is hard to guess."
         case .signUpRejected: "That email can't be used. Check it and try again."
         case .invalidCode: "That code is wrong or has expired. Check the latest email or send a new code."
+        case .cancelled: "Sign-in was cancelled."
+        case .socialSignInFailed: "That sign-in didn't work. Try again, or use your email and password."
         }
     }
 }

@@ -40,6 +40,10 @@ public enum AuthError: Error, Equatable, Sendable {
     case signUpRejected
     /// Sign-up: wrong or expired email code.
     case invalidCode
+    /// Apple or Google sign-in: the user closed the sheet. Not shown as an error.
+    case cancelled
+    /// Apple or Google sign-in: Supabase rejected the token or code (or the provider is off).
+    case socialSignInFailed
 }
 
 // MARK: - GET /api/v1/me

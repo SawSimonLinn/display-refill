@@ -22,6 +22,11 @@ targets:
     sources:
       - path: DisplayRefill/App
       - path: DisplayRefill/Resources
+    # Sign in with Apple. The App ID needs the capability too (automatic signing adds it).
+    entitlements:
+      path: DisplayRefill/DisplayRefill.entitlements
+      properties:
+        com.apple.developer.applesignin: [Default]
     configFiles:
       Debug: DisplayRefill/Config/Shared.xcconfig
       Release: DisplayRefill/Config/Shared.xcconfig
